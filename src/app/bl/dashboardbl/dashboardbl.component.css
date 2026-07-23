@@ -1,0 +1,1807 @@
+/* dashboardbl.component.css - CONSOLIDADO */
+
+:host {
+    display: block;
+}
+
+/* =======================================
+   1. VARIABLES (CSS Custom Properties)
+   ======================================= */
+:root,
+:host {
+    /* Paleta reducida (igual a dashboardinvoi/dashboardrev):
+       azul acento + neutros + verde/rojo apagados + ámbar solo advertencias */
+    --color-primario: #3a7bd5;
+    --color-primario-hover: #2f6abf;
+    --color-primario-tinte: #eaf1fb;
+    --color-positivo: #1e6e3a;
+    --color-positivo-tinte: #e6f4ec;
+    --color-peligro: #b3362a;
+    --color-peligro-tinte: #fdecea;
+    --color-alerta: #8a6d1a;
+    --color-alerta-tinte: #faf3dd;
+    --color-alerta-borde: #e8d9a8;
+    --gris-0: #fafafa;
+    --gris-1: #f2f2f7;
+    --gris-2: #e5e5ea;
+    --gris-3: #d1d1d6;
+    --gris-4: #c7c7cc;
+    --gris-5: #aeaeb2;
+    --gris-texto: #6c757d;
+    --color-texto: #1c1c1e;
+    --fuente-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    /* Alias de compatibilidad */
+    --color-secundario: #3a7bd5;
+    --color-secundario-hover: #2f6abf;
+    --color-advertencia: #8a6d1a;
+    --color-primario-dark: #2f6abf;
+}
+
+/* =======================================
+   2. ESTILOS GLOBALES Y ESTRUCTURA
+   ======================================= */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--fuente-sans);
+}
+
+body {
+    background-color: var(--gris-0);
+    color: var(--color-texto);
+    line-height: 1.6;
+}
+
+.contenedor {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* =======================================
+   3. CABECERA
+   ======================================= */
+.cabecera {
+    background-color: #ffffff;
+    color: var(--color-texto);
+    padding: 15px 0;
+    border-bottom: 1px solid var(--gris-2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.contenido-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Búsqueda */
+.contenedor-busqueda {
+    display: flex;
+    flex-grow: 1;
+    max-width: 300px;
+}
+
+.busqueda {
+    width: 100%;
+    padding: 8px 15px;
+    border: 1px solid var(--gris-2);
+    border-radius: 20px;
+    background-color: var(--gris-1);
+    color: var(--color-texto);
+    font-size: 16px;
+}
+
+.busqueda::placeholder {
+    color: var(--gris-texto);
+}
+
+.busqueda:focus {
+    outline: none;
+    background-color: #ffffff;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.15);
+}
+
+/* =======================================
+   4. PANEL PRINCIPAL
+   ======================================= */
+.panel {
+    background-color: white;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.panel-cabecera {
+    padding: 20px;
+    border-bottom: 1px solid var(--gris-2);
+}
+
+.panel-titulo {
+    font-size: 28px;
+    color: var(--color-texto);
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.panel-subtitulo {
+    font-size: 16px;
+    color: var(--gris-5);
+}
+
+.panel-contenido {
+    padding: 20px;
+}
+
+/* =======================================
+   5. TARJETAS DE ESTADÍSTICAS
+   ======================================= */
+.contenedor-estadisticas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: var(--gris-1);
+    border-bottom: 1px solid var(--gris-2);
+}
+
+.tarjeta-estadistica {
+    position: relative;
+    padding: 20px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 120px;
+    text-align: center; /* Asegurar centrado del texto */
+    flex: 1; /* Estilo original para flexbox */
+    min-width: 150px; /* Estilo original para flexbox */
+    max-width: 200px; /* Estilo original para flexbox */
+}
+
+.tarjeta-estadistica::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.tarjeta-estadistica:hover::before {
+    opacity: 1;
+}
+
+.tarjeta-estadistica:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+}
+
+.icono-tarjeta {
+    font-size: 2.5rem;
+    transition: transform 0.3s ease;
+}
+
+.tarjeta-estadistica:hover .icono-tarjeta {
+    transform: scale(1.1);
+}
+
+.valor-estadistica {
+    font-size: 1rem; /* Ajustado de 24px a 1rem para consistencia con el nuevo diseño */
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    z-index: 1;
+    margin-bottom: 0; /* Eliminado el margin-bottom: 5px del estilo original */
+    /* El color se define en las clases específicas (tarjeta-bl, etc.) */
+}
+
+.etiqueta-estadistica {
+    font-size: 14px;
+    color: var(--gris-5); /* Color gris oscuro para el texto secundario */
+}
+
+/* Tarjetas neutras — un solo color de acento (azul) */
+.tarjeta-bl,
+.tarjeta-invoice,
+.tarjeta-excel,
+.tarjeta-transito {
+    background: #ffffff;
+    border: 2px solid var(--gris-2);
+    color: var(--color-texto);
+}
+
+/* CREAR — única tarjeta sólida porque es una acción */
+.tarjeta-crear {
+    background: var(--color-primario);
+    border: 2px solid var(--color-primario);
+    color: white;
+}
+
+.tarjeta-crear:hover {
+    background: var(--color-primario-hover);
+}
+
+/* Estado activo para la tarjeta actual — resaltado azul */
+.tarjeta-estadistica.activa {
+    box-shadow: 0 8px 20px rgba(58, 123, 213, 0.25);
+    transform: translateY(-3px) scale(1.05);
+    border: 3px solid var(--color-primario);
+    background-color: var(--color-primario-tinte);
+    animation: pulseActive 2s infinite;
+}
+
+.tarjeta-crear.activa {
+    background: var(--color-primario);
+    color: white;
+}
+
+.tarjeta-estadistica.activa::after {
+    content: '✓';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--color-primario);
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+    animation: checkmark 0.3s ease;
+}
+
+@keyframes checkmark {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes pulseActive {
+    0%, 100% { box-shadow: 0 8px 20px rgba(58, 123, 213, 0.25); }
+    50% { box-shadow: 0 8px 30px rgba(58, 123, 213, 0.40); }
+}
+
+/* =======================================
+   6. TABLA DE PEDIDOS (BLs)
+   ======================================= */
+.tabla-pedidos {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-pedidos th {
+    background: #f8f9fa;
+    color: #495057;
+    border-bottom: 2px solid var(--gris-2);
+    padding: 15px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.tabla-pedidos td {
+    padding: 15px 10px;
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: top;
+    text-align: left; /* Asegurar alineación a la izquierda */
+}
+
+.tabla-pedidos td:last-child {
+    padding: 8px 15px; /* Ajuste para acciones */
+}
+
+.tabla-pedidos tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.tabla-pedidos tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.tabla-pedidos .detalle-text {
+    color: var(--gris-5);
+    font-size: 13px;
+}
+
+/* Estilos para el texto de detalles en la tabla */
+.bl-header-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.bl-number {
+    font-weight: 600;
+    color: var(--color-texto);
+}
+
+.bl-summary {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+td[data-label="Proveedor"] strong,
+.badge-proveedor {
+    display: inline-block;
+    padding: 4px 8px;
+    background: var(--color-primario-tinte);
+    color: var(--color-texto) !important;
+    border: 1px solid #c9dcf5;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para la nueva columna de fecha de arribo */
+.fecha-arribo-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
+.fecha-arribo {
+    font-size: 14px;
+    color: var(--color-texto);
+    font-weight: 500;
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.fecha-arribo.pendiente {
+    background-color: #f8f9fa;
+    color: #6c757d;
+}
+
+.fecha-arribo.arribado {
+    background-color: var(--color-positivo-tinte);
+    color: var(--color-positivo);
+}
+
+.fecha-arribo.programado {
+    background-color: var(--color-alerta-tinte);
+    color: var(--color-alerta);
+}
+
+.fecha-pendiente {
+    font-size: 12px;
+    color: var(--color-alerta);
+    font-style: italic;
+    background-color: var(--color-alerta-tinte);
+    padding: 4px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* Column Widths */
+.tabla-pedidos th:nth-child(1), .tabla-pedidos td:nth-child(1) { width: 80px; min-width: 80px; } /* Cod */
+.tabla-pedidos th:nth-child(2), .tabla-pedidos td:nth-child(2) { width: 200px; min-width: 180px; } /* BL */
+.tabla-pedidos th:nth-child(3), .tabla-pedidos td:nth-child(3) { width: 140px; min-width: 120px; } /* Estado */
+.tabla-pedidos th:nth-child(4), .tabla-pedidos td:nth-child(4) { width: 130px; min-width: 120px; } /* Fecha Arribo */
+.tabla-pedidos th:nth-child(5), .tabla-pedidos td:nth-child(5) { width: 120px; min-width: 100px; } /* Total Invoices */
+.tabla-pedidos th:nth-child(6), .tabla-pedidos td:nth-child(6) { width: 140px; min-width: 140px; } /* Acciones */
+.tabla-pedidos th:last-child, .tabla-pedidos td:last-child { width: 140px; min-width: 140px; text-align: left; } /* Overrides nth-child(6) for safety */
+
+/* Contenedor de acciones - alineación horizontal */
+.acciones-tabla-celda {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: nowrap;
+    min-width: 120px;
+}
+
+/* =======================================
+   7. ACORDEÓN (DETALLES BL e INVOICES)
+   ======================================= */
+.acordeon {
+    margin-top: 20px;
+}
+
+.accordion-item {
+    background-color: white;
+    border: 1px solid #e9ecef; /* Usando gris-2/e9ecef */
+    border-radius: 8px;
+    margin-bottom: 15px; /* Aumentado de 10px a 15px */
+    overflow: hidden;
+    transition: all 0.3s ease;
+    padding: 15px; /* Añadido padding base */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.accordion-item:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+}
+
+.accordion-item:last-child {
+    margin-bottom: 0;
+}
+
+.accordion-item.expanded {
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.18);
+}
+
+/* Encabezado del acordeón - Usado en la tabla de BLs */
+.accordion-cell {
+    position: relative;
+    min-width: 300px;
+}
+
+.accordion-header {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    background-color: transparent;
+    border: none;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.accordion-header:hover {
+    background-color: var(--gris-1);
+}
+
+.bl-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.bl-number {
+    font-size: 18px; /* Solo para el acordeón, en tabla es diferente */
+    font-weight: 700;
+    color: var(--color-texto);
+}
+
+.bl-description {
+    font-size: 14px;
+    color: var(--gris-5);
+}
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+    color: var(--color-primario);
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.accordion-icon.rotated {
+    transform: rotate(180deg);
+}
+
+.accordion-item.expanded .accordion-icon {
+    transform: rotate(180deg);
+}
+
+/* Contenido del acordeón - Altura dinámica y Scroll */
+.accordion-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, opacity 0.3s ease;
+    background-color: var(--gris-0);
+    border-radius: 6px;
+    margin-top: 8px;
+}
+
+.accordion-content.open {
+    max-height: 70vh; /* Altura máxima del 70% del viewport */
+    opacity: 1;
+    transition: max-height 0.4s ease-in, opacity 0.3s ease;
+}
+
+.accordion-body {
+    padding: 20px;
+    border: 1px solid var(--gris-2);
+    border-radius: 6px;
+    background: #f8f9fa;
+    max-height: calc(70vh - 40px);
+    overflow-y: auto;
+}
+
+/* Información principal del BL */
+.bl-main-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    flex-shrink: 0;
+}
+
+.info-row {
+    margin-bottom: 10px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+}
+
+.info-row:last-child {
+    margin-bottom: 0;
+}
+
+.info-row strong {
+    color: var(--color-primario); /* Estilo primario para el título */
+    font-weight: 600;
+    min-width: 120px;
+    margin-right: 10px;
+}
+
+/* =======================================
+   8. DETALLES DE INVOICES (Dentro del BL)
+   ======================================= */
+.invoicebl-items-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-shrink: 0;
+}
+
+.section-title {
+    color: var(--color-primario);
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+    border-bottom: 2px solid var(--color-primario);
+    padding-bottom: 5px;
+}
+
+.section-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* CONTENEDOR DE SCROLL PARA LOS INVOICES */
+.invoices-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 400px;
+    padding-right: 8px;
+    margin-right: -8px;
+}
+
+.invoices-scroll-container.transitioning {
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.invoices-scroll-container::-webkit-scrollbar { width: 8px; }
+.invoices-scroll-container::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+.invoices-scroll-container::-webkit-scrollbar-thumb { background: var(--color-primario); border-radius: 4px; opacity: 0.7; }
+.invoices-scroll-container::-webkit-scrollbar-thumb:hover { background: var(--color-primario-dark); opacity: 1; }
+.invoices-scroll-container { scrollbar-width: thin; scrollbar-color: var(--color-primario) #f1f1f1; }
+
+/* Tarjeta Individual de Invoice */
+.invoice-card {
+    background-color: white;
+    border: 1px solid var(--gris-3);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 10px; /* Separación entre tarjetas */
+}
+
+.invoice-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e9ecef;
+    gap: 10px;
+}
+
+.invoice-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.invoice-number {
+    font-size: 15px; /* Estilo dentro del acordeón */
+    font-weight: 600;
+    color: var(--color-primario);
+}
+
+.invoice-id {
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.invoice-description {
+    font-size: 13px;
+    color: #495057;
+    word-wrap: break-word;
+}
+
+.invoice-header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.invoice-item-details {
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.invoice-item-details div {
+    margin-bottom: 5px;
+}
+
+.invoice-item-details strong {
+    color: #495057;
+    font-weight: 600;
+    margin-right: 8px;
+}
+
+.no-invoices-message {
+    text-align: center;
+    padding: 20px;
+    color: #6c757d;
+    font-style: italic;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+/* Estilos para el contenedor de detalles de invoice para disposición horizontal */
+.invoice-details-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.detail-item {
+    flex: 1 1 auto;
+    min-width: 150px;
+    font-size: 14px;
+}
+
+.detail-item strong {
+    display: block;
+    color: var(--color-primario);
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+/* Contenido del Invoice Card (Cuerpo) */
+/* NOTA: Estos se usan en el componente de invoice, pero están en tu CSS */
+.invoice-card-body.open {
+    max-height: 200px; /* Ajusta según sea necesario */
+    opacity: 1;
+    transition: max-height 0.4s ease-in, opacity 0.3s ease;
+    padding: 15px;
+}
+
+.invoice-card-body {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.4s ease-out, opacity 0.3s ease-out;
+}
+
+
+/* =======================================
+   9. BOTONES DE ACCIÓN Y ESTADOS
+   ======================================= */
+/* Botón genérico (usado en la tabla) */
+.boton-accion {
+    background-color: var(--gris-1);
+    color: var(--gris-texto);
+    border: 1px solid var(--gris-2);
+    border: none;
+    padding: 6px; /* Ajuste para el botón de icono */
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px; /* Separación de 4px para texto/icono */
+    transition: all 0.2s ease;
+    min-width: 32px;
+    min-height: 32px;
+    text-decoration: none;
+}
+
+.boton-accion:hover {
+    background-color: var(--color-primario-tinte);
+    color: var(--color-primario);
+    border-color: var(--color-primario);
+    transform: translateY(-1px);
+}
+
+.boton-accion svg {
+    fill: currentColor;
+}
+
+/* Estilos específicos: todos neutros; el rojo queda solo para eliminar */
+.boton-accion.editar,
+.boton-accion.detalles,
+.boton-accion.agregar-detalle {
+    background-color: var(--gris-1);
+    color: var(--gris-texto);
+}
+
+.boton-accion.editar:hover,
+.boton-accion.detalles:hover,
+.boton-accion.agregar-detalle:hover {
+    background-color: var(--color-primario-tinte);
+    color: var(--color-primario);
+    border-color: var(--color-primario);
+}
+
+.boton-accion.eliminar {
+    background-color: var(--gris-1);
+    color: var(--color-peligro);
+}
+
+.boton-accion.eliminar:hover {
+    background-color: var(--color-peligro-tinte);
+    border-color: var(--color-peligro);
+    color: var(--color-peligro);
+}
+
+.btn-expand-all {
+    background: var(--color-primario);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 8px; /* Ajustado para icono y texto */
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px; /* Ajustado de 6px a 4px */
+    transition: all 0.2s ease;
+    min-width: 120px;
+    justify-content: center;
+}
+
+.btn-expand-all:hover {
+    background: var(--color-primario-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-expand-all:active {
+    transform: translateY(0);
+}
+
+.btn-expand-all.expanded {
+    background: var(--color-peligro);
+}
+
+.btn-expand-all.expanded:hover {
+    background: #992e24;
+}
+
+.btn-expand-all .btn-text {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.btn-expand-all svg {
+    transition: transform 0.2s ease;
+}
+
+.btn-expand-all:hover svg {
+    transform: scale(1.1);
+}
+
+/* Iconos de Información y Agregar (dentro de la celda de acciones) */
+.details-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    background-color: transparent;
+    border: none;
+    min-width: 32px;
+    min-height: 32px;
+    color: var(--color-primario);
+}
+
+.details-icon:hover {
+    background-color: var(--gris-1);
+    transform: translateY(-1px);
+}
+
+.details-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+.details-icon.info-icon { color: var(--color-primario); }
+.details-icon.add-icon { color: var(--color-positivo); }
+
+.details-icon.info-icon:hover { background-color: var(--color-primario-tinte); }
+.details-icon.add-icon:hover { background-color: var(--color-positivo-tinte); }
+
+/* ESTADOS (GENERAL Y ESPECÍFICO) */
+.estado, .estado-small {
+    padding: 6px 12px; /* Base */
+    border-radius: 4px; /* Base */
+    font-size: 0.875rem; /* Base */
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+.estado-small {
+    font-size: 12px;
+    padding: 4px 8px;
+    white-space: nowrap;
+    border-radius: 20px; /* Estilo pill */
+}
+
+/* Pastillas suaves — verde: en curso/completado, azul: tránsito/embarque,
+   ámbar: pendiente/aduana, gris: revisión/liquidado, rojo: anulada */
+.estado.pendiente {
+    background-color: var(--color-alerta-tinte);
+    color: var(--color-alerta);
+    border: 1px solid var(--color-alerta-borde);
+}
+
+.estado.transito, .estado.activa, .estado.aprobada, .estado.entregada {
+    background-color: var(--color-positivo-tinte);
+    color: var(--color-positivo);
+    border: 1px solid #bcdccb;
+}
+
+.estado.revision {
+    background-color: var(--gris-1);
+    color: #495057;
+    border: 1px solid var(--gris-3);
+}
+
+.estado.embarque {
+    background-color: var(--color-primario-tinte);
+    color: var(--color-primario-hover);
+    border: 1px solid #c9dcf5;
+}
+
+.estado.aduana {
+    background-color: var(--color-alerta-tinte);
+    color: var(--color-alerta);
+    border: 1px solid var(--color-alerta-borde);
+}
+
+.estado.liquidado {
+    background-color: var(--gris-1);
+    color: var(--gris-texto);
+    border: 1px solid var(--gris-2);
+}
+
+.estado.anulada {
+    background-color: var(--color-peligro-tinte);
+    color: var(--color-peligro);
+    border: 1px solid #eec2bc;
+}
+
+/* =======================================
+   10. FILTROS Y ACCIONES DE TABLA
+   ======================================= */
+.opciones-tabla {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--gris-1);
+    border-bottom: 1px solid var(--gris-2);
+    margin-bottom: 20px;
+    border-radius: 8px;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.filtros-fecha {
+    display: flex;
+    align-items: center; /* Alineación horizontal inicial */
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.fecha-desde,
+.fecha-hasta {
+    display: flex;
+    flex-direction: column; /* Cambiado a columna para el filtro avanzado */
+    gap: 5px;
+    align-items: flex-start; /* Alineado a la izquierda */
+}
+
+.filtros-fecha label {
+    font-weight: 600;
+    color: var(--color-texto);
+    font-size: 0.875rem; /* Usando rem para consistencia */
+}
+
+.filtros-fecha input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid var(--gris-3);
+    border-radius: 5px;
+    font-size: 0.875rem; /* Usando rem para consistencia */
+    color: var(--color-texto);
+    background-color: white;
+    appearance: none;
+    transition: all 0.2s;
+}
+
+.filtros-fecha input[type="date"]:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.18);
+}
+
+.acciones-tabla {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.boton-secundario {
+    background-color: var(--gris-4);
+    color: var(--color-texto);
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.boton-secundario:hover {
+    background-color: var(--gris-5);
+    transform: translateY(-1px);
+}
+
+.boton-secundario svg {
+    fill: currentColor; /* Asegura que el color del icono sea el mismo que el texto */
+}
+
+/* Filtros Avanzados */
+.filtros-avanzados {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+}
+
+.filtros-avanzados h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filtros-avanzados h3::before {
+    content: "🔍";
+    font-size: 1.2rem;
+}
+
+.filtro-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.filtro-item label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 4px;
+}
+
+.input-filtro,
+.select-filtro {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    background-color: white;
+}
+
+.input-filtro:focus,
+.select-filtro:focus {
+    outline: none;
+    border-color: var(--color-primario);
+    box-shadow: 0 0 0 0.2rem rgba(58, 123, 213, 0.2);
+}
+
+.input-filtro::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+.select-filtro {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23495057' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    background-size: 12px;
+    padding-right: 35px;
+}
+
+.boton-limpiar {
+    background-color: var(--color-peligro);
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.boton-limpiar:hover {
+    background-color: #992e24;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.boton-limpiar:active {
+    transform: translateY(0);
+}
+
+.boton-limpiar::before {
+    content: "✕";
+    font-size: 1.1rem;
+}
+
+/* Animaciones de filtro */
+@keyframes filtroActivo {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.input-filtro:not(:placeholder-shown),
+.select-filtro:not([value=""]) {
+    animation: filtroActivo 0.3s ease;
+}
+
+.filtro-item.activo .input-filtro,
+.filtro-item.activo .select-filtro {
+    border-color: var(--color-positivo);
+    background-color: var(--color-positivo-tinte);
+}
+
+/* Badge de contador de filtros activos */
+.filtros-avanzados::after {
+    content: attr(data-active-filters) " filtros activos";
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: var(--color-primario);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: none;
+}
+
+.filtros-avanzados[data-active-filters]:not([data-active-filters="0"])::after {
+    display: block;
+}
+
+/* =======================================
+   11. PAGINACIÓN
+   ======================================= */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.pagination-button {
+    background-color: var(--color-primario);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    transition: background-color 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+    background-color: var(--color-primario-hover);
+}
+
+.pagination-button:disabled {
+    background-color: var(--gris-4);
+    cursor: not-allowed;
+}
+
+.pagination-info {
+    font-size: 16px;
+    color: var(--color-texto);
+    font-weight: 500;
+}
+
+/* =======================================
+   12. MODAL
+   ======================================= */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.6);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal.show-modal {
+    display: flex;
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 30px;
+    border: 1px solid #888;
+    width: 90%;
+    max-width: 900px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    animation-name: animatetop;
+    animation-duration: 0.4s;
+    position: relative;
+    border-radius: 8px;
+}
+
+@keyframes animatetop {
+    from { top: -300px; opacity: 0; }
+    to { top: 0; opacity: 1; }
+}
+
+.close-button {
+    color: #aaa;
+    font-size: 32px;
+    font-weight: bold;
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: #333;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.table-responsive {
+    margin-top: 20px;
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+    vertical-align: top;
+}
+
+.table th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+}
+
+.table-striped tbody tr:nth-child(odd) {
+    background-color: #f9f9f9;
+}
+
+/* =======================================
+   13. MENSAJES DE ESTADO
+   ======================================= */
+.no-results, .loading-indicator {
+    text-align: center;
+    padding: 30px;
+    color: var(--gris-5);
+    font-size: 18px;
+}
+
+
+/* =======================================
+   14. MEDIA QUERIES (RESPONSIVE)
+   ======================================= */
+@media screen and (max-width: 1024px) {
+    .tabla-pedidos th:nth-child(4),
+    .tabla-pedidos td:nth-child(4) {
+        width: 110px;
+        min-width: 100px;
+    }
+
+    .fecha-arribo,
+    .fecha-pendiente {
+        font-size: 12px;
+        padding: 2px 6px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .contenido-cabecera {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .contenedor-busqueda {
+        margin-top: 10px;
+        max-width: 100%;
+    }
+
+    .panel-titulo {
+        font-size: 24px;
+    }
+
+    /* Estadísticas */
+    .contenedor-estadisticas {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        gap: 15px;
+    }
+
+    .tarjeta-estadistica {
+        flex-basis: 45%;
+        max-width: 45%;
+        padding: 15px;
+        min-height: 100px;
+    }
+
+    .icono-tarjeta {
+        font-size: 2rem;
+    }
+
+    .valor-estadistica {
+        font-size: 0.85rem;
+    }
+
+    /* Acordeón */
+    .accordion-cell {
+        min-width: unset;
+    }
+
+    .accordion-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    .bl-info {
+        width: 100%;
+    }
+
+    .bl-number {
+        font-size: 16px;
+    }
+
+    .estado {
+        align-self: flex-end;
+    }
+
+    .accordion-content.open {
+        max-height: 600px;
+    }
+
+    .accordion-body {
+        padding: 15px;
+    }
+
+    /* Botones y acciones */
+    .btn-expand-all {
+        min-width: 100px;
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .btn-expand-all .btn-text {
+        display: none;
+    }
+
+    .invoice-bl-list {
+        grid-template-columns: 1fr;
+    }
+
+    .invoice-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+
+    .invoice-card-body .invoice-actions {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .acciones-invoice {
+        flex-direction: column;
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    .boton-accion,
+    .accordion-header,
+    .details-icon {
+        min-width: 28px;
+        min-height: 28px;
+        padding: 4px;
+    }
+
+    .accordion-icon,
+    .details-icon svg {
+        width: 14px;
+        height: 14px;
+    }
+
+    .acciones-tabla-celda {
+        gap: 4px;
+        min-width: 100px;
+    }
+
+    .info-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .info-row strong {
+        min-width: unset;
+        margin-right: 0;
+        margin-bottom: 3px;
+    }
+
+    .invoice-item-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+
+    /* Tabla */
+    .tabla-pedidos th:nth-child(1),
+    .tabla-pedidos td:nth-child(1) {
+        width: 60px;
+        min-width: 60px;
+    }
+
+    .tabla-pedidos th:nth-child(4),
+    .tabla-pedidos td:nth-child(4) {
+        width: 100px;
+        min-width: 90px;
+    }
+
+    .tabla-pedidos th:nth-child(6),
+    .tabla-pedidos td:nth-child(6) {
+        width: 110px;
+        min-width: 110px;
+    }
+
+    /* Filtros */
+    .opciones-tabla {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 15px;
+    }
+
+    .filtros-fecha,
+    .acciones-tabla {
+        width: 100%;
+        justify-content: flex-start;
+        margin-bottom: 15px;
+    }
+
+    .acciones-tabla {
+        margin-bottom: 0;
+    }
+    
+    .filtros-avanzados {
+        padding: 15px;
+    }
+
+    .filtros-avanzados > div {
+        grid-template-columns: 1fr !important;
+    }
+
+    .filtros-fecha {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .boton-limpiar {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    /* Estadísticas */
+    .contenedor-estadisticas {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    /* Acordeón */
+    .accordion-content.open {
+        max-height: 500px;
+    }
+
+    .accordion-body {
+        padding: 10px;
+    }
+
+    .accordion-item {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+
+    .invoice-item-details {
+        font-size: 12px;
+    }
+
+    .acciones-invoice {
+        justify-content: center;
+        width: 100%;
+    }
+
+    /* Botones */
+    .btn-expand-all {
+        min-width: 32px;
+        padding: 6px;
+    }
+
+    /* Tabla */
+    .tabla-pedidos {
+        min-width: 600px;
+    }
+
+    .fecha-arribo,
+    .fecha-pendiente {
+        font-size: 11px;
+        padding: 1px 4px;
+    }
+
+    .acciones-tabla-celda {
+        gap: 2px;
+        min-width: 90px;
+    }
+
+    .accordion-header,
+    .details-icon {
+        min-width: 24px;
+        min-height: 24px;
+        padding: 2px;
+    }
+
+    .accordion-icon,
+    .details-icon svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .tabla-pedidos th:last-child,
+    .tabla-pedidos td:last-child {
+        width: 100px;
+        min-width: 100px;
+    }
+
+    /* Filtros */
+    .filtros-fecha {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+}
+/* =============================================
+   COLUMNA INVOICES INLINE — agregar al .css
+   ============================================= */
+
+/* Celda contenedora de los chips */
+.col-invoices {
+  min-width: 180px;
+  max-width: 320px;
+}
+
+/* Wrapper que permite wrapping de chips sin scroll */
+.invoices-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Chip base */
+.invoice-chip {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  cursor: default;
+  border: 1px solid transparent;
+  transition: opacity 0.15s;
+}
+
+.invoice-chip:hover {
+  opacity: 0.85;
+}
+
+/* Sin invoices */
+.sin-invoices {
+  color: #bbb;
+  font-size: 13px;
+}
+
+/* ---- Colores por estado ---- */
+.chip-pendiente {
+  background-color: var(--color-alerta-tinte);
+  color: var(--color-alerta);
+  border-color: var(--color-alerta-borde);
+}
+
+.chip-transito {
+  background-color: var(--color-primario-tinte);
+  color: var(--color-primario-hover);
+  border-color: #c9dcf5;
+}
+
+.chip-activa {
+  background-color: var(--color-positivo-tinte);
+  color: var(--color-positivo);
+  border-color: #bcdccb;
+}
+
+.chip-embarque {
+  background-color: var(--color-primario-tinte);
+  color: var(--color-primario-hover);
+  border-color: #c9dcf5;
+}
+
+.chip-aduana {
+  background-color: var(--color-alerta-tinte);
+  color: var(--color-alerta);
+  border-color: var(--color-alerta-borde);
+}
+
+.chip-liquidado {
+  background-color: var(--gris-1);
+  color: var(--gris-texto);
+  border-color: var(--gris-2);
+}
+
+.chip-aprobada {
+  background-color: var(--color-positivo-tinte);
+  color: var(--color-positivo);
+  border-color: #bcdccb;
+}
+
+.chip-revision {
+  background-color: var(--gris-1);
+  color: #495057;
+  border-color: var(--gris-3);
+}
+
+.chip-entregada {
+  background-color: var(--color-positivo-tinte);
+  color: var(--color-positivo);
+  border-color: #bcdccb;
+}
+
+.chip-anulada {
+  background-color: var(--color-peligro-tinte);
+  color: var(--color-peligro);
+  border-color: #eec2bc;
+}
+
+/* Acciones en fila (reemplaza accordion-header) */
+.acciones-fila {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+/* =============================================
+   CHIPS DE ORDEN COMPRA — pegar en dashboardbl.component.css
+   ============================================= */
+
+/* Celda contenedora */
+.col-invoices {
+  min-width: 200px;
+  max-width: 350px;
+  vertical-align: middle;
+}
+
+/* Wrapper HORIZONTAL con wrap */
+.invoices-inline {
+  display: flex;
+  flex-direction: row;   /* horizontal */
+  flex-wrap: wrap;       /* baja a siguiente línea si no caben */
+  gap: 4px 5px;
+  align-items: flex-start;
+}
+
+/* Chip base */
+.invoice-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  cursor: default;
+  border: 1px solid transparent;
+  line-height: 1.6;
+  transition: opacity 0.15s;
+}
+
+.invoice-chip:hover {
+  opacity: 0.8;
+}
+
+/* Sin invoices */
+.sin-invoices {
+  color: #bbb;
+  font-size: 13px;
+}
+
+/* Acciones en fila */
+.acciones-fila {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ---- Colores por estado ---- */
+.chip-pendiente {
+  background-color: var(--color-alerta-tinte);
+  color: var(--color-alerta);
+  border-color: var(--color-alerta-borde);
+}
+.chip-transito {
+  background-color: var(--color-primario-tinte);
+  color: var(--color-primario-hover);
+  border-color: #c9dcf5;
+}
+.chip-activa {
+  background-color: var(--color-positivo-tinte);
+  color: var(--color-positivo);
+  border-color: #bcdccb;
+}
+.chip-embarque {
+  background-color: var(--color-primario-tinte);
+  color: var(--color-primario-hover);
+  border-color: #c9dcf5;
+}
+.chip-aduana {
+  background-color: var(--color-alerta-tinte);
+  color: var(--color-alerta);
+  border-color: var(--color-alerta-borde);
+}
+.chip-liquidado {
+  background-color: var(--gris-1);
+  color: var(--gris-texto);
+  border-color: var(--gris-2);
+}
+.chip-aprobada {
+  background-color: var(--color-positivo-tinte);
+  color: var(--color-positivo);
+  border-color: #bcdccb;
+}
+.chip-revision {
+  background-color: var(--gris-1);
+  color: #495057;
+  border-color: var(--gris-3);
+}
+.chip-entregada {
+  background-color: var(--color-positivo-tinte);
+  color: var(--color-positivo);
+  border-color: #bcdccb;
+}
+.chip-anulada {
+  background-color: var(--color-peligro-tinte);
+  color: var(--color-peligro);
+  border-color: #eec2bc;
+}

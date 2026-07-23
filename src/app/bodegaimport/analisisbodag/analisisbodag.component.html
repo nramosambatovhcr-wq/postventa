@@ -1,0 +1,256 @@
+<div class="analisis-container">
+
+  <!-- MODAL NATIVO -->
+  <app-repuesto-modal
+    [visible]="modalVisible"
+    [oficina]="oficinaInfo"
+    [modo]="modalModo"
+    [repuestoExistente]="modalRepuesto"
+    (cerrar)="cerrarModal()"
+    (guardar)="onGuardarModal($event)">
+  </app-repuesto-modal>
+
+  <!-- ── HEADER ─────────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-content">
+      <h1>📊 Análisis de Inventario</h1>
+      <div class="oficina-info" *ngIf="oficinaInfo">
+        <span class="badge-oficina">🏢 {{ oficinaInfo.oficina }}</span>
+        <span class="badge-bodega">📦 {{ oficinaInfo.bodega }}</span>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button class="btn-nuevo" (click)="abrirModalNuevo()">
+        <span>➕</span>
+        <span>Nuevo</span>
+      </button>
+      <button class="btn-exportar" (click)="exportarExcel()">
+        <span>📥</span>
+        <span>Exportar</span>
+      </button>
+      <button class="btn-refresh" (click)="cargarInventario()" [disabled]="cargando"
+              title="Recargar inventario">
+        🔄
+      </button>
+    </div>
+  </header>
+
+  <!-- ── CARGANDO ───────────────────────────────────────── -->
+  <div class="loading-state" *ngIf="cargando">
+    <div class="spinner"></div>
+    <p>Cargando inventario…</p>
+  </div>
+
+  <!-- ── ERROR ──────────────────────────────────────────── -->
+  <div class="error-state" *ngIf="error && !cargando">
+    <div class="error-icon">⚠️</div>
+    <h3>{{ error }}</h3>
+    <button class="btn-reintentar" (click)="cargarInventario()">Reintentar</button>
+  </div>
+
+  <!-- ── CONTENIDO ──────────────────────────────────────── -->
+  <div class="content" *ngIf="!cargando && !error">
+
+    <!-- Resumen -->
+    <div class="resumen-cards">
+      <div class="resumen-card articulos">
+        <div class="resumen-icon">📦</div>
+        <div class="resumen-data">
+          <span class="resumen-numero">{{ getTotalArticulos() | number }}</span>
+          <span class="resumen-label">Artículos</span>
+        </div>
+      </div>
+      <div class="resumen-card stock">
+        <div class="resumen-icon">📊</div>
+        <div class="resumen-data">
+          <span class="resumen-numero">{{ formatearStock(getStockTotal()) }}</span>
+          <span class="resumen-label">Stock Total</span>
+        </div>
+      </div>
+      <div class="resumen-card costo">
+        <div class="resumen-icon">💵</div>
+        <div class="resumen-data">
+          <span class="resumen-numero">${{ getCostoTotal() | number:'1.2-2' }}</span>
+          <span class="resumen-label">Costo Total</span>
+        </div>
+      </div>
+      <div class="resumen-card valor">
+        <div class="resumen-icon">💰</div>
+        <div class="resumen-data">
+          <span class="resumen-numero">${{ getValorTotal() | number:'1.2-2' }}</span>
+          <span class="resumen-label">Valor Total</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-panel">
+      <h3 class="filtros-title">🔍 Filtros</h3>
+      <div class="filtros-grid">
+        <div class="filtro-group">
+          <label>Artículo</label>
+          <input type="text"
+                 [(ngModel)]="filtros.articulo"
+                 (input)="aplicarFiltros()"
+                 placeholder="Código…">
+        </div>
+        <div class="filtro-group">
+          <label>Descripción</label>
+          <input type="text"
+                 [(ngModel)]="filtros.nombre"
+                 (input)="aplicarFiltros()"
+                 placeholder="Buscar…">
+        </div>
+        <div class="filtro-group">
+          <label>Clase</label>
+          <select [(ngModel)]="filtros.clase" (change)="aplicarFiltros()">
+            <option value="">Todas</option>
+            <option *ngFor="let c of clasesDisponibles" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+        <div class="filtro-group">
+          <label>Grupo</label>
+          <select [(ngModel)]="filtros.grupo" (change)="aplicarFiltros()">
+            <option value="">Todos</option>
+            <option *ngFor="let g of gruposDisponibles" [value]="g">{{ g }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filtros-actions">
+        <button class="btn-limpiar" (click)="limpiarFiltros()">🗑️ Limpiar filtros</button>
+        <span class="resultados-info">
+          {{ inventarioFiltrado.length | number }} resultado(s)
+        </span>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="tabla-container" *ngIf="inventarioFiltrado.length > 0">
+
+      <!-- wrapper para scroll horizontal en pantallas pequeñas -->
+      <div class="table-scroll-wrapper">
+        <table class="inventario-table">
+          <thead>
+            <tr>
+              <th (click)="cambiarOrden('articulo')" class="sortable">
+                Artículo {{ getIconoOrden('articulo') }}
+              </th>
+              <th (click)="cambiarOrden('nombre')" class="sortable">
+                Descripción {{ getIconoOrden('nombre') }}
+              </th>
+              <th>Clase</th>
+              <th>Grupo</th>
+              <th (click)="cambiarOrden('stock_disponible')" class="sortable text-center">
+                Stock {{ getIconoOrden('stock_disponible') }}
+              </th>
+              <th (click)="cambiarOrden('cantidad_contada')" class="sortable text-center">
+                Contado {{ getIconoOrden('cantidad_contada') }}
+              </th>
+              <th (click)="cambiarOrden('diferencia')" class="sortable text-center">
+                Faltante {{ getIconoOrden('diferencia') }}
+              </th>
+              <th class="text-right">Precio</th>
+              <th class="actions-col text-center">Acciones</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr *ngFor="let item of getItemsPagina()">
+
+              <!-- Código artículo -->
+              <td class="articulo-cell">{{ item.articulo }}</td>
+
+              <!-- Descripción -->
+              <td class="nombre-cell" [title]="item.nombre">{{ item.nombre }}</td>
+
+              <!-- Clase -->
+              <td><span class="clase-badge">{{ item.clase }}</span></td>
+
+              <!-- Grupo -->
+              <td><span class="grupo-badge">{{ item.grupo }}</span></td>
+
+              <!-- Stock del inventario -->
+              <td class="text-center">
+                <span class="stock-value" [class]="getStockClass(item.stock_disponible)">
+                  {{ formatearStock(item.stock_disponible) }}
+                </span>
+              </td>
+
+              <!-- Contado: registrado en repuestos -->
+              <td class="text-center">
+                <span *ngIf="item.cantidad_contada !== null"
+                      class="contado-badge contado-parcial">
+                  {{ formatearStock(item.cantidad_contada) }}
+                </span>
+                <span *ngIf="item.cantidad_contada === null"
+                      class="contado-badge contado-sin-registro"
+                      title="Aún no contado">
+                  —
+                </span>
+              </td>
+
+              <!-- Faltante: diferencia stock vs contado -->
+              <td class="text-center">
+                <span class="faltante-badge"
+                      [ngClass]="getFaltanteClass(item.diferencia)"
+                      [title]="item.diferencia !== null
+                               ? 'Faltan ' + formatearStock(item.diferencia) + ' unidades'
+                               : 'Sin registro de conteo'">
+                  {{ item.diferencia !== null ? ('+' + formatearStock(item.diferencia)) : 'Todo' }}
+                </span>
+              </td>
+
+              <!-- Precio -->
+              <td class="text-right precio-cell">${{ formatearStock(item.precio_sin_iva) }}</td>
+
+              <!-- Acciones -->
+              <td class="actions-col text-center">
+                <button class="btn-action btn-edit"
+                        (click)="abrirModalEditar(item)"
+                        title="Editar artículo">✏️</button>
+                <button class="btn-action btn-view"
+                        (click)="toggleDetalle(item)"
+                        title="Ver detalle">👁️</button>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div><!-- /table-scroll-wrapper -->
+
+      <!-- Paginación -->
+      <div class="paginacion">
+        <button class="btn-pagina"
+                [disabled]="paginaActual === 1"
+                (click)="cambiarPagina(paginaActual - 1)"
+                aria-label="Página anterior">←</button>
+
+        <button class="btn-pagina-numero"
+                *ngFor="let p of getPaginas()"
+                [class.active]="p === paginaActual"
+                (click)="cambiarPagina(p)"
+                [attr.aria-current]="p === paginaActual ? 'page' : null">
+          {{ p }}
+        </button>
+
+        <button class="btn-pagina"
+                [disabled]="paginaActual === totalPaginas"
+                (click)="cambiarPagina(paginaActual + 1)"
+                aria-label="Página siguiente">→</button>
+
+        <span class="pagina-info">Pág. {{ paginaActual }} / {{ totalPaginas }}</span>
+      </div>
+
+    </div><!-- /tabla-container -->
+
+    <!-- Sin resultados -->
+    <div class="no-results" *ngIf="inventarioFiltrado.length === 0">
+      <h3>🔎 No se encontraron artículos</h3>
+      <p>Intenta ajustar los filtros aplicados.</p>
+      <button class="btn-reintentar" (click)="limpiarFiltros()">Limpiar filtros</button>
+    </div>
+
+  </div><!-- /content -->
+</div>

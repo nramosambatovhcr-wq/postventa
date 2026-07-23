@@ -1,0 +1,111 @@
+<section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de BL de Importaciones</h1>
+      <h2>BLs Revisados</h2>
+    </div>
+
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="bl()">
+          <div class="valor-estadistica">BL</div>
+      </div>
+       <div class="tarjeta-estadistica" (click)="revision()">
+          <div class="valor-estadistica">REVISION</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="asignar()">
+        <div class="valor-estadistica">ASIGNACION</div>
+    </div>
+
+      <div class="tarjeta-estadistica" (click)="usuarios()">
+          <div class="valor-estadistica">USUARIO</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="reportes()">
+          <div class="valor-estadistica">REPORTES</div>
+      </div>
+       <div class="tarjeta-estadistica search-dashboard" 
+          (click)="openSearchModal()">
+        <div class="valor-estadistica">BUSCAR</div>
+      </div>  
+    </div>
+</section>
+<div class="revision-container">
+
+  <div class="search-container">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (input)="filterBls()"
+      placeholder="Buscar por nombre de BL..."
+    />
+    <button class="btn-download-bls"
+            (click)="downloadData()"
+            [disabled]="!filteredBlsLiquidados.length"
+            [title]="searchTerm ? 'Descargar los BLs filtrados por la búsqueda' : 'Descargar todos los BLs'">
+      📥 Descargar
+      <span *ngIf="searchTerm && filteredBlsLiquidados.length" class="download-count">
+        ({{ filteredBlsLiquidados.length }})
+      </span>
+    </button>
+  </div>
+
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div *ngIf="filteredBlsLiquidados.length === 0 && !errorMessage" class="no-data">
+    <p>No hay BLs revisados para mostrar o no se encontraron resultados.</p>
+  </div>
+
+  <!-- ── Tabla de BLs (reemplaza las cards) ── -->
+  <div *ngIf="filteredBlsLiquidados.length > 0" class="bl-table-wrapper">
+    <table class="bl-table">
+      <thead>
+        <tr>
+          <th>BL</th>
+          <th>Proveedor</th>
+          <th>Estado</th>
+          <th class="th-num">Total Liquidaciones</th>
+          <th class="th-num">Cantidad Total Liquidada</th>
+          <th class="th-ver">Ver</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let bl of filteredBlsLiquidados" (dblclick)="revisionbl(bl.id)">
+          <td class="td-nombre" [title]="bl.nombre">{{ bl.nombre }}</td>
+          <td>{{ bl.proveedor || '—' }}</td>
+          <td>
+            <span class="bl-estado-badge"
+                  [class.estado-liquidado]="(bl.estado || '').toLowerCase() === 'liquidado'"
+                  [class.estado-pendiente]="(bl.estado || '').toLowerCase() === 'pendiente'">
+              {{ bl.estado }}
+            </span>
+          </td>
+          <td class="td-num">{{ bl.total_liquidaciones | number }}</td>
+          <td class="td-num">{{ bl.cantidad_total_liquidada | number }}</td>
+          <td class="td-ver">
+            <button class="btn-ver-bl" (click)="revisionbl(bl.id)"
+                    title="Ver las liquidaciones detalladas de este BL">
+              👁️ Ver
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="bl-table-footer">
+      Mostrando {{ filteredBlsLiquidados.length }} de {{ blsLiquidados.length }} BLs
+      <span *ngIf="searchTerm"> — Búsqueda: "{{ searchTerm }}"</span>
+    </div>
+  </div>
+</div>
+
+ <div class="modal-overlay" *ngIf="showSearchModal">
+        <div class="modal-content search-dashboard-modal">
+          <div class="modal-header">
+            <h2>Búsqueda General</h2>
+            <button class="close-button" (click)="closeSearchModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <app-buscarcod></app-buscarcod>
+          </div>
+        </div>
+</div>

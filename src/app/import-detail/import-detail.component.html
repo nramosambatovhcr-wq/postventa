@@ -1,0 +1,164 @@
+<!-- import-detail.component.html -->
+<header class="header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo">VHCR-Importaciones</div>
+        <div class="search-container">
+          <input type="text" class="search" placeholder="Buscar por Proforma, BL, Invoice...">
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="container">
+    <section class="detail-page">
+      <a href="javascript:void(0)" class="back-button" (click)="goBack()">← Volver al Dashboard</a>
+      
+      <div class="detail-header">
+        <div>
+          <h1 class="detail-title">Importación #{{ importDetails.proforma }}</h1>
+          <p class="detail-subtitle">Detalles completos y seguimiento de la importación</p>
+        </div>
+        <div class="detail-actions">
+          <button class="btn btn-outline" (click)="downloadDetails()">Descargar</button>
+          <button class="btn btn-primary" (click)="editImport()">Actualizar</button>
+        </div>
+      </div>
+      
+      <div class="detail-grid">
+        <div class="main-column">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Información General</div>
+              <span class="status" [ngClass]="getStatusClass(lista2.liquidacion)">
+                {{ lista2.liquidacion }}
+              </span>
+            </div>
+            <div class="card-body">
+              <div class="detail-list">
+                <div class="detail-item">
+                  <div class="detail-label">Proforma</div>
+                  <div class="detail-value" >{{ lista2.codigocot }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Invoice No.</div>
+                  <div class="detail-value" >{{ lista2.invoicen }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Invoice con BL</div>
+                  <div class="detail-value">{{ lista2.invoicebl }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">BL</div>
+                  <div class="detail-value">{{ lista2.bl }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Contenedor</div>
+                  <div class="detail-value">{{ lista.contenedor || '--' }}</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">Liquidación</div>
+                  <div class="detail-value">{{ lista2.liquidacion }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Documentos Relacionados</div>
+              <div class="input-group mb-2">
+                <a [routerLink]="['/docu', { foo: lista2.id }]" class="btn"> <i class="material-icons right">attach_file</i> Subir</a>
+              </div>
+            </div>
+            <div class="card-body">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Documento</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody *ngFor="let item of lista3">
+                  <tr *ngIf="item.tipodoc=='Factura Comercial'">
+                    <td>Factura Comercial</td>
+                    <td>{{item.fecha}}</td>
+                    <td><span class="status status-completado">{{item.estado}}</span></td>
+                    <td><a href="javascript:void(0)">Ver</a>
+                    </td>
+                  </tr>
+                  <tr *ngIf="item.tipodoc=='Bill of Lading'">
+                    <td>Bill of Lading</td>
+                    <td>20/01/2025</td>
+                    <td><span class="status status-completado">Recibido</span></td>
+                    <td><a href="javascript:void(0)">Ver</a> 
+                    </td>
+                  </tr>
+                  <tr *ngIf="item.tipodoc=='Packing List'">
+                    <td>Packing List</td>
+                    <td>15/01/2025</td>
+                    <td><span class="status status-completado">Recibido</span></td>
+                    <td><a href="javascript:void(0)">Ver</a></td>
+                  </tr>
+                  <tr *ngIf="item.tipodoc=='Declaración Aduanera'">
+                    <td>Declaración Aduanera</td>
+                    <td>--</td>
+                    <td><span class="status status-pendiente">Pendiente</span></td>
+                    <td><a href="javascript:void(0)">--</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        
+        <div class="side-column">
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Seguimiento</div>
+              <div class="detail-actions">
+             
+                <button class="btn btn-primary" (click)="editDates()">Actualizar</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="timeline">
+                <div 
+                  class="timeline-item" 
+                  *ngFor="let event of timelineEvents"
+                >
+                  <div class="timeline-point" [ngClass]="event.status"></div>
+                  <div class="timeline-date" *ngIf="event.date">{{ event.date }}</div>
+                  <div class="timeline-date" *ngIf="!event.date">Pendiente</div>
+                  <div class="timeline-title">{{ event.title }}</div>
+                  <div class="timeline-description">{{ event.description }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Tiempo Estimado</div>
+            </div>
+            <div class="card-body">
+              <div class="detail-item">
+                <div class="detail-label">Tiempo en Tránsito</div>
+                <div class="detail-value">10 días (est.)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Tiempo en Aduana</div>
+                <div class="detail-value">5 días (est.)</div>
+              </div>
+              <div class="detail-item">
+                <div class="detail-label">Llegada Estimada</div>
+                <div class="detail-value">15/02/2025</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>

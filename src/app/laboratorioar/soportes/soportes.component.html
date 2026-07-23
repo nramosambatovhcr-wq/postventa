@@ -1,0 +1,681 @@
+<div class="container-fluid">
+  <!-- Header del Dashboard -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">Dashboard de Soportes de Laboratorio</h1>
+      <p class="dashboard-subtitle">Gestión y monitoreo de soportes en tiempo real</p>
+    </div>
+  </div>
+
+  <!-- Mensajes de alerta -->
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fas fa-tools"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.total }}</h3>
+        <p>TOTAL SOPORTES</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon pending">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.pendientes }}</h3>
+        <p>PENDIENTES</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon process">
+        <i class="fas fa-cog"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.enProceso }}</h3>
+        <p>EN PROCESO</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon completed">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.completados }}</h3>
+        <p>COMPLETADOS</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon delivered">
+        <i class="fas fa-shipping-fast"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.entregados }}</h3>
+        <p>ENTREGADOS</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controles y Filtros -->
+  <div class="controls-section">
+    <div class="controls-left">
+      <button class="btn btn-primary btn-nuevo" (click)="abrirModalNuevo()">
+        <i class="fas fa-plus"></i> Nuevo Soporte
+      </button>
+      <button class="btn btn-outline-secondary" (click)="cargarSoportes()" [disabled]="cargando">
+        <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i> Actualizar
+      </button>
+    </div>
+
+    <div class="filters-section">
+      <div class="filter-group">
+        <label for="busqueda">Buscar:</label>
+        <input 
+          id="busqueda"
+          type="text" 
+          class="form-control" 
+          placeholder="Código, descripción, VIM, modelo..." 
+          [(ngModel)]="terminoBusqueda"
+          (input)="onFiltroChange()">
+      </div>
+
+      <div class="filter-group">
+        <label for="estado">Estado:</label>
+        <select 
+          id="estado"
+          class="form-select" 
+          [(ngModel)]="filtroEstado"
+          (change)="onFiltroChange()">
+          <option *ngFor="let estado of estados" [value]="estado.value">
+            {{ estado.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="fechaDesde">Desde:</label>
+        <input 
+          id="fechaDesde"
+          type="date" 
+          class="form-control" 
+          [(ngModel)]="fechaDesde"
+          (change)="onFiltroChange()">
+      </div>
+
+      <div class="filter-group">
+        <label for="fechaHasta">Hasta:</label>
+        <input 
+          id="fechaHasta"
+          type="date" 
+          class="form-control" 
+          [(ngModel)]="fechaHasta"
+          (change)="onFiltroChange()">
+      </div>
+
+      <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+        <i class="fas fa-times"></i> Limpiar
+      </button>
+    </div>
+
+    <div class="export-section">
+      <button class="btn btn-success" (click)="exportarExcel()">
+        <i class="fas fa-file-excel"></i> Excel
+      </button>
+      <button class="btn btn-info" (click)="exportarCSV()">
+        <i class="fas fa-file-csv"></i> CSV
+      </button>
+    </div>
+  </div>
+
+  <!-- Tabla de Soportes -->
+  <div class="table-container">
+    <div *ngIf="cargando" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <table class="table table-modern">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>VIM</th>
+          <th>ESTADO</th>
+          <th>ORIGEN</th>
+          <th>USUARIO</th>
+          <th>MECÁNICO</th>
+          <th>FECHA INGRESO</th>
+          <th>FECHA ENTREGA</th>
+          <th>MODELO</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let soporte of soportesFiltrados; let i = index" 
+            [class.table-row-even]="i % 2 === 0">
+          <td class="font-weight-bold">{{ soporte.codigo }}</td>
+          <td>
+            <div class="descripcion-cell">
+              {{ soporte.descripcion }}
+              <small *ngIf="soporte.imagenes && soporte.imagenes.length > 0" class="text-muted">
+                <i class="fas fa-images"></i> {{ soporte.imagenes.length }} imágenes
+              </small>
+            </div>
+          </td>
+          <td>{{ soporte.vim || 'N/A' }}</td>
+          <td>
+            <span class="badge" [ngClass]="obtenerClaseEstado(soporte.estado || '')">
+              {{ soporte.estado || 'N/A' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge"  >
+              {{ soporte.origen || 'N/A' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge"  >
+              {{ soporte.usuariocrea_nombre || 'N/A' }}
+            </span>
+          </td>
+          <td>
+            <span>{{ soporte.usuariorepara_nombre || 'Sin asignar' }}</span>
+          </td>
+          <td>{{ formatearFecha(soporte.fechaingreso) }}</td>
+          <td>{{ formatearFecha(soporte.fechaentrega) }}</td>
+          <td>{{ soporte.modelo || 'N/A' }}</td>
+          <td>
+            <div class="action-buttons">
+              <!-- Acciones de flujo según estado -->
+              <button
+                *ngIf="soporte.estado === 'PENDIENTE'"
+                class="btn btn-sm btn-outline-warning"
+                (click)="abrirModalAsignar(soporte)"
+                title="Asignar mecánico">
+                <i class="fas fa-user-plus"></i>
+              </button>
+              <button
+                *ngIf="soporte.estado === 'EN_PROCESO'"
+                class="btn btn-sm btn-outline-success"
+                (click)="recibirSoporte(soporte)"
+                title="Registrar recepción">
+                <i class="fas fa-hand-holding"></i>
+              </button>
+              <button
+                *ngIf="soporte.estado === 'REPARANDO'"
+                class="btn btn-sm btn-outline-info"
+                (click)="abrirModalCalibrar(soporte)"
+                title="Calibrar y subir fotos">
+                <i class="fas fa-sliders-h"></i>
+              </button>
+              <button
+                *ngIf="soporte.estado === 'COMPLETADO'"
+                class="btn btn-sm btn-outline-primary"
+                (click)="entregarSoporte(soporte)"
+                title="Registrar entrega">
+                <i class="fas fa-truck"></i>
+              </button>
+
+              <!-- Acciones generales -->
+              <button 
+                class="btn btn-sm btn-outline-info" 
+                (click)="abrirModalImagenes(soporte)"
+                title="Ver/Subir Imágenes">
+                <i class="fas fa-camera"></i>
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-primary" 
+                (click)="abrirModalEditar(soporte)"
+                title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-danger" 
+                (click)="eliminarSoporte(soporte)"
+                title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="soportesFiltrados.length === 0 && !cargando" class="no-data">
+      <i class="fas fa-search"></i>
+      <p>No se encontraron soportes con los criterios seleccionados</p>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Crear/Editar Soporte -->
+<div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" 
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          {{ modoEdicion ? 'Editar Soporte' : 'Nuevo Soporte' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form #formulario="ngForm">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="codigo" class="form-label">Código *</label>
+                <input 
+                  type="text" 
+                  id="codigo"
+                  class="form-control" 
+                  [(ngModel)]="formularioSoporte.codigo"
+                  name="codigo"
+                  required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="estado" class="form-label">Estado</label>
+                <select 
+                  id="estado"
+                  class="form-select" 
+                  [(ngModel)]="formularioSoporte.estado"
+                  name="estado">
+                  <option value="PENDIENTE">Pendiente</option>
+                  <option value="EN_PROCESO">En Proceso</option>
+                  <option value="REPARANDO">Reparando</option>
+                  <option value="COMPLETADO">Completado</option>
+                  <option value="ENTREGADO">Entregado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción *</label>
+            <textarea 
+              id="descripcion"
+              class="form-control" 
+              rows="3"
+              [(ngModel)]="formularioSoporte.descripcion"
+              name="descripcion"
+              required></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="vim" class="form-label">VIM</label>
+                <input 
+                  type="text" 
+                  id="vim"
+                  class="form-control" 
+                  [(ngModel)]="formularioSoporte.vim"
+                  name="vim">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="color" class="form-label">Color</label>
+                <input 
+                  type="text" 
+                  id="color"
+                  class="form-control" 
+                  [(ngModel)]="formularioSoporte.color"
+                  name="color">
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="modelo" class="form-label">Modelo</label>
+                <input 
+                  type="text" 
+                  id="modelo"
+                  class="form-control" 
+                  [(ngModel)]="formularioSoporte.modelo"
+                  name="modelo">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="tipoSoporte" class="form-label">Tipo de Soporte</label>
+                <select
+                  id="tipoSoporte"
+                  class="form-select" 
+                  [(ngModel)]="formularioSoporte.tipoSoporte"
+                  name="tipoSoporte">
+                  <option value="repotenciacion">Repotenciación</option>
+                  <option value="calibracion">Calibración</option>
+                </select>
+              </div>
+            </div>
+          </div>
+      
+          <div class="mb-3">
+            <label for="observacion" class="form-label">Observación *</label>
+            <textarea 
+              id="observacion"
+              class="form-control" 
+              rows="3"
+              [(ngModel)]="formularioSoporte.observacion"
+              name="observacion"
+              required></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="origen" class="form-label">Origen</label>
+                <input 
+                  type="text" 
+                  id="origen"
+                  class="form-control" 
+                  [(ngModel)]="formularioSoporte.origen"
+                  name="origen">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="destino" class="form-label">Destino</label>
+                <input 
+                  type="text" 
+                  id="destino"
+                  class="form-control" 
+                  [(ngModel)]="formularioSoporte.destino"
+                  name="destino">
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================== -->
+          <!-- Fecha de ingreso (solo lectura) -->
+          <!-- ============================== -->
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label class="form-label">Fecha Ingreso</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="formatearFechaHora(formularioSoporte.fechaingreso)"
+                  readonly
+                  disabled>
+                <small class="form-text text-muted">Se registra automáticamente y no es editable.</small>
+              </div>
+            </div>
+            <div class="col-md-6" *ngIf="modoEdicion">
+              <div class="mb-3">
+                <label class="form-label">Mecánico (recibe y calibra)</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="soporteSeleccionado?.usuariorepara_nombre || 'Sin asignar'"
+                  readonly
+                  disabled>
+              </div>
+            </div>
+          </div>
+
+          <!-- ============================== -->
+          <!-- Trazabilidad (solo lectura, en edición) -->
+          <!-- ============================== -->
+          <div class="row" *ngIf="modoEdicion">
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Fecha Recepción</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="formatearFechaHora(soporteSeleccionado?.fecha_recepcion)"
+                  readonly
+                  disabled>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Fecha Calibración</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="formatearFechaHora(soporteSeleccionado?.fecha_calibracion)"
+                  readonly
+                  disabled>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label class="form-label">Fecha Entrega</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  [value]="formatearFechaHora(soporteSeleccionado?.fechaentrega)"
+                  readonly
+                  disabled>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="guardarSoporte()" [disabled]="cargando">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Asignar Mecánico -->
+<div class="modal fade" [class.show]="mostrarModalAsignar" [style.display]="mostrarModalAsignar ? 'block' : 'none'"
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Asignar mecánico — {{ soporteParaAccion?.codigo }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalAsignar()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="mecanico" class="form-label">Mecánico responsable (recibe y calibra)</label>
+          <select
+            id="mecanico"
+            class="form-select"
+            [(ngModel)]="mecanicoSeleccionadoId"
+            name="mecanico">
+            <option [ngValue]="null" disabled>Seleccione un mecánico...</option>
+            <option *ngFor="let m of mecanicosDisponibles" [ngValue]="m.id">{{ m.nombre }}</option>
+          </select>
+        </div>
+        <p class="text-muted small mb-0">
+          Al asignar, el soporte pasa a <strong>EN PROCESO</strong>. El mecánico asignado podrá
+          registrar la recepción y luego la calibración.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalAsignar()">Cancelar</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="confirmarAsignacion()"
+          [disabled]="cargando || !mecanicoSeleccionadoId">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          Asignar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Calibración (con fotos obligatorias del componente calibrado) -->
+<div class="modal fade" [class.show]="mostrarModalCalibrar" [style.display]="mostrarModalCalibrar ? 'block' : 'none'"
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Calibración — {{ soporteParaAccion?.codigo }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalCalibrar()"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted">
+          Adjunte fotos del <strong>componente calibrado</strong> para cerrar la calibración.
+          La imagen es obligatoria.
+        </p>
+
+        <!-- Botones: Tomar foto (cámara en móvil) y Galería -->
+        <div class="d-flex gap-2 flex-wrap mb-2">
+          <label class="btn btn-success mb-0">
+            <i class="fas fa-camera"></i> Tomar foto
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              capture="environment"
+              (change)="onFileSelected($event)">
+          </label>
+
+          <label class="btn btn-outline-primary mb-0">
+            <i class="fas fa-folder-open"></i> Galería
+            <input
+              type="file"
+              hidden
+              multiple
+              accept="image/*"
+              (change)="onFileSelected($event)">
+          </label>
+        </div>
+
+        <div class="form-text mb-3">
+          Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB por archivo.
+        </div>
+
+        <!-- Vista previa -->
+        <div *ngIf="imagenesPreview.length > 0" class="image-preview-grid mb-2">
+          <div *ngFor="let preview of imagenesPreview; let i = index" class="image-preview-item">
+            <img [src]="preview" alt="Vista previa" class="img-thumbnail">
+            <button
+              type="button"
+              class="btn-remove-image"
+              (click)="quitarImagenSeleccionada(i)"
+              title="Quitar imagen">
+              <i class="fas fa-times"></i>
+            </button>
+            <small class="image-preview-name">{{ archivosSeleccionados[i]?.name }}</small>
+          </div>
+        </div>
+
+        <!-- Aviso si no hay imágenes -->
+        <div *ngIf="archivosSeleccionados.length === 0" class="text-danger small">
+          <i class="fas fa-exclamation-circle"></i> Debe adjuntar al menos una imagen del componente calibrado.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalCalibrar()">Cancelar</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="confirmarCalibracion()"
+          [disabled]="cargando || archivosSeleccionados.length === 0">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          Calibrar y guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Imágenes -->
+<div class="modal fade" [class.show]="mostrarModalImagenes" [style.display]="mostrarModalImagenes ? 'block' : 'none'" 
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          Imágenes del Soporte: {{ soporteSeleccionado?.codigo }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalImagenes()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Imágenes existentes -->
+        <div *ngIf="soporteSeleccionado?.imagenes " class="mb-4">
+          <h6>Imágenes actuales:</h6>
+          <div class="images-grid">
+            <div *ngFor="let imagen of soporteSeleccionado?.imagenes" class="image-item">
+              <img [src]="obtenerUrlImagen(imagen)" [alt]="imagen" class="img-thumbnail">
+              <p class="image-name">{{ imagen }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Subir nuevas imágenes -->
+        <div class="upload-section">
+          <h6>Subir nuevas imágenes:</h6>
+          <div class="mb-3">
+            <input 
+              type="file" 
+              class="form-control" 
+              multiple 
+              accept="image/*"
+              (change)="onFileSelected($event)">
+            <div class="form-text">
+              Formatos permitidos: JPG, PNG, GIF. Tamaño máximo: 5MB por archivo.
+            </div>
+          </div>
+
+          <!-- Vista previa de archivos seleccionados -->
+          <div *ngIf="archivosSeleccionados.length > 0" class="selected-files">
+            <h6>Archivos seleccionados:</h6>
+            <ul class="list-group">
+              <li *ngFor="let archivo of archivosSeleccionados" class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                  <i class="fas fa-file-image text-info me-2"></i>
+                  {{ archivo.name }}
+                  <small class="text-muted">({{ (archivo.size / 1024 / 1024).toFixed(2) }} MB)</small>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalImagenes()">Cerrar</button>
+        <button 
+          type="button" 
+          class="btn btn-primary" 
+          (click)="subirImagenes()" 
+          [disabled]="archivosSeleccionados.length === 0 || cargando">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          Subir Imágenes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay para modales -->
+<div *ngIf="mostrarModal || mostrarModalImagenes || mostrarModalAsignar || mostrarModalCalibrar" class="modal-backdrop fade show"></div>

@@ -1,0 +1,130 @@
+.contenedor {
+  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.panel {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.panel-cabecera {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 2rem;
+  text-align: center;
+}
+
+.panel-titulo {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.panel-subtitulo {
+  margin: 0.5rem 0 0 0;
+  font-size: 1rem;
+  opacity: 0.9;
+}
+
+.panel-contenido {
+  padding: 3rem 2rem;
+}
+
+.grid-opciones {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.tarjeta-opcion {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.tarjeta-opcion:hover {
+  border-color: #667eea;
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.2);
+  transform: translateY(-4px);
+}
+
+.icono-opcion {
+  width: 80px;
+  height: 80px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform 0.3s ease;
+}
+
+.tarjeta-opcion:hover .icono-opcion {
+  transform: scale(1.1);
+}
+
+.titulo-opcion {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.descripcion-opcion {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px) {
+  .contenedor {
+    padding: 1rem;
+  }
+
+  .panel-cabecera {
+    padding: 1.5rem 1rem;
+  }
+
+  .panel-titulo {
+    font-size: 1.5rem;
+  }
+
+  .panel-contenido {
+    padding: 2rem 1rem;
+  }
+
+  .grid-opciones {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .tarjeta-opcion {
+    padding: 1.5rem;
+  }
+
+  .icono-opcion {
+    width: 64px;
+    height: 64px;
+  }
+
+  .icono-opcion svg {
+    width: 32px;
+    height: 32px;
+  }
+}

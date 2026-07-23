@@ -1,0 +1,98 @@
+/* documento-upload.component.scss */
+.upload-container {
+    padding: 20px;
+    border: 1px solid #e0e0e0;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    
+    h3 {
+      margin-bottom: 20px;
+      color: #333;
+    }
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+    
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    .form-control {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      
+      &:focus {
+        outline: none;
+        border-color: #1976d2;
+      }
+    }
+    
+    .form-control-file {
+      padding: 5px 0;
+    }
+  }
+  
+  .selected-file {
+    margin: 10px 0;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    font-size: 0.9rem;
+  }
+  
+  .btn-upload {
+    background-color: #1976d2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 16px;
+    cursor: pointer;
+    
+    &:hover {
+      background-color: #1565c0;
+    }
+    
+    &:disabled {
+      background-color: #b3b3b3;
+      cursor: not-allowed;
+    }
+  }
+  
+  .progress {
+    height: 20px;
+    margin-top: 15px;
+    background-color: #f5f5f5;
+    border-radius: 4px;
+    overflow: hidden;
+    
+    .progress-bar {
+      height: 100%;
+      background-color: #1976d2;
+      text-align: center;
+      color: white;
+      font-size: 0.8rem;
+      line-height: 20px;
+      transition: width 0.3s ease;
+    }
+  }
+  
+  .success-msg {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #d4edda;
+    border-radius: 4px;
+    color: #155724;
+  }
+  
+  .error-msg {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8d7da;
+    border-radius: 4px;
+    color: #721c24;
+  }

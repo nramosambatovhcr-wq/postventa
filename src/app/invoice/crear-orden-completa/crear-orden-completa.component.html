@@ -1,0 +1,500 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Crear Órdenes de Compra y Cargar Detalles</h4>
+        </div>
+
+        <div class="card-body">
+
+          <!-- ── STEPPER ── -->
+          <ul class="nav nav-pills nav-justified mb-4">
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 1}" href="javascript:void(0);">
+                <span class="badge badge-pill mr-1"
+                  [ngClass]="{'badge-primary': currentStep === 1, 'badge-success': currentStep > 1, 'badge-secondary': currentStep < 1}">
+                  1
+                </span>
+                Crear Órdenes
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 2}" href="javascript:void(0);">
+                <span class="badge badge-pill mr-1"
+                  [ngClass]="{'badge-primary': currentStep === 2, 'badge-success': currentStep > 2, 'badge-secondary': currentStep < 2}">
+                  2
+                </span>
+                Cargar Excel
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 3}" href="javascript:void(0);">
+                <span class="badge badge-pill mr-1"
+                  [ngClass]="{'badge-primary': currentStep === 3, 'badge-secondary': currentStep < 3}">
+                  3
+                </span>
+                Importar Detalles
+              </a>
+            </li>
+          </ul>
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- PASO 1: Crear órdenes                         -->
+          <!-- ══════════════════════════════════════════════ -->
+          <div *ngIf="currentStep === 1" class="step-content">
+
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i>
+              Se creará una <strong>cotización + orden de compra</strong> automáticamente por cada proveedor seleccionado.
+            </div>
+
+            <!-- Nombre base -->
+            <div class="form-group">
+              <label for="invoiceBase">Nombre base de la orden *</label>
+              <input type="text" id="invoiceBase" class="form-control"
+                [formControl]="invoiceBaseControl"
+                placeholder="Ej: OC-2026-001" maxlength="50"
+                [ngClass]="{'is-invalid': isFieldInvalid('invoiceBase')}">
+              <div class="invalid-feedback">Campo requerido.</div>
+              <small class="text-muted">
+                Se agregará la inicial del proveedor automáticamente (Ej: XLI-OC-2026-001)
+              </small>
+            </div>
+
+            <!-- Proveedores -->
+            <div class="card mb-3">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">Seleccionar Proveedores *</h5>
+              </div>
+              <div class="card-body">
+
+                <div *ngIf="loadingProveedores" class="text-center py-3">
+                  <div class="spinner-border text-primary" role="status"></div>
+                </div>
+
+                <div *ngIf="!loadingProveedores" class="row">
+                  <div class="col-md-4 col-sm-6 mb-2" *ngFor="let proveedor of allProveedores">
+                    <label class="d-flex align-items-center" style="cursor:pointer;">
+                      <input type="checkbox"
+                        class="mr-2"
+                        [checked]="isProveedorSeleccionado(proveedor.id)"
+                        (change)="toggleProveedor(proveedor, $event)">
+                      <span>
+                        <strong>{{ proveedor.nombre }}</strong>
+                        <small class="text-muted ml-1">({{ proveedor.inicial }})</small>
+                      </span>
+                    </label>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Vista previa de nombres -->
+            <div class="card mb-3" *ngIf="proveedoresSeleccionados.length > 0 && ordenForm.value.invoiceBase">
+              <div class="card-header bg-light">
+                <h6 class="mb-0">Vista previa de órdenes a crear:</h6>
+              </div>
+              <div class="card-body py-2">
+                <div class="d-flex flex-wrap gap-2">
+                  <span class="badge badge-primary mr-2 mb-2 p-2"
+                    *ngFor="let p of proveedoresSeleccionados" style="font-size:0.85rem;">
+                    📄 {{ generarInvoiceN(ordenForm.value.invoiceBase, p) }}
+                    <small class="d-block">{{ p.nombre }}</small>
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón crear -->
+            <div class="d-flex justify-content-end mt-3">
+              <button class="btn btn-primary btn-lg" (click)="crearOrdenes()" [disabled]="isCreating">
+                <span *ngIf="isCreating">
+                  <span class="spinner-border spinner-border-sm mr-1"></span> Creando...
+                </span>
+                <span *ngIf="!isCreating">
+                  <i class="fas fa-plus-circle"></i>
+                  Crear {{ proveedoresSeleccionados.length }} Orden(es)
+                </span>
+              </button>
+            </div>
+
+          </div><!-- /PASO 1 -->
+
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- PASO 2: Cargar Excel                          -->
+          <!-- ══════════════════════════════════════════════ -->
+          <div *ngIf="currentStep === 2" class="step-content">
+
+            <!-- Resumen de órdenes creadas -->
+            <div class="alert alert-success mb-4">
+              <i class="fas fa-check-circle"></i>
+              <strong>{{ ordenesCreadas.length }} orden(es) creada(s) correctamente.</strong>
+              Ahora cargue el Excel con los detalles que se aplicarán a todas.
+            </div>
+
+            <div class="row">
+              <!-- Tabla órdenes creadas -->
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Órdenes creadas</h5>
+                  </div>
+                  <div class="card-body p-0">
+                    <table class="table table-sm table-striped mb-0">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Invoice N</th>
+                          <th>Proveedor</th>
+                          <th>Orden ID</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr *ngFor="let o of ordenesCreadas; let i = index">
+                          <td>{{ i + 1 }}</td>
+                          <td><strong>{{ o.invoiceN }}</strong></td>
+                          <td>{{ o.proveedorNombre }}</td>
+                          <td><span class="badge badge-secondary">{{ o.ordenId }}</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Carga de archivo -->
+              <div class="col-md-6">
+                <div class="card mb-3">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Plantilla y archivo</h5>
+                  </div>
+                  <div class="card-body">
+
+                    <button type="button" class="btn btn-outline-primary btn-block mb-3" (click)="downloadTemplate()">
+                      <i class="fas fa-file-download"></i> Descargar Plantilla Excel
+                    </button>
+                    <p *ngIf="isTemplateDownloaded" class="text-success text-center">
+                      <i class="fas fa-check-circle"></i> Plantilla descargada
+                    </p>
+
+                    <div class="alert alert-secondary" style="font-size:0.85rem;">
+                      <strong>Columnas obligatorias:</strong>
+                      <ul class="mb-0 mt-1">
+                        <li><strong>CODIGO</strong> – Código original del producto</li>
+                        <li><strong>NOMBRE</strong> – Descripción del producto</li>
+                        <li><strong>CANTIDAD_IMP</strong> – Cantidad (número positivo)</li>
+                      </ul>
+                      <hr class="my-1">
+                      <small>Opcionales: NUEVO_CODIGO (puede ir vacío), CHINO (puede ir vacío), FOB, TOTAL</small>
+                    </div>
+
+                    <div class="custom-file mt-2">
+                      <input type="file" class="custom-file-input" id="excelFile"
+                        (change)="onFileSelect($event)" accept=".xlsx,.xls">
+                      <label class="custom-file-label" for="excelFile">
+                        {{ excelFile ? excelFile.name : 'Seleccionar archivo...' }}
+                      </label>
+                    </div>
+
+                    <div *ngIf="loadingExcel" class="text-center mt-3">
+                      <div class="spinner-border text-primary" role="status"></div>
+                      <p class="mt-2 text-muted">Procesando archivo...</p>
+                    </div>
+
+                    <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+                      <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Errores de validación -->
+            <div *ngIf="validationErrors.length > 0" class="alert alert-warning">
+              <strong><i class="fas fa-exclamation-triangle"></i> Errores en el archivo ({{ validationErrors.length }}):</strong>
+              <ul class="mb-0 mt-1" style="max-height:120px; overflow-y:auto;">
+                <li *ngFor="let err of validationErrors">{{ err }}</li>
+              </ul>
+            </div>
+
+            <!-- Preview -->
+            <div *ngIf="previewData.length > 0 && validationErrors.length === 0">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-success">
+                  <i class="fas fa-check-circle"></i>
+                  <strong>{{ previewData.length }}</strong> registros listos para importar
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" (click)="showPreview = !showPreview">
+                  {{ showPreview ? 'Ocultar' : 'Ver' }} preview
+                </button>
+              </div>
+
+              <div *ngIf="showPreview" class="table-responsive" style="max-height:300px; overflow-y:auto;">
+                <table class="table table-sm table-bordered">
+                  <thead class="thead-light">
+                    <tr>
+                      <th>#</th>
+                      <th>Código</th>
+                      <th>Nuevo Código</th>
+                      <th>Chino</th>
+                      <th>Nombre</th>
+                      <th>Cant.</th>
+                      <th>FOB Unit.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let d of previewData; let i = index"
+                        [ngClass]="{'table-danger': invalidRows.includes(i)}">
+                      <td>{{ i + 1 }}</td>
+                      <td>{{ d.codigo }}</td>
+                      <td>{{ d.equivalentCode || '-' }}</td>
+                      <td>{{ d.chino || '-' }}</td>
+                      <td>{{ d.descripcion }}</td>
+                      <td>{{ d.cantidad }}</td>
+                      <td>{{ d.precioUnitario | number:'1.2-2' }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Navegación -->
+            <div class="d-flex justify-content-between mt-4">
+              <button class="btn btn-secondary" (click)="previousStep()">
+                <i class="fas fa-arrow-left"></i> Anterior
+              </button>
+              <button class="btn btn-primary"
+                (click)="nextStep()"
+                [disabled]="previewData.length === 0 || validationErrors.length > 0">
+                Siguiente <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+
+          </div><!-- /PASO 2 -->
+
+
+          <!-- ══════════════════════════════════════════════ -->
+          <!-- PASO 3: Importar                              -->
+          <!-- ══════════════════════════════════════════════ -->
+          <div *ngIf="currentStep === 3" class="step-content">
+
+            <!-- Confirmación previa -->
+            <div *ngIf="!importInProgress && !importComplete && !importFailed">
+
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                Se cargarán <strong>{{ previewData.length }} detalles</strong> en
+                <strong>{{ ordenesCreadas.length }} orden(es)</strong>.
+                Total de registros: <strong>{{ previewData.length * ordenesCreadas.length }}</strong>.
+              </div>
+
+              <!-- Resumen tarjetas -->
+              <div class="row mb-4">
+                <div class="col-md-4">
+                  <div class="card bg-light text-center">
+                    <div class="card-body">
+                      <h3 class="mb-0 text-primary">{{ ordenesCreadas.length }}</h3>
+                      <p class="mb-0 text-muted">Órdenes destino</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-light text-center">
+                    <div class="card-body">
+                      <h3 class="mb-0 text-primary">{{ previewData.length }}</h3>
+                      <p class="mb-0 text-muted">Detalles por orden</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-light text-center">
+                    <div class="card-body">
+                      <h3 class="mb-0 text-primary">{{ previewData.length * ordenesCreadas.length }}</h3>
+                      <p class="mb-0 text-muted">Total registros</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Lista órdenes -->
+              <div class="row mb-4">
+                <div class="col-md-4" *ngFor="let o of ordenesCreadas">
+                  <div class="alert alert-info mb-2 py-2">
+                    <i class="fas fa-file-alt"></i> <strong>{{ o.invoiceN }}</strong>
+                    <small class="d-block text-muted">{{ o.proveedorNombre }}</small>
+                  </div>
+                </div>
+              </div>
+
+              <div class="d-flex justify-content-between">
+                <button class="btn btn-secondary" (click)="previousStep()">
+                  <i class="fas fa-arrow-left"></i> Anterior
+                </button>
+                <button class="btn btn-success btn-lg" (click)="startImport()">
+                  <i class="fas fa-file-import"></i> Confirmar e Importar
+                </button>
+              </div>
+            </div>
+
+            <!-- Progreso -->
+            <div *ngIf="importInProgress" class="text-center p-5">
+              <h4 class="mb-4">Importando detalles...</h4>
+              <div class="progress mb-4" style="height:30px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                  role="progressbar"
+                  [style.width.%]="importProgress"
+                  [attr.aria-valuenow]="importProgress"
+                  aria-valuemin="0" aria-valuemax="100">
+                  {{ importProgress }}%
+                </div>
+              </div>
+              <div class="alert alert-info">
+                <i class="fas fa-spinner fa-spin"></i>
+                Procesando {{ ordenesCreadas.length }} orden(es) con {{ previewData.length }} detalles cada una...
+                <small class="d-block text-muted mt-1">Por favor espere, este proceso puede tardar unos momentos...</small>
+              </div>
+            </div>
+
+            <!-- Éxito -->
+            <div *ngIf="importComplete" class="text-center p-4">
+              <div class="alert alert-success">
+                <i class="fas fa-check-circle fa-3x mb-3 d-block"></i>
+                <h4 class="alert-heading">¡Importación Completada!</h4>
+                <p>{{ successMessage }}</p>
+              </div>
+
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <div class="card bg-success text-white text-center">
+                    <div class="card-body">
+                      <h3 class="mb-0">{{ ordenesExito }}</h3>
+                      <p class="mb-0">Órdenes exitosas</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card text-center"
+                    [ngClass]="ordenesFallidas > 0 ? 'bg-danger text-white' : 'bg-light'">
+                    <div class="card-body">
+                      <h3 class="mb-0">{{ ordenesFallidas }}</h3>
+                      <p class="mb-0">Órdenes fallidas</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-primary text-white text-center">
+                    <div class="card-body">
+                      <h3 class="mb-0">{{ totalDetalles }}</h3>
+                      <p class="mb-0">Detalles cargados</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Alertas: anomalías sin guardar (crítico) -->
+              <div class="alert alert-danger text-left mt-4" *ngIf="totalDuplicadosAnomalos > 0">
+                <h6 class="alert-heading">
+                  <i class="fas fa-exclamation-circle"></i>
+                  {{ totalDuplicadosAnomalos }} fila(s) en conflicto sin guardar
+                </h6>
+                <p class="mb-2 small">
+                  Estos códigos aparecen repetidos en el archivo mezclando filas a actualizar y filas nuevas;
+                  no se procesaron automáticamente y requieren revisión manual.
+                </p>
+                <div *ngFor="let item of alertasPorOrden">
+                  <ng-container *ngIf="item.alertas.duplicados_anomalos.total > 0">
+                    <strong class="d-block small">{{ item.invoiceN }} ({{ item.proveedorNombre }}):</strong>
+                    <ul class="mb-2 small">
+                      <li *ngFor="let d of item.alertas.duplicados_anomalos.detalles">
+                        Código <strong>{{ d.codigo }}</strong> — {{ d.mensaje }}
+                      </li>
+                    </ul>
+                  </ng-container>
+                </div>
+              </div>
+
+              <!-- Alertas: códigos consolidados por duplicado -->
+              <div class="alert alert-warning text-left mt-3" *ngIf="totalCodigosConsolidados > 0">
+                <h6 class="alert-heading">
+                  <i class="fas fa-layer-group"></i>
+                  {{ totalCodigosConsolidados }} código(s) consolidados por estar repetidos en el archivo
+                </h6>
+                <p class="mb-2 small">
+                  Las cantidades se sumaron y el precio unitario se recalculó como promedio ponderado.
+                </p>
+                <div *ngFor="let item of alertasPorOrden">
+                  <ng-container *ngIf="item.alertas.codigos_consolidados.total > 0">
+                    <strong class="d-block small">{{ item.invoiceN }} ({{ item.proveedorNombre }}):</strong>
+                    <ul class="mb-2 small">
+                      <li *ngFor="let c of item.alertas.codigos_consolidados.detalles">
+                        <strong>{{ c.codigo }}</strong> — cantidad total: {{ c.cantidad_total }},
+                        precio promedio: {{ c.precio_promedio_ponderado | number:'1.2-4' }}
+                        <span *ngIf="c.filas_originales"> ({{ c.filas_originales }} filas combinadas)</span>
+                      </li>
+                    </ul>
+                  </ng-container>
+                </div>
+              </div>
+
+              <!-- Alertas: equivalent_code / codigovhcr duplicados cruzados -->
+              <div class="alert alert-info text-left mt-3" *ngIf="totalEquivalentesDuplicados > 0">
+                <h6 class="alert-heading">
+                  <i class="fas fa-info-circle"></i>
+                  {{ totalEquivalentesDuplicados }} fila(s) con código equivalente o VHCR repetido entre líneas
+                </h6>
+                <p class="mb-2 small">
+                  El mismo código nuevo (CODE NEW) o código VHCR aparece en más de una línea del archivo. Verifique que no sea un error de digitación.
+                </p>
+                <div *ngFor="let item of alertasPorOrden">
+                  <ng-container *ngIf="item.alertas.equivalentes_duplicados.total > 0">
+                    <strong class="d-block small">{{ item.invoiceN }} ({{ item.proveedorNombre }}):</strong>
+                    <ul class="mb-2 small">
+                      <li *ngFor="let e of item.alertas.equivalentes_duplicados.detalles">
+                        <strong>{{ e.codigo }}</strong>
+                        <span *ngIf="e.equivalent_code"> — CODE NEW: {{ e.equivalent_code }}</span>
+                        <span *ngIf="e.codigovhcr"> — VHCR: {{ e.codigovhcr }}</span>
+                      </li>
+                    </ul>
+                  </ng-container>
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <button class="btn btn-primary mr-2" (click)="goToDashboard()">
+                  <i class="fas fa-th-large"></i> Ver Dashboard
+                </button>
+                <button class="btn btn-outline-secondary" (click)="resetForm()">
+                  <i class="fas fa-sync"></i> Crear Nuevas Órdenes
+                </button>
+              </div>
+            </div>
+
+            <!-- Error -->
+            <div *ngIf="importFailed" class="text-center p-4">
+              <div class="alert alert-danger">
+                <i class="fas fa-times-circle fa-3x mb-3 d-block"></i>
+                <h4 class="alert-heading">Error en la importación</h4>
+                <p>{{ errorMessage }}</p>
+              </div>
+              <div class="mt-3">
+                <button class="btn btn-secondary mr-2" (click)="previousStep()">
+                  <i class="fas fa-arrow-left"></i> Revisar datos
+                </button>
+                <button class="btn btn-primary" (click)="resetForm()">
+                  <i class="fas fa-sync"></i> Comenzar de nuevo
+                </button>
+              </div>
+            </div>
+
+          </div><!-- /PASO 3 -->
+
+        </div><!-- card-body -->
+      </div><!-- card -->
+    </div>
+  </div>
+</div>

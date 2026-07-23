@@ -1,0 +1,95 @@
+/* ═══════════════════════════════════════════════════════════════
+   otgrtskus.component.css
+   Estilos para el componente SKUs en Garantía + Stock Actual
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Cursor en encabezados de tabla ordenables ─────────────── */
+.cursor-pointer {
+  cursor: pointer;
+  user-select: none;
+}
+
+.cursor-pointer:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Filas con stock insuficiente ──────────────────────────── */
+tr.table-danger td {
+  background-color: rgba(220, 53, 69, 0.08) !important;
+}
+
+/* ── Tabs ──────────────────────────────────────────────────── */
+.nav-tabs .nav-link {
+  color: #495057;
+  font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+  font-weight: 600;
+}
+
+/* ── Barras de progreso por agencia ────────────────────────── */
+.progress {
+  border-radius: 4px;
+}
+
+/* ── Truncado en celdas de artículo ────────────────────────── */
+.text-truncate {
+  display: inline-block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+
+/* ── Tabla compacta ────────────────────────────────────────── */
+.table-sm td,
+.table-sm th {
+  vertical-align: middle;
+}
+
+/* ── Badges de tipo OT ─────────────────────────────────────── */
+.badge {
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+}
+
+/* ── Paginación ────────────────────────────────────────────── */
+.pagination .page-link {
+  cursor: pointer;
+}
+
+/* ── Card KPI ──────────────────────────────────────────────── */
+.card .card-body.py-3 {
+  min-height: 80px;
+}
+
+/* ── Alerta stock insuficiente (link interno) ──────────────── */
+.alert .alert-link {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ── Estado vacío ──────────────────────────────────────────── */
+.fa-4x {
+  opacity: 0.35;
+}
+
+/* ── Print ─────────────────────────────────────────────────── */
+@media print {
+  .btn,
+  .nav-tabs,
+  .card-footer,
+  .pagination {
+    display: none !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .table-responsive {
+    overflow: visible !important;
+  }
+}

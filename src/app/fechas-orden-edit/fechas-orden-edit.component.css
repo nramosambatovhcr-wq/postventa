@@ -1,0 +1,191 @@
+/* src/app/components/fechas-orden-edit/fechas-orden-edit.component.scss */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+  
+  .heading {
+    margin-bottom: 1.5rem;
+    color: #333;
+    font-size: 1.8rem;
+  }
+  
+  .loading-container {
+    display: flex;
+    justify-content: center;
+    padding: 2rem;
+  }
+  
+  .spinner {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border-left-color: #2196F3;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .fechas-container {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .seguimiento-panel {
+    padding: 1rem;
+  }
+  
+  .etapa-container {
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 1.5rem;
+  }
+  
+  .etapa-container:last-child {
+    border-bottom: none;
+  }
+  
+  .fecha-row {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .fecha-info h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.2rem;
+    color: #333;
+  }
+  
+  .fecha-info p {
+    margin: 0;
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .custom-form-field {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .custom-form-field label {
+    margin-bottom: 0.5rem;
+    color: #666;
+    font-size: 0.9rem;
+  }
+  
+  .date-input {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    width: 100%;
+  }
+  
+  .date-input:focus {
+    outline: none;
+    border-color: #2196F3;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+  }
+  
+  .estado-container {
+    display: flex;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+  
+  .estado {
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  
+  .pendiente {
+    background-color: #FFECB3;
+    color: #FF8F00;
+  }
+  
+  .completado {
+    background-color: #E8F5E9;
+    color: #2E7D32;
+  }
+  
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1rem;
+    border-top: 1px solid #eee;
+  }
+  
+  .btn-primary {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.3s;
+  }
+  
+  .btn-primary:hover {
+    background-color: #1976D2;
+  }
+  
+  .btn-secondary {
+    background-color: transparent;
+    color: #666;
+    border: 1px solid #ddd;
+    padding: 0.75rem 1.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .btn-secondary:hover {
+    background-color: #f5f5f5;
+  }
+  
+  /* Responsive styles */
+  @media (min-width: 768px) {
+    .fecha-row {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .fecha-info {
+      flex: 2;
+    }
+    
+    .fecha-input {
+      flex: 1;
+      padding: 0 1rem;
+    }
+    
+    .estado-container {
+      flex: 0 0 120px;
+      margin-top: 0;
+      justify-content: flex-end;
+    }
+  }
+  
+  @media (max-width: 767px) {
+    .actions {
+      flex-direction: column;
+    }
+    
+    .actions button {
+      width: 100%;
+    }
+  }

@@ -1,0 +1,329 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Pedidos de Aceite</div>
+      <div class="acciones">
+        <button class="boton boton-secundario" 
+                (click)="refreshData()"
+                [disabled]="loading"
+                title="Actualizar stock y permisos">
+          <span *ngIf="loading" class="spinner"></span>
+          <span *ngIf="!loading"><i class="fa fa-refresh"></i> Actualizar</span>
+        </button>
+        <button class="boton boton-primario" (click)="cancelar()">Volver al Listado</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Realizar Pedido de Aceite</h1>
+      <p class="panel-subtitulo">Seleccione el proveedor y los aceites para su pedido.</p>
+    </div>
+
+    <div class="formulario-container">
+      <form [formGroup]="pedidoForm" (ngSubmit)="submitPedido()">
+        <div class="row">
+          <div class="columna">
+            <div class="campo-formulario">
+              <label for="idProveedor">Proveedor *</label>
+              <select id="idProveedor" formControlName="idProveedor"
+                [ngClass]="{ 'invalido': submitted && f['idProveedor'].errors }"
+                (change)="onProveedorChange()">
+                <option value="">Seleccione un proveedor</option>
+                <option *ngFor="let proveedor of proveedores" [value]="proveedor.idProveedor">
+                  {{ proveedor.nombreProveedor }}
+                </option>
+              </select>
+              <div *ngIf="submitted && f['idProveedor'].errors" class="mensaje-error">
+                <div *ngIf="f['idProveedor'].errors['required']">El proveedor es obligatorio</div>
+                <div *ngIf="f['idProveedor'].errors['min']">Debe seleccionar un proveedor válido</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="columna">
+            <div class="campo-formulario">
+              <label for="oilSearch">Buscar Aceite</label>
+              <input type="text" id="oilSearch" placeholder="Buscar por código o descripción"
+                [(ngModel)]="oilSearchTerm" [ngModelOptions]="{standalone: true}"
+                (keyup)="filterOils()"
+                [disabled]="!selectedProveedorId">
+              <p *ngIf="!selectedProveedorId" class="mensaje-info">Seleccione un proveedor para buscar aceites.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="contenedor-tabla-aceites-disponibles" *ngIf="groupedFilteredOils.length > 0 && selectedProveedorId">
+          <div class="titulo-tabla">Aceites Disponibles del Proveedor Seleccionado</div>
+          <div class="tabla-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th>Estado Stock</th>
+                  <th>Stock Actual</th>
+                  <th>Venta Últ. Mes</th>
+                  <th>Stock Mín/Máx</th>
+                  <th>Sugerido</th>
+                  <th>Litros</th>
+                  <th>Galones</th>
+                  <th>Canecas</th>
+                  <th>Tanques</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let groupedOil of groupedFilteredOils"
+                    [ngClass]="{'fila-bloqueada': groupedOil.bloqueado && !groupedOil.solicitudPermisoAprobada || groupedOil.solicitudPermisoPendiente}">
+                  <td>
+                    {{ groupedOil.codigo }}
+                    <span *ngIf="groupedOil.bloqueado && !groupedOil.solicitudPermisoAprobada" class="icono-bloqueado" title="Artículo bloqueado">
+                      <i class="fa fa-lock"></i>
+                    </span>
+                  </td>
+                  <td>{{ groupedOil.descripcion }}</td>
+                  
+                  <td>
+                    <span *ngIf="groupedOil.stockInfo" 
+                          class="badge-stock"
+                          [ngClass]="{
+                            'stock-critico': groupedOil.stockInfo.alertaStock === 'critico',
+                            'stock-bajo': groupedOil.stockInfo.alertaStock === 'bajo',
+                            'stock-normal': groupedOil.stockInfo.alertaStock === 'normal',
+                            'stock-alto': groupedOil.stockInfo.alertaStock === 'alto'
+                          }">
+                      {{ groupedOil.stockInfo.alertaStock | uppercase }}
+                    </span>
+                    <span *ngIf="!groupedOil.stockInfo" class="text-muted">Sin datos</span>
+                  </td>
+                  
+                  <td>
+                    <strong *ngIf="groupedOil.stockInfo">{{ groupedOil.stockInfo.stockDisponible }}</strong>
+                    <span *ngIf="!groupedOil.stockInfo" class="text-muted">N/A</span>
+                  </td>
+
+                  <!-- Venta Último Mes -->
+                  <td class="text-center">
+                    <span *ngIf="groupedOil.stockInfo"
+                          [ngClass]="{'venta-activa': groupedOil.stockInfo.ventaUltimoMes > 0,
+                                      'text-muted': !groupedOil.stockInfo.ventaUltimoMes}">
+                      {{ groupedOil.stockInfo.ventaUltimoMes || 0 }}
+                    </span>
+                    <span *ngIf="!groupedOil.stockInfo" class="text-muted">N/A</span>
+                  </td>
+                  
+                  <td>
+                    <div *ngIf="groupedOil.stockInfo" class="stock-range">
+                      <small>Mín: {{ groupedOil.stockInfo.stockMinimo }}</small><br>
+                      <small>Máx: {{ groupedOil.stockInfo.stockMaximo }}</small>
+                    </div>
+                    <span *ngIf="!groupedOil.stockInfo" class="text-muted">N/A</span>
+                  </td>
+                  
+                  <td>
+                    <button type="button" 
+                            *ngIf="groupedOil.stockInfo && groupedOil.stockInfo.cantidadSugerida > 0"
+                            class="boton-sugerido"
+                            (click)="aplicarCantidadSugerida(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                            title="Aplicar cantidad sugerida">
+                      <strong>{{ groupedOil.stockInfo.cantidadSugerida }}</strong>
+                      <i class="fa fa-arrow-right"></i>
+                    </button>
+                    <span *ngIf="!groupedOil.stockInfo || groupedOil.stockInfo.cantidadSugerida === 0" 
+                          class="text-muted">-</span>
+                  </td>
+                  
+                  <td>
+                    <input type="number" 
+                           class="cantidad-input-small" 
+                           min="0" 
+                           value="0" 
+                           #litrosInput
+                           (input)="onOilQuantityChange(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                           [disabled]="!groupedOil.presentacionesDisponibles.litros || (groupedOil.bloqueado && !groupedOil.solicitudPermisoAprobada)">
+                    <div *ngIf="!groupedOil.presentacionesDisponibles.litros" class="text-muted">N/A</div>
+                  </td>
+                  
+                  <td>
+                    <input type="number" 
+                           class="cantidad-input-small" 
+                           min="0" 
+                           value="0" 
+                           #galonesInput
+                           (input)="onOilQuantityChange(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                           [disabled]="!groupedOil.presentacionesDisponibles.galones || (groupedOil.bloqueado && !groupedOil.solicitudPermisoAprobada)">
+                    <div *ngIf="!groupedOil.presentacionesDisponibles.galones" class="text-muted">N/A</div>
+                  </td>
+                  
+                  <td>
+                    <input type="number" 
+                           class="cantidad-input-small" 
+                           min="0" 
+                           value="0" 
+                           #canecasInput
+                           (input)="onOilQuantityChange(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                           [disabled]="!groupedOil.presentacionesDisponibles.canecas || (groupedOil.bloqueado && !groupedOil.solicitudPermisoAprobada)">
+                    <div *ngIf="!groupedOil.presentacionesDisponibles.canecas" class="text-muted">N/A</div>
+                  </td>
+                  
+                  <td>
+                    <input type="number" 
+                           class="cantidad-input-small" 
+                           min="0" 
+                           value="0" 
+                           #tanquesInput
+                           (input)="onOilQuantityChange(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                           [disabled]="!groupedOil.presentacionesDisponibles.tanques || (groupedOil.bloqueado && !groupedOil.solicitudPermisoAprobada)">
+                    <div *ngIf="!groupedOil.presentacionesDisponibles.tanques" class="text-muted">N/A</div>
+                  </td>
+                  
+                  <td>
+                    <p *ngIf="groupedOil.cantidadExcedeLimite && !groupedOil.solicitudPermisoPendiente" 
+                       class="mensaje-alerta-exceso">
+                        <i class="fa fa-warning"></i> Excede el límite.
+                    </p>
+
+                    <button type="button" 
+                            *ngIf="groupedOil.cantidadExcedeLimite && !groupedOil.solicitudPermisoPendiente && !groupedOil.solicitudPermisoAprobada"
+                            class="boton-solicitar-permiso" 
+                            (click)="solicitarPermisoConCantidad(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                            title="Solicitar permiso para ordenar esta cantidad">
+                      <i class="fa fa-unlock-alt"></i> Sol. Permiso
+                    </button>
+                    
+                    <button type="button" 
+                            *ngIf="!groupedOil.cantidadExcedeLimite && (!groupedOil.bloqueado || groupedOil.solicitudPermisoAprobada) && !groupedOil.solicitudPermisoPendiente"
+                            class="boton-accion-add" 
+                            (click)="addOilToPedidoMultiple(groupedOil, litrosInput, galonesInput, canecasInput, tanquesInput)"
+                            [title]="groupedOil.solicitudPermisoAprobada ? 'Agregar (Con permiso aprobado)' : 'Agregar al pedido'">
+                      <i class="fa fa-plus"></i> Agregar
+                      <span *ngIf="groupedOil.solicitudPermisoAprobada" style="font-size: 0.8em;"> ✓</span>
+                    </button>
+                    
+                    <button type="button" 
+                            *ngIf="groupedOil.bloqueado && !groupedOil.solicitudPermisoPendiente && !groupedOil.solicitudPermisoAprobada && !groupedOil.cantidadExcedeLimite"
+                            class="boton-solicitar-permiso" 
+                            (click)="abrirModalSolicitudPermiso(groupedOil)" 
+                            title="Solicitar permiso para ordenar este artículo">
+                      <i class="fa fa-lock"></i> Sol. Permiso
+                    </button>
+                    
+                    <span *ngIf="groupedOil.solicitudPermisoPendiente" class="badge-permiso-pendiente">
+                        <i class="fa fa-clock-o"></i> Permiso Pendiente
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div *ngIf="groupedFilteredOils.length === 0 && selectedProveedorId" class="mensaje-info">
+          No se encontraron aceites para el proveedor seleccionado o el término de búsqueda.
+        </div>
+
+        <div class="contenedor-pedido-actual" *ngIf="currentPedidoItems.length > 0">
+          <div class="titulo-tabla">Pedido Actual</div>
+          <div class="tabla-responsive">
+            <table>
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th>Presentación</th>
+                  <th>Cantidad</th>
+                  <th>Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let item of currentPedidoItems; let i = index">
+                  <td>{{ item.codigo }}</td>
+                  <td>{{ item.descripcion }}</td>
+                  <td>{{ item.presentacion }}</td>
+                  <td>{{ item.cantidad }}</td>
+                  <td>
+                    <button type="button" class="boton boton-eliminar" (click)="removeOilFromPedido(i)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="total-pedido">
+            Total de Artículos: <strong>{{ currentPedidoItems.length }}</strong>
+          </div>
+        </div>
+
+        <div class="acciones-formulario">
+          <button type="submit" class="boton boton-primario" [disabled]="pedidoForm.invalid || currentPedidoItems.length === 0 || loading">
+            <span *ngIf="loading" class="spinner"></span>
+            <span *ngIf="!loading"><i class="fa fa-check"></i> Enviar Pedido</span>
+          </button>
+        </div>
+
+        <div *ngIf="errorMessage" class="mensaje-error mensaje-general">
+          <i class="fa fa-times-circle"></i> {{ errorMessage }}
+        </div>
+        
+        <div *ngIf="submitSuccess" class="mensaje-exito mensaje-general">
+          <i class="fa fa-check-circle"></i> El pedido se ha enviado exitosamente.
+        </div>
+      </form>
+    </div>
+  </section>
+</main>
+
+
+<div class="modal" [ngClass]="{'visible': mostrarModalPermiso}">
+  <div class="modal-contenido">
+    <div class="modal-cabecera">
+      <h2>Solicitud de Permiso de Pedido</h2>
+      <button type="button" class="cerrar-modal" (click)="cerrarModalPermiso()">
+        <i class="fa fa-close"></i>
+      </button>
+    </div>
+    <div class="modal-cuerpo">
+      <div class="articulo-bloqueado">
+        <h3>Artículo Bloqueado</h3>
+        <p><strong>Código:</strong> {{ articuloSeleccionadoPermiso?.codigo }}</p>
+        <p><strong>Descripción:</strong> {{ articuloSeleccionadoPermiso?.descripcion }}</p>
+        <p class="motivo-bloqueo">
+          <i class="fa fa-exclamation-triangle"></i>
+          <strong>Motivo:</strong> {{ articuloSeleccionadoPermiso?.motivoBloqueo || 'Exceso de cantidad solicitada.' }}
+        </p>
+      </div>
+      
+      <div class="campo-formulario">
+        <label for="motivoSolicitud">Motivo de la Solicitud *</label>
+        <textarea 
+          id="motivoSolicitud" 
+          [(ngModel)]="motivoSolicitud"
+          [ngModelOptions]="{standalone: true}"
+          rows="4"
+          placeholder="Explique por qué necesita realizar este pedido a pesar de que el stock está por encima del máximo o excede el límite disponible..."
+          maxlength="500"></textarea>
+        <small class="contador-caracteres">{{ motivoSolicitud.length }}/500 caracteres</small>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button type="button" class="boton boton-secundario" (click)="cerrarModalPermiso()">
+        Cancelar
+      </button>
+      <button type="button" 
+              class="boton boton-primario" 
+              (click)="enviarSolicitudPermiso()"
+              [disabled]="!motivoSolicitud.trim() || loading">
+        <span *ngIf="loading" class="spinner"></span>
+        <span *ngIf="!loading"><i class="fa fa-send"></i> Enviar Solicitud</span>
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,156 @@
+<div class="bajas-container">
+
+  <!-- Header -->
+  <div class="bajas-header">
+    <div>
+      <h1 class="bajas-titulo">Histórico de Bajas</h1>
+      <p class="bajas-subtitulo">Items y cantidades dadas de baja por {{ usuario?.nombreUsuario }}</p>
+    </div>
+  </div>
+
+  <!-- Tarjetas de totales -->
+  <div class="bajas-metricas">
+    <div class="metrica-card metrica-azul">
+      <div class="metrica-valor">{{ totalBajas | number }}</div>
+      <div class="metrica-label">Registros de baja</div>
+    </div>
+    <div class="metrica-card metrica-naranja">
+      <div class="metrica-valor">{{ totalCantidad | number }}</div>
+      <div class="metrica-label">Unidades dadas de baja</div>
+    </div>
+    <div class="metrica-card metrica-rojo">
+      <div class="metrica-valor">$ {{ totalValorFob | number:'1.2-2' }}</div>
+      <div class="metrica-label">Valor FOB total</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="bajas-filtros">
+    <div class="filtro-grupo filtro-buscar">
+      <label>Buscar:</label>
+      <input type="text" [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"
+             placeholder="Código, descripción, invoice, proveedor, motivo, orden...">
+    </div>
+    <div class="filtro-grupo">
+      <label>Desde:</label>
+      <input type="date" [(ngModel)]="startDate" (ngModelChange)="onDateChange()">
+    </div>
+    <div class="filtro-grupo">
+      <label>Hasta:</label>
+      <input type="date" [(ngModel)]="endDate" (ngModelChange)="onDateChange()">
+    </div>
+    <button class="boton-limpiar" (click)="limpiarFiltros()">Limpiar</button>
+    <div class="filtro-export">
+      <button class="boton-export boton-excel" (click)="downloadExcel()">⬇ Excel</button>
+      <button class="boton-export boton-csv" (click)="downloadCSV()">⬇ CSV</button>
+    </div>
+  </div>
+
+  <!-- Cargando -->
+  <div *ngIf="loading" class="bajas-cargando">Cargando histórico de bajas...</div>
+
+  <!-- Sin datos -->
+  <div *ngIf="!loading && filteredData.length === 0" class="bajas-vacio">
+    No hay bajas registradas con los filtros actuales.
+  </div>
+
+  <!-- Tabla -->
+  <div class="bajas-tabla-wrapper" *ngIf="!loading && filteredData.length > 0">
+    <table class="bajas-tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Orden</th>
+          <th>Invoice</th>
+          <th>Proveedor</th>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th class="text-right">Anterior</th>
+          <th class="text-right">Baja</th>
+          <th class="text-right">Restante</th>
+          <th class="text-right">FOB unit.</th>
+          <th class="text-right">Valor FOB</th>
+          <th>Motivo</th>
+          <th class="text-center">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let b of lista" [class.fila-baja-total]="esBajaTotal(b)">
+          <td class="celda-fecha">{{ formatFecha(b.fechaBaja) }}</td>
+          <td>
+            <a class="link-orden" (click)="irAOrden(b.ordenId)" title="Ver orden">#{{ b.ordenId }}</a>
+          </td>
+          <td>{{ b.invoicen }}</td>
+          <td class="celda-prov">{{ b.proveedor }}</td>
+          <td><strong>{{ b.codigo }}</strong></td>
+          <td class="celda-desc" [title]="b.descripcion">{{ b.descripcion }}</td>
+          <td class="text-right">{{ b.cantidadAnterior | number }}</td>
+          <td class="text-right"><strong class="text-rojo">{{ b.cantidadBaja | number }}</strong></td>
+          <td class="text-right">
+            {{ b.cantidadRestante | number }}
+            <span *ngIf="esBajaTotal(b)" class="badge-total" title="El item quedó en 0 y fue eliminado">TOTAL</span>
+          </td>
+          <td class="text-right">$ {{ b.fobUnitario | number:'1.2-2' }}</td>
+          <td class="text-right text-rojo">$ {{ b.valorFobBaja | number:'1.2-2' }}</td>
+          <td class="celda-motivo" [title]="b.motivo">{{ b.motivo || '—' }}</td>
+          <td class="text-center">
+            <button class="boton-revertir" (click)="abrirRevertModal(b)" title="Revertir baja (devolver cantidad)">
+              ↩ Revertir
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Paginación -->
+  <div class="bajas-paginacion" *ngIf="!loading && totalPages > 1">
+    <button (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">‹</button>
+    <ng-container *ngFor="let p of getPaginationArray()">
+      <span *ngIf="p === -1" class="pag-puntos">…</span>
+      <button *ngIf="p !== -1" (click)="changePage(p)" [class.pag-activa]="p === currentPage">{{ p }}</button>
+    </ng-container>
+    <button (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">›</button>
+  </div>
+
+  <!-- ── Modal Revertir ───────────────────────────────────────────────────── -->
+  <div class="revert-overlay" *ngIf="isRevertModalOpen" (click)="cerrarRevertModal()">
+    <div class="revert-modal" (click)="$event.stopPropagation()">
+      <div class="revert-header">
+        <h2>↩ Revertir baja</h2>
+        <span class="revert-close" (click)="cerrarRevertModal()">&times;</span>
+      </div>
+      <div class="revert-body" *ngIf="bajaParaRevertir">
+        <p>
+          Vas a devolver <strong>{{ bajaParaRevertir.cantidadBaja | number }}</strong> unidad(es)
+          del código <strong>{{ bajaParaRevertir.codigo }}</strong>
+          a la orden <strong>#{{ bajaParaRevertir.ordenId }}</strong>.
+        </p>
+        <div class="revert-detalle">
+          <div><span>Descripción:</span> {{ bajaParaRevertir.descripcion }}</div>
+          <div><span>Invoice:</span> {{ bajaParaRevertir.invoicen }}</div>
+          <div><span>Motivo original:</span> {{ bajaParaRevertir.motivo || '—' }}</div>
+          <div><span>Valor FOB a restaurar:</span> $ {{ bajaParaRevertir.valorFobBaja | number:'1.2-2' }}</div>
+        </div>
+
+        <div class="revert-alerta" *ngIf="esBajaTotal(bajaParaRevertir)">
+          ⚠️ Este item fue dado de baja por completo y eliminado del detalle.
+          Al revertir, se <strong>recreará</strong> el item en la orden.
+        </div>
+
+        <div class="revert-error" *ngIf="revertError">{{ revertError }}</div>
+
+        <div class="revert-acciones">
+          <button class="boton-secundario" (click)="cerrarRevertModal()" [disabled]="revertLoading">
+            Cancelar
+          </button>
+          <button class="boton-confirmar-revert" (click)="confirmarRevertir()" [disabled]="revertLoading">
+            <span *ngIf="revertLoading">Revirtiendo...</span>
+            <span *ngIf="!revertLoading">↩ Confirmar reversión</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,47 @@
+<!-- Modal de imágenes -->
+<div class="img-overlay" [class.show]="visible" (click)="cerrarModal()">
+  <div class="img-modal" (click)="$event.stopPropagation()">
+
+    <div class="img-header">
+      <h3>Imágenes del componente</h3>
+      <button class="img-close" (click)="cerrarModal()" title="Cerrar">✖</button>
+    </div>
+
+    <div class="img-body">
+      <div *ngIf="cargando" class="img-msg">⏳ Cargando imágenes...</div>
+      <div *ngIf="error" class="img-msg img-error">❌ {{ error }}</div>
+
+      <section class="img-seccion" *ngFor="let s of secciones">
+        <div class="img-seccion-header">
+          <h4>{{ s.titulo }}</h4>
+          <label class="img-btn-subir" [class.disabled]="subiendo === s.momento">
+            <span *ngIf="subiendo !== s.momento">＋ Subir</span>
+            <span *ngIf="subiendo === s.momento">Subiendo...</span>
+            <input type="file" accept="image/*" multiple hidden
+                   [disabled]="subiendo === s.momento || !extraccionId"
+                   (change)="onSeleccion(s.momento, $event)">
+          </label>
+        </div>
+
+        <div class="img-grid" *ngIf="imagenesDe(s.momento).length; else vacio">
+          <div class="img-card" *ngFor="let img of imagenesDe(s.momento)">
+            <img [src]="img.url" [alt]="img.nombreOriginal || ''" (click)="ampliar(img.url)">
+            <button class="img-del" (click)="borrar(img)" title="Eliminar">🗑️</button>
+          </div>
+        </div>
+        <ng-template #vacio>
+          <p class="img-empty">Sin imágenes.</p>
+        </ng-template>
+      </section>
+    </div>
+
+    <div class="img-footer">
+      <button class="img-btn-cerrar" (click)="cerrarModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div class="img-lightbox" *ngIf="imagenAmpliada" (click)="cerrarAmpliada()">
+  <img [src]="imagenAmpliada" alt="">
+</div>

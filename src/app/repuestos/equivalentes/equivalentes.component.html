@@ -1,0 +1,233 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">EQUIVALENTES DE REPUESTOS</div>
+            <div class="contenedor-busqueda">
+        <input type="text" class="busqueda" placeholder="Buscar..."
+               [(ngModel)]="searchTerm" (input)="applyFilters()" (keyup.enter)="openSearchModal()" />
+        <button class="boton-accion" (click)="openSearchModal()" title="Buscar">🔍 Buscar</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Equivalentes</h1>
+      <p class="panel-subtitulo">Gestión de códigos equivalentes</p>
+    </div>
+
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica tarjeta-crear" (click)="openModal(false)">
+        <div class="icono-tarjeta">➕</div>
+        <div class="valor-estadistica">NUEVO</div>
+      </div>
+      <div class="tarjeta-estadistica tarjeta-excel" (click)="openCargaModal()">
+        <div class="icono-tarjeta">📤</div>
+        <div class="valor-estadistica">CARGAR EXCEL</div>
+      </div>
+      <div class="tarjeta-estadistica tarjeta-excel" (click)="downloadExcel()">
+        <div class="icono-tarjeta">📊</div>
+        <div class="valor-estadistica">EXCEL</div>
+      </div>
+      <div class="tarjeta-estadistica tarjeta-invoice" (click)="downloadCSV()">
+        <div class="icono-tarjeta">📋</div>
+        <div class="valor-estadistica">CSV</div>
+      </div>
+    </div>
+
+    <div class="panel-contenido">
+      <div class="filtros-avanzados buscador-destacado">
+                <div class="buscador-box">
+          <input type="text" class="busqueda-grande"
+                 placeholder="🔍 Buscar por sistema, original, chino, equivalente o descripción…"
+                 [(ngModel)]="searchTerm" (input)="applyFilters()" (keyup.enter)="openSearchModal()" />
+          <button class="boton-limpiar-grande" (click)="clearAllFilters()" title="Limpiar búsqueda">✕ Limpiar</button>
+          <button class="boton-accion" (click)="openSearchModal()" title="Buscar">🔍 Buscar</button>
+        </div>
+      </div>
+
+      <div class="contenedor-tabla">
+        <table class="tabla-pedidos">
+          <thead>
+            <tr>
+              <th>ID</th><th>Sistema</th><th>Original</th><th>Descripción</th><th>Equivalentes</th><th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of paginatedData">
+              <td>{{ item.id }}</td>
+              <td [class.sin-actualizar]="item.descActualizadaOracle === false">
+                {{ item.codsistema }}
+              </td>
+
+
+              <td><strong>{{ item.codoriginal }}</strong></td>
+              
+              <td [class.sin-actualizar]="item.descActualizadaOracle === false">
+                  {{ item.descripcion }}
+
+                </td>
+                <td>
+                <span *ngIf="item.codigo1" class="badge">1: {{ item.codigo1 }}</span>
+                <span *ngIf="item.codigo2" class="badge">2: {{ item.codigo2 }}</span>
+                <span *ngIf="item.codigo3" class="badge">3: {{ item.codigo3 }}</span>
+                <span *ngIf="item.codigo4" class="badge">4: {{ item.codigo4 }}</span>
+                <span *ngIf="item.codigo5" class="badge">5: {{ item.codigo5 }}</span>
+              </td>
+              <td>
+                <button class="boton-accion editar" (click)="openModal(true, item)">✏️</button>
+                <button class="boton-accion eliminar" (click)="deleteItem(item.id)">🗑️</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-wrapper">
+        <div class="pagination-info">
+          Página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong>
+          &nbsp;|&nbsp;
+          Mostrando <strong>{{ (currentPage-1)*itemsPerPage + 1 }} – {{ Math.min(currentPage*itemsPerPage, filteredData.length) }}</strong>
+          de <strong>{{ filteredData.length }}</strong> registros
+        </div>
+        <div class="page-size">
+          <label>Mostrar</label>
+          <select [(ngModel)]="itemsPerPage" (change)="onPageSizeChange()">
+            <option [value]="20">20</option><option [value]="50">50</option><option [value]="100">100</option>
+          </select>
+        </div>
+        <div class="pagination-controls">
+          <button class="pagination-button" (click)="changePage(1)" [disabled]="currentPage === 1" title="Primera">⏮</button>
+          <button class="pagination-button" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">Anterior</button>
+          <button *ngFor="let p of getVisiblePages()" class="pagination-button" [class.active]="p === currentPage" (click)="changePage(p)">{{ p }}</button>
+          <button class="pagination-button" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">Siguiente</button>
+          <button class="pagination-button" (click)="changePage(totalPages)" [disabled]="currentPage === totalPages" title="Última">⏭</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Modal Nuevo/Editar -->
+<div class="modal" [class.show-modal]="isModalOpen">
+  <div class="modal-content">
+    <span class="close-button" (click)="closeModal()">&times;</span>
+    <h3>{{ isEditing ? 'Editar Equivalente' : 'Nuevo Equivalente' }}</h3>
+
+    <form [formGroup]="form" (ngSubmit)="save()">
+      <div class="form-grid">
+        <label>Código Sistema *</label>
+        <input formControlName="codsistema" maxlength="30" />
+        <small *ngIf="form.get('codsistema')?.touched && form.get('codsistema')?.errors?.['required']" class="text-danger">Obligatorio</small>
+
+        <label>Código Original *</label>
+        <input formControlName="codoriginal" maxlength="50" />
+        <small *ngIf="form.get('codoriginal')?.touched && form.get('codoriginal')?.errors?.['required']" class="text-danger">Obligatorio</small>
+
+        <label>Código Chino *</label>
+        <input formControlName="chino" maxlength="50" />
+        <small *ngIf="form.get('chino')?.touched && form.get('chino')?.errors?.['required']" class="text-danger">Obligatorio</small>
+
+        <label>Descripción</label>
+        <input formControlName="descripcion" maxlength="250" />
+
+        <label>Código 1</label>
+        <input formControlName="codigo1" maxlength="50" />
+
+        <label>Código 2</label>
+        <input formControlName="codigo2" maxlength="50" />
+
+        <label>Código 3</label>
+        <input formControlName="codigo3" maxlength="50" />
+
+        <label>Código 4</label>
+        <input formControlName="codigo4" maxlength="50" />
+
+        <label>Código 5</label>
+        <input formControlName="codigo5" maxlength="50" />
+      </div>
+
+      <div *ngIf="modalError" class="message error">{{ modalError }}</div>
+
+      <div class="modal-actions">
+        <button type="submit" class="boton-accion editar" [disabled]="form.invalid || saving">
+          <span *ngIf="!saving">Guardar</span>
+          <span *ngIf="saving">Guardando…</span>
+        </button>
+        <button type="button" class="boton-accion eliminar" (click)="closeModal()">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Carga Masiva -->
+<div class="modal" [class.show-modal]="isCargaModalOpen">
+  <div class="modal-content">
+    <span class="close-button" (click)="closeCargaModal()">&times;</span>
+    <h3>Carga Masiva de Equivalentes</h3>
+    <p>Selecciona un archivo Excel con las siguientes columnas:</p>
+    <ul>
+      <li><strong>A:</strong> Código Original</li>
+      <li><strong>B:</strong> Código Sistema</li>
+      <li><strong>C:</strong> Código Chino</li>
+      <li><strong>D:</strong> Descripción</li>
+      <li><strong>E-I:</strong> Codigo1 a Codigo5 (opcionales)</li>
+    </ul>
+    <input type="file" accept=".xlsx,.xls" (change)="onFileSelected($event)" />
+    <div class="modal-actions">
+      <button class="boton-accion editar" (click)="downloadPlantilla()">📥 Descargar Plantilla</button>
+      <button class="boton-accion eliminar" (click)="closeCargaModal()">Cancelar</button>
+    </div>
+    <div *ngIf="uploadMessage" class="message" [class.error]="uploadMessage.includes('❌')">{{ uploadMessage }}</div>
+    <div *ngIf="uploadLoading" class="loading-indicator">⏳ Subiendo...</div>
+  </div>
+</div>
+
+<!-- Modal de búsqueda: diseño exacto a la imagen -->
+<div class="modal" [class.show-modal]="isSearchModalOpen">
+  <div class="modal-content" style="max-width: 700px">
+    <span class="close-button" (click)="closeSearchModal()">&times;</span>
+
+    <!-- CÓDIGO BUSCADO -->
+    <div class="search-header">{{ searchTerm }}</div>
+    <div class="search-stock">
+      Stock disponible: <strong>{{ stockBuscado }}</strong>
+    </div>
+
+    <div class="search-agencias" *ngIf="agenciasBuscado.length">
+      <small *ngFor="let a of agenciasBuscado">
+        {{ a.oficina }}: {{ a.stock }}
+      </small>
+    </div>
+
+    <!-- DESCRIPCIONES -->
+    <div class="search-desc-box">
+      <div *ngFor="let d of searchDescriptions">{{ d }}</div>
+    </div>
+
+    <!-- EQUIVALENTES (todos los códigos distintos al buscado) -->
+    <div class="search-equiv-title">EQUIVALENTES</div>
+    <div class="search-equiv-column">
+    <div class="equiv-item" *ngFor="let c of searchEquivCodes">
+  {{ c }}
+  <span class="stock-badge">
+    Disponible ({{ stockMap[c] ?? 0 }})
+  </span>
+
+  <!-- Agencias -->
+  <div class="agencias-list" *ngIf="agenciasMap[c]?.length">
+    <small *ngFor="let a of agenciasMap[c]">
+      Agencias {{ a.oficina }}: {{ a.stock }}
+    </small>
+  </div>
+</div>
+    </div>
+
+    <!-- CERRAR -->
+    <div class="modal-actions">
+      <button class="boton-accion eliminar" (click)="closeSearchModal()">Cerrar</button>
+    </div>
+  </div>
+</div>

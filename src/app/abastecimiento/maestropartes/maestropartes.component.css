@@ -1,0 +1,233 @@
+.maestropartes-container {
+  padding: 1.5rem;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #333;
+}
+
+.encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.encabezado h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #1a1a2e;
+}
+
+.acciones-encabezado {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.btn-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+}
+
+.btn-accion:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-actualizar {
+  background-color: #f3f4f6;
+  border-color: #ccc;
+  color: #333;
+}
+
+.btn-actualizar:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.btn-excel {
+  background-color: #15803d;
+  color: #fff;
+  min-width: 160px;
+  justify-content: center;
+}
+
+.btn-excel:hover:not(:disabled) {
+  background-color: #166534;
+}
+
+/* ── Barra de búsqueda ────────────────────────────────────────── */
+
+.barra-busqueda {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.input-busqueda {
+  flex: 1;
+  max-width: 480px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.95rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.input-busqueda:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.btn-limpiar {
+  padding: 0.55rem 1rem;
+  font-size: 0.85rem;
+  background-color: #f3f4f6;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #555;
+}
+
+.btn-limpiar:hover {
+  background-color: #e5e7eb;
+}
+
+/* ── Mensajes de estado ───────────────────────────────────────── */
+
+.mensaje-error {
+  padding: 0.65rem 1rem;
+  margin-bottom: 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  color: #b91c1c;
+  font-size: 0.9rem;
+}
+
+.mensaje-cargando {
+  padding: 0.65rem 1rem;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.resumen-resultados {
+  margin-bottom: 0.65rem;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.sin-resultados {
+  padding: 1.5rem;
+  text-align: center;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* ── Tabla ────────────────────────────────────────────────────── */
+
+.tabla-wrapper {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.tabla-maestro {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tabla-maestro thead {
+  background-color: #1a1a2e;
+}
+
+.tabla-maestro thead th {
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  color: #fff;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tabla-maestro tbody tr {
+  border-bottom: 1px solid #eee;
+  transition: background-color 0.1s ease;
+}
+
+.tabla-maestro tbody tr:hover {
+  background-color: #f8f9fb;
+}
+
+.tabla-maestro tbody tr:last-child {
+  border-bottom: none;
+}
+
+.tabla-maestro td {
+  padding: 0.6rem 0.85rem;
+  vertical-align: top;
+}
+
+.col-codigo {
+  font-weight: 600;
+  color: #1a1a2e;
+  white-space: nowrap;
+}
+
+.col-numero {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Paginación ───────────────────────────────────────────────── */
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.btn-pagina {
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #333;
+}
+
+.btn-pagina:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+
+.btn-pagina:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.info-pagina {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.select-tamano {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #fff;
+  cursor: pointer;
+}

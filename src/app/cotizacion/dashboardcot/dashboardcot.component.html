@@ -1,0 +1,717 @@
+
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Cotizaciones</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de las solicitudes de cotización</p>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="coti()">
+        <div class="valor-estadistica">COTIZACIONES</div>
+      </div>
+      
+      
+    <!--  <div class="tarjeta-estadistica" (click)="error()">
+        <div class="valor-estadistica">SUBIR DETALLE</div>          
+      </div>-->
+      
+      
+      
+      <div class="tarjeta-estadistica" (click)="revi()">
+        <div class="valor-estadistica">ASIGNADAS</div>          
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="aprobada()">
+        <div class="valor-estadistica">APROBADAS</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="rechazada()"> 
+        <div class="valor-estadistica">ANULADA</div>
+      </div>
+
+      <div class="tarjeta-estadistica" (click)="crearm()">
+        <div class="valor-estadistica">CREAR </div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="excelm()">
+        <div class="valor-estadistica">SUBIR DETALLE </div>          
+      </div>
+
+    </div>
+    
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">
+          Cotizaciones Recientes
+          <span class="badge-resultados" *ngIf="isFiltering()">
+            {{ filteredData.length }} resultados
+          </span>
+        </div>
+
+        <!-- Buscador en la misma línea de los filtros y exportar -->
+        <div class="busqueda-wrapper">
+          <span class="icono-lupa">🔍</span>
+          <input
+            type="text"
+            class="busqueda"
+            placeholder="Buscar por código, proveedor o estado..."
+            [(ngModel)]="searchTerm"
+            (input)="searchImports()">
+          <button class="btn-limpiar-busqueda" *ngIf="searchTerm" (click)="clearSearch()" title="Limpiar búsqueda">✕</button>
+        </div>
+
+        <div class="acciones-tabla">
+          <button class="boton boton-filtro" (click)="toggleFilterPanel()">
+            <span class="icono-filtro">⚙️</span>
+            Filtros
+            <span class="badge-filtros-activos" *ngIf="getActiveFiltersCount() > 0">
+              {{ getActiveFiltersCount() }}
+            </span>
+          </button>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">
+              <span class="icono-exportar">📥</span> Exportar
+            </button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">📊 Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">📄 CSV (.csv)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de filtros expandible -->
+      <div class="panel-filtros" *ngIf="showFilterPanel">
+        <div class="filtros-grid">
+          <!-- Filtro de fechas -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Rango de Fechas</label>
+            <div class="filtro-fechas-inline">
+              <input 
+                type="date" 
+                class="input-filtro" 
+                [(ngModel)]="startDate" 
+                (change)="applyFilters()"
+                placeholder="Desde">
+              <span class="separador-fecha">-</span>
+              <input 
+                type="date" 
+                class="input-filtro" 
+                [(ngModel)]="endDate" 
+                (change)="applyFilters()"
+                placeholder="Hasta">
+            </div>
+          </div>
+
+          <!-- Filtro por proveedor -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Proveedor</label>
+            <select class="input-filtro" [(ngModel)]="selectedProveedor" (change)="applyFilters()">
+              <option value="">Todos los proveedores</option>
+              <option *ngFor="let prov of uniqueProveedores" [value]="prov">{{ prov }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro por estado -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Estado</label>
+            <select class="input-filtro" [(ngModel)]="selectedEstado" (change)="applyFilters()">
+              <option value="">Todos los estados</option>
+              <option *ngFor="let estado of uniqueEstados" [value]="estado">{{ estado }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Cotización General -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Cotización General</label>
+            <select class="input-filtro" [(ngModel)]="selectedCotiGeneral" (change)="applyFilters()">
+              <option value="">Todas</option>
+              <option *ngFor="let coti of uniqueCotiGenerales" [value]="coti">{{ coti }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="acciones-filtros">
+          <button class="boton boton-limpiar" (click)="clearAllFilters()">
+            <span class="icono">🔄</span> Limpiar Filtros
+          </button>
+          <button class="boton boton-aplicar" (click)="applyFilters()">
+            <span class="icono">✓</span> Aplicar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Chips de filtros activos -->
+      <div class="filtros-activos" *ngIf="getActiveFiltersCount() > 0">
+        <div class="chip-filtro" *ngIf="startDate || endDate">
+          <span class="chip-texto">
+            📅 {{ startDate | date:'dd/MM/yyyy' }} - {{ endDate | date:'dd/MM/yyyy' }}
+          </span>
+          <button class="chip-cerrar" (click)="clearDateFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="selectedProveedor">
+          <span class="chip-texto">👤 {{ selectedProveedor }}</span>
+          <button class="chip-cerrar" (click)="clearProveedorFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="selectedEstado">
+          <span class="chip-texto">📋 {{ selectedEstado }}</span>
+          <button class="chip-cerrar" (click)="clearEstadoFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="selectedCotiGeneral">
+          <span class="chip-texto">📑 {{ selectedCotiGeneral }}</span>
+          <button class="chip-cerrar" (click)="clearCotiGeneralFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="searchTerm">
+          <span class="chip-texto">🔍 "{{ searchTerm }}"</span>
+          <button class="chip-cerrar" (click)="clearSearch()">✕</button>
+        </div>
+      </div>
+      
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            
+            <tr>
+              <th class="hide-mobile">N.</th>
+              <th class="hide-mobile">Coti. General</th>
+              <th>Código Coti.</th> 
+              <th>Proveedor</th>
+              <th>Fecha Solicitud</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista" class="fila-datos">
+               <td data-label="Coti. General" class="hide-mobile">{{ item.cotizacionId || '-' }}</td>
+              <td data-label="Coti. General" class="hide-mobile">{{ item.cotigeneral || '-' }}</td>
+              <td data-label="Código Coti.">{{ item.codigoCot || item.cotizacionId }}</td> 
+              <td data-label="Proveedor">{{ item.nombreProveedor || 'N/A' }}</td>
+              <td data-label="Fecha">{{ item.fechaSolicitud ? (item.fechaSolicitud | date:'dd/MM/yyyy') : '-' }}</td>
+              
+              <td data-label="Estado">
+                <span class="badge-estado" [ngClass]="{
+                  'estado-pendiente': item.estadoCotizacion === 'Pendiente',
+                  'estado-aprobado': item.estadoCotizacion === 'Aprobado',
+                  'estado-rechazado': item.estadoCotizacion === 'Rechazado',
+                  'estado-revision': item.estadoCotizacion === 'Revision'
+                }">
+                  {{item.estadoCotizacion || 'Pendiente'}}
+                </span>
+              </td>
+              
+              <td data-label="Acciones" class="text-center">
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                <!--  <button (click)="responder(item.cotizacionId)" 
+                          class="details-icon btn btn-link p-0" 
+                          title="Responder cotización">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-reply-fill" viewBox="0 0 16 16">
+                      <path d="M5.921 11.9 1.353 8.62a.719.719 0 0 1 0-1.238L5.921 4.1A.716.716 0 0 1 7 4.719V6c1.5 0 6 0 7 8-2.5-4.5-7-4-7-4v1.281c0 .56-.606.898-1.079.62z"/>
+                    </svg>
+                  </button>
+                  
+                  <button (click)="verDetalles(item.cotizacionId)" 
+                          class="details-icon btn btn-link p-0" 
+                          title="Ver detalles de la cotización">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
+                      <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                      <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                    </svg>
+                  </button>-->
+                  
+                  <button *ngIf="item.cotigeneral" (click)="verDetallesmm(item.cotigeneral)" 
+                          class="details-icon btn btn-link p-0" 
+                          title="Ver cotización consolidada">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-collection-fill" viewBox="0 0 16 16">
+                      <path d="M0 13a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 16 13V6a1.5 1.5 0 0 0-1.5-1.5h-13A1.5 1.5 0 0 0 0 6v7zM2 3a.5.5 0 0 0 .5.5h11a.5.5 0 0 0 0-1h-11A.5.5 0 0 0 2 3zm2-2a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 0-1h-7A.5.5 0 0 0 4 1z"/>
+                    </svg>
+                  </button>
+
+                  <!-- Cancelar cotización (cambia estado a Rechazada) -->
+                  <button
+                    *ngIf="item.estadoCotizacion !== 'Rechazada' && item.estadoCotizacion !== 'Aprobada' && item.estadoCotizacion !== 'liquidado'"
+                    (click)="cancelarCotizacion(item)"
+                    class="details-icon btn btn-link p-0 btn-cancelar"
+                    title="Anular cotización"
+                    [disabled]="item._procesando">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-x-circle-fill" viewBox="0 0 16 16">
+                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM5.354 4.646a.5.5 0 1 0-.708.708L7.293 8l-2.647 2.646a.5.5 0 0 0 .708.708L8 8.707l2.646 2.647a.5.5 0 0 0 .708-.708L8.707 8l2.647-2.646a.5.5 0 0 0-.708-.708L8 7.293 5.354 4.646z"/>
+                    </svg>
+                  </button>
+
+                  <!-- Eliminar cotización -->
+                  <button
+                    *ngIf="item.estadoCotizacion !== 'Aprobada' && item.estadoCotizacion !== 'liquidado'"
+                    (click)="eliminarCotizacion(item)"
+                    class="details-icon btn btn-link p-0 btn-eliminar"
+                    title="Eliminar cotización y sus detalles"
+                    [disabled]="item._procesando">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                      <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5zm-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5zM4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06zm6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528zM8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5z"/>
+                    </svg>
+                  </button>
+                  
+                 <!-- <button (click)="addDetalles(item.cotizacionId)" 
+                          class="details-icon btn btn-link p-0" 
+                          title="Agregar items a la cotización">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-plus-circle-fill" viewBox="0 0 16 16">
+                      <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM8.5 4.5a.5.5 0 0 0-1 0v3h-3a.5.5 0 0 0 0 1h3v3a.5.5 0 0 0 1 0v-3h3a.5.5 0 0 0 0-1h-3v-3z"/>
+                    </svg>
+                  </button>-->
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="lista.length === 0">
+              <td colspan="6" class="sin-resultados">
+                <div class="mensaje-vacio">
+                  <span class="icono-vacio">📭</span>
+                  <p>No se encontraron cotizaciones</p>
+                  <small *ngIf="searchTerm">Intenta con otros términos de búsqueda</small>
+                  <button class="boton boton-secundario" (click)="clearAllFilters()">Limpiar filtros</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pie-tabla">
+        <div class="items-count">
+          Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} cotizaciones
+          <span *ngIf="filteredData?.length !== allData?.length" class="filtrado-info">
+            ({{ allData?.length }} en total)
+          </span>
+        </div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pagina" 
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+</main>
+
+<style>
+  /* ── Cabecera de tabla en una sola línea ────────────────────────── */
+  .contenedor-tabla-importaciones .cabecera-tabla {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.1rem 1.5rem;
+    margin-bottom: 0;
+    border-bottom: 1px solid #e5e5ea;
+    flex-wrap: wrap;
+  }
+
+  .contenedor-tabla-importaciones .titulo-tabla {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* El buscador ocupa el espacio sobrante del centro */
+  .cabecera-tabla .busqueda-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 240px;
+    min-width: 200px;
+  }
+
+  .cabecera-tabla .acciones-tabla {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .busqueda-wrapper .icono-lupa {
+    position: absolute;
+    left: 14px;
+    font-size: 0.95rem;
+    opacity: 0.55;
+    pointer-events: none;
+  }
+
+  .busqueda-wrapper .busqueda {
+    width: 100%;
+    padding: 0.6rem 2.2rem;
+    border-radius: 10px;
+    border: 1px solid #d1d1d6;
+    background-color: #f2f2f7;
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s ease;
+  }
+
+  .busqueda-wrapper .busqueda:focus {
+    background-color: #fff;
+    border-color: #0a84ff;
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.15);
+  }
+
+  .busqueda-wrapper .btn-limpiar-busqueda {
+    position: absolute;
+    right: 8px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #888;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 4px 6px;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+  }
+
+  .busqueda-wrapper .btn-limpiar-busqueda:hover {
+    color: #333;
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  /* En móvil cada bloque pasa a su propia línea */
+  @media (max-width: 768px) {
+    .cabecera-tabla .busqueda-wrapper {
+      flex: 1 1 100%;
+      order: 3;
+    }
+    .cabecera-tabla .acciones-tabla {
+      margin-left: 0;
+    }
+  }
+
+  .contenedor-busqueda {
+    position: relative;
+    flex: 1;
+    max-width: 500px;
+  }
+
+  .icono-busqueda {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .btn-limpiar {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    font-size: 18px;
+    padding: 5px;
+    transition: color 0.2s;
+  }
+
+  .btn-limpiar:hover {
+    color: #333;
+  }
+
+  .panel-filtros {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    animation: slideDown 0.3s ease;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .filtros-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+  }
+
+  .grupo-filtro {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .label-filtro {
+    font-weight: 600;
+    font-size: 14px;
+    color: #333;
+  }
+
+  .input-filtro {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .input-filtro:focus {
+    outline: none;
+    border-color: #4CAF50;
+  }
+
+  .filtro-fechas-inline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .separador-fecha {
+    color: #666;
+    font-weight: 500;
+  }
+
+  .acciones-filtros {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .boton-filtro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+
+  .icono-filtro {
+    font-size: 16px;
+  }
+
+  .badge-filtros-activos {
+    background: #ff4444;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: bold;
+  }
+
+  .badge-resultados {
+    background: #4CAF50;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 10px;
+    font-weight: 500;
+  }
+
+  .filtros-activos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 6px;
+  }
+
+  .chip-filtro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .chip-texto {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .chip-cerrar {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #1976d2;
+    font-size: 16px;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background 0.2s;
+  }
+
+  .chip-cerrar:hover {
+    background: rgba(25, 118, 210, 0.1);
+  }
+
+  .boton-limpiar {
+    background: #f5f5f5;
+    color: #666;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .boton-limpiar:hover {
+    background: #e0e0e0;
+  }
+
+  .boton-aplicar {
+    background: #4CAF50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+  }
+
+  .boton-aplicar:hover {
+    background: #45a049;
+  }
+
+  .icono {
+    font-size: 14px;
+  }
+
+  .sin-resultados {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .mensaje-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+
+  .icono-vacio {
+    font-size: 48px;
+    opacity: 0.5;
+  }
+
+  .mensaje-vacio p {
+    color: #666;
+    font-size: 16px;
+    margin: 0;
+  }
+
+  .mensaje-vacio small {
+    color: #999;
+    font-size: 14px;
+  }
+
+  .boton-secundario {
+    background: #f5f5f5;
+    color: #333;
+    border: 1px solid #ddd;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .boton-secundario:hover {
+    background: #e0e0e0;
+  }
+
+  .filtrado-info {
+    color: #666;
+    font-size: 12px;
+    font-style: italic;
+  }
+
+  .icono-exportar {
+    font-size: 16px;
+  }
+
+  .btn-cancelar {
+    color: #f57c00 !important;
+    transition: color 0.2s, transform 0.15s;
+  }
+  .btn-cancelar:hover:not(:disabled) {
+    color: #e65100 !important;
+    transform: scale(1.15);
+  }
+
+  .btn-eliminar {
+    color: #c62828 !important;
+    transition: color 0.2s, transform 0.15s;
+  }
+  .btn-eliminar:hover:not(:disabled) {
+    color: #b71c1c !important;
+    transform: scale(1.15);
+  }
+
+  .btn-cancelar:disabled,
+  .btn-eliminar:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    .filtros-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .acciones-filtros {
+      flex-direction: column;
+    }
+
+    .boton-limpiar,
+    .boton-aplicar {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

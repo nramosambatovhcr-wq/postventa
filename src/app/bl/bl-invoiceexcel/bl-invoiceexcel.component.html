@@ -1,0 +1,381 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Importación de detalles de BL desde Excel</h4>
+        </div>
+        <div class="card-body">
+          <ul class="nav nav-pills nav-justified mb-4">
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 1}" href="javascript:void(0);">
+                <span class="badge badge-pill" [ngClass]="{'badge-primary': currentStep === 1, 'badge-secondary': currentStep !== 1}">1</span>
+                Seleccionar archivo
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 2}" href="javascript:void(0);">
+                <span class="badge badge-pill" [ngClass]="{'badge-primary': currentStep === 2, 'badge-secondary': currentStep !== 2}">2</span>
+                Validar datos
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 3}" href="javascript:void(0);">
+                <span class="badge badge-pill" [ngClass]="{'badge-primary': currentStep === 3, 'badge-secondary': currentStep !== 3}">3</span>
+                Importar
+              </a>
+            </li>
+          </ul>
+
+          <!-- PASO 1: Seleccionar archivo -->
+          <div *ngIf="currentStep === 1" class="step-content">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> 
+              Para importar detalles de BL, debe cargar un archivo Excel con el formato correcto.
+              <br>
+              Puede descargar una plantilla con el formato requerido haciendo clic en el botón "Descargar Plantilla".
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Plantilla</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="text-center mb-3">
+                      <button type="button" class="btn btn-outline-primary btn-lg" (click)="downloadTemplate()">
+                        <i class="fas fa-file-download"></i> Descargar Plantilla
+                      </button>
+                      <p class="mt-2 text-muted" *ngIf="isTemplateDownloaded">
+                        <i class="fas fa-check-circle text-success"></i> Plantilla descargada
+                      </p>
+                    </div>
+
+                    <div class="alert alert-secondary text-left mt-3" style="font-size: 0.875rem;">
+                      <h6 class="font-weight-bold mb-2">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        INSTRUCCIONES PARA CARGAR DETALLES DE INVOICE BL
+                      </h6>
+                      <ol class="mb-2 pl-3">
+                        <li class="mb-1">Complete la información en la hoja <strong>"Detalle Invoice BL"</strong> según el formato indicado.</li>
+                        <li class="mb-1">
+                          Las columnas <span class="text-danger font-weight-bold">OBLIGATORIAS</span> son:
+                          <ul class="mt-1 pl-3">
+                            <li><strong>CODIGO:</strong> Código del producto</li>
+                            <li><strong>DESCRIPCION ESPAÑOL:</strong> Descripción del producto en español</li>
+                            <li><strong>QTY:</strong> Cantidad (número positivo)</li>
+                            <li><strong>UNIT_FOB:</strong> Costo FOB</li>
+                            <li><strong>BL:</strong> Número de conocimiento de embarque</li>
+                            <li><strong>TOTAL:</strong> Total calculado &nbsp;|&nbsp; <strong>ORDEN:</strong> Orden a la que esta asociado</li>
+                          </ul>
+                        </li>
+                        <li class="mb-1">
+                          Las columnas <span class="text-secondary font-weight-bold">OPCIONALES</span> son:
+                          <ul class="mt-1 pl-3">
+                            <li><strong>ITEM:</strong> Número de ítem &nbsp;|&nbsp; <strong>LINE:</strong> Línea o tipo de producto &nbsp;|&nbsp; <strong>CHINO:</strong> Descripción en chino</li>
+                            <li><strong>UNIT:</strong> Unidad de medida &nbsp;|&nbsp; <strong>REF:</strong> Referencia </li>
+                            <li><strong>CODE_NEW:</strong> Código nuevo del producto &nbsp;|&nbsp; <strong>CODIGOVHCR:</strong> Código interno VHCR</li>
+                          </ul>
+                        </li>
+                        <li class="mb-1"><strong>NO</strong> modifique los nombres de las columnas.</li>
+                        <li class="mb-1">Asegúrese de que los datos numéricos estén en formato correcto.</li>
+                        <li class="mb-1">Guarde el archivo en formato Excel <strong>(.xlsx)</strong> antes de cargarlo.</li>
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Cargar Archivo</h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="custom-file">
+                      <input type="file" class="custom-file-input" id="excelFile" (change)="onFileSelect($event)" accept=".xlsx, .xls">
+                      <label class="custom-file-label" for="excelFile">
+                        {{ excelFile ? excelFile.name : 'Seleccionar archivo...' }}
+                      </label>
+                    </div>
+                    <div *ngIf="loading" class="mt-3">
+                      <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Cargando...</span>
+                      </div>
+                      <p class="mt-2">Procesando archivo...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="errorMessage" class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+            </div>
+
+            <div *ngIf="successMessage && currentStep === 1" class="alert alert-success">
+              <i class="fas fa-check-circle"></i> {{ successMessage }}
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="goToList()">
+                <i class="fas fa-arrow-left"></i> Volver
+              </button>
+              <button type="button" class="btn btn-primary" [disabled]="!canProceedToStep2" (click)="nextStep()">
+                Siguiente <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- PASO 2: Validar datos -->
+          <div *ngIf="currentStep === 2" class="step-content">
+            <div class="alert" [ngClass]="{'alert-warning': hasValidationErrors, 'alert-success': !hasValidationErrors}">
+              <i class="fas" [ngClass]="{'fa-exclamation-triangle': hasValidationErrors, 'fa-check-circle': !hasValidationErrors}"></i>
+              <span *ngIf="hasValidationErrors">
+                Se encontraron {{ validationErrors.length }} errores en los datos. Debe corregirlos antes de continuar.
+              </span>
+              <span *ngIf="!hasValidationErrors">
+                Los datos se han validado correctamente. Puede continuar con la importación.
+              </span>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Resumen de Datos</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="togglePreview()">
+                  <i class="fas" [ngClass]="{'fa-eye': !showPreview, 'fa-eye-slash': showPreview}"></i>
+                  {{ showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa' }}
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-4">
+                    <div class="card bg-light">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0">{{ fileData.length }}</h3>
+                        <p class="text-muted mb-0">Registros Totales</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="card bg-light">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0">{{ validRowsCount }}</h3>
+                        <p class="text-muted mb-0">Registros Válidos</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="card bg-light">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0 text-danger">{{ invalidRows.length }}</h3>
+                        <p class="text-muted mb-0">Registros con Errores</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="hasValidationErrors" class="card mb-4">
+              <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Errores de Validación</h5>
+              </div>
+              <div class="card-body">
+                <ul class="list-group">
+                  <li *ngFor="let error of validationErrors.slice(0, 10)" class="list-group-item list-group-item-danger">
+                    {{ error }}
+                  </li>
+                </ul>
+                <div *ngIf="validationErrors.length > 10" class="mt-2 text-center">
+                  <p class="text-muted">Se muestran 10 de {{ validationErrors.length }} errores.</p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="showPreview" class="card mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">Vista Previa de Datos</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-bordered table-striped table-hover">
+                    <thead class="thead-dark">
+                      <tr>
+                        <th>Item</th>
+                        <th>Line</th>
+                        <th>Código</th>
+                        <th>Cód. VHCR</th>
+                        <th>Code New</th>
+                        <th>Descripción Español</th>
+                        <th>Chino</th>
+                        <th>Cantidad</th>
+                        <th>Unidad</th>
+                        <th>FOB.</th>
+                        <th>Total</th>
+                        <th>ORDEN</th>
+                        <th>Ref</th>
+                        <th>BL</th>
+                           
+                     
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of previewData.slice(0, 10); let i = index" 
+                          [ngClass]="{'bg-danger text-white': invalidRows.includes(i)}">
+                        <td>{{ item.item || '-' }}</td>
+                        <td>{{ item.line || '-' }}</td>
+                        <td>{{ item.codigo }}</td>
+                         <td>{{ item.codigovhcr || '-' }}</td>
+                         <td>{{ item.code_new || '-' }}</td>
+                       
+                        <td>{{ item.descripcion_espanol }}</td>
+                        <td>{{ item.chino || '-' }}</td>
+                        <td>{{ item.qty }}</td>
+                        <td>{{ item.unit || '-' }}</td>
+                        <td>{{ item.unit_cost | currency:'USD':'symbol':'1.2-2' }}</td>
+                        <td>{{ item.total | currency:'USD':'symbol':'1.2-2' }}</td>
+                        <td>{{ item.eta || '-' }}</td>
+                        <td>{{ item.ref || '-' }}</td>
+                        <td>{{ item.bl || '-' }}</td>
+                       
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div *ngIf="previewData.length > 10" class="mt-2 text-center">
+                  <p class="text-muted">Se muestran 10 de {{ previewData.length }} registros.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                <i class="fas fa-arrow-left"></i> Anterior
+              </button>
+              <button type="button" class="btn btn-primary" [disabled]="!canProceedToStep3" (click)="nextStep()">
+                Siguiente <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- PASO 3: Importar -->
+          <div *ngIf="currentStep === 3" class="step-content">
+            <!-- Estado inicial: Listo para importar -->
+            <div *ngIf="!importInProgress && !importComplete && !importFailed" class="text-center p-5">
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 
+                Está a punto de importar {{ validRowsCount }} registros de detalles de BL.
+                <br>
+                Haga clic en "Iniciar Importación" para continuar.
+              </div>
+
+              <button type="button" class="btn btn-success btn-lg mt-4" (click)="startImport()">
+                <i class="fas fa-file-import"></i> Iniciar Importación
+              </button>
+            </div>
+
+            <!-- Estado: Importando -->
+            <div *ngIf="importInProgress" class="text-center p-5">
+              <h4 class="mb-4">Importando datos...</h4>
+              
+              <div class="progress mb-4">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                     role="progressbar" 
+                     [style.width.%]="importProgress" 
+                     [attr.aria-valuenow]="importProgress" 
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                  {{ importProgress }}%
+                </div>
+              </div>
+              
+              <p class="text-muted">
+                <i class="fas fa-spinner fa-spin"></i> 
+                Por favor espere mientras se procesan los datos...
+              </p>
+            </div>
+
+            <!-- Estado: Importación completada -->
+            <div *ngIf="importComplete" class="text-center p-5">
+              <div class="alert alert-success">
+                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                <h4 class="alert-heading">¡Importación Completada!</h4>
+                <p>{{ successMessage }}</p>
+              </div>
+              
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ processedRows }}</h3>
+                      <p class="text-muted mb-0">Registros Procesados</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ successRows }}</h3>
+                      <p class="mb-0">Registros Exitosos</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card" [ngClass]="{'bg-danger text-white': failedRows > 0, 'bg-light': failedRows === 0}">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ failedRows }}</h3>
+                      <p class="mb-0">Registros Fallidos</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div *ngIf="errorMessage && failedRows > 0" class="alert alert-warning mt-4">
+                <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+              </div>
+              
+              <div class="mt-4">
+                <button type="button" class="btn btn-primary me-2" (click)="goToList()">
+                  <i class="fas fa-list"></i> Ver Lista de BLs
+                </button>
+                <button type="button" class="btn btn-secondary" (click)="resetForm()">
+                  <i class="fas fa-sync"></i> Importar Otro Archivo
+                </button>
+              </div>
+            </div>
+
+            <!-- Estado: Importación fallida -->
+            <div *ngIf="importFailed" class="text-center p-5">
+              <div class="alert alert-danger">
+                <i class="fas fa-times-circle fa-3x mb-3"></i>
+                <h4 class="alert-heading">¡Error en la Importación!</h4>
+                <p>{{ errorMessage }}</p>
+              </div>
+              
+              <div class="mt-4">
+                <button type="button" class="btn btn-secondary me-2" (click)="previousStep()">
+                  <i class="fas fa-arrow-left"></i> Revisar Datos
+                </button>
+                <button type="button" class="btn btn-primary" (click)="resetForm()">
+                  <i class="fas fa-sync"></i> Comenzar de Nuevo
+                </button>
+              </div>
+            </div>
+
+            <!-- Botones de navegación (solo cuando no está importando) -->
+            <div *ngIf="!importInProgress && !importComplete && !importFailed" class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                <i class="fas fa-arrow-left"></i> Anterior
+              </button>
+              <button type="button" class="btn btn-success" (click)="startImport()">
+                <i class="fas fa-file-import"></i> Iniciar Importación
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

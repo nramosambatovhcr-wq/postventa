@@ -1,0 +1,173 @@
+<div class="container">
+  <div class="header">
+    <h1>Cotizaciones</h1>
+  </div>
+  
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Crear Cotización para Proveedores</h1>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="cancelar()">
+        <div class="valor-estadistica">DASHBOARD</div>
+      </div>
+      
+     <!--<div class="tarjeta-estadistica" (click)="individual()">
+        <div class="valor-estadistica">CREAR INDIVIDUAL</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="excel()">
+        <div class="valor-estadistica">SUBIR EXCEL</div>
+      </div>--> 
+    </div>
+  </section>
+
+  <div class="form-container">
+    <h2>Nueva Cotización </h2>
+    <p>Se creará una cotización para cada proveedor seleccionado</p>
+
+    <form [formGroup]="cotizacionForm" (ngSubmit)="guardarCotizaciones()">
+      
+      <!-- Nombre Base de Cotización -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="Cotigeneral">Nombre Base de Cotización *</label>
+          <input 
+            type="text" 
+            id="Cotigeneral" 
+            formControlName="Cotigeneral" 
+            maxlength="20" 
+            placeholder="Ej: COT-2024-001"
+            [ngClass]="{'invalid-field': isFieldInvalid('Cotigeneral')}">
+          <div class="error-message" *ngIf="isFieldInvalid('Cotigeneral')">
+            Campo requerido
+          </div>
+          <small class="helper-text">
+            Se agregará la inicial del proveedor automáticamente (Ej: XM-COT-2024-001)
+          </small>
+        </div>
+      </div>
+
+      <!-- Selección de Proveedores -->
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label>Seleccionar Proveedores *</label>
+          <div class="proveedores-grid" *ngIf="!loading">
+            <div class="proveedor-checkbox" *ngFor="let proveedor of allProveedores">
+              <label class="checkbox-label">
+                <input 
+                  type="checkbox"
+                  [value]="proveedor.id"
+                  [checked]="isProveedorSeleccionado(proveedor.id)"
+                  (change)="toggleProveedor(proveedor, $event)">
+                <span class="checkbox-custom"></span>
+                <span class="proveedor-info">
+                  <strong>{{proveedor.nombre}}</strong>
+                  <small class="proveedor-inicial">({{proveedor.inicial}})</small>
+                </span>
+              </label>
+            </div>
+          </div>
+          <div *ngIf="loading" class="loading-proveedores">
+            Cargando proveedores...
+          </div>
+          <div class="error-message" *ngIf="cotizacionForm.get('proveedoresIds')?.touched && proveedoresIdsArray.length === 0">
+            Debe seleccionar al menos un proveedor
+          </div>
+        </div>
+      </div>
+
+      <!-- Vista Previa de Nombres -->
+      <div class="form-row" *ngIf="proveedoresSeleccionados.length > 0">
+        <div class="form-group full-width">
+          <label>Vista Previa de Nombres a Crear:</label>
+          <div class="preview-container">
+            <div class="preview-item" *ngFor="let proveedor of proveedoresSeleccionados">
+              <span class="preview-icon">📄</span>
+              <span class="preview-nombre">
+                {{generarNombreCotizacion(cotizacionForm.get('Cotigeneral')?.value || '', proveedor)}}
+              </span>
+              <span class="preview-proveedor">→ {{proveedor.nombre}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fecha de Solicitud -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fechaSolicitud">Fecha de Solicitud *</label>
+          <input 
+            type="datetime-local" 
+            id="fechaSolicitud" 
+            formControlName="fechaSolicitud"
+            [ngClass]="{'invalid-field': isFieldInvalid('fechaSolicitud')}">
+          <div class="error-message" *ngIf="isFieldInvalid('fechaSolicitud')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado de Cotización -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="estadoCotizacion">Estado de Cotización *</label>
+          <select 
+            id="estadoCotizacion" 
+            formControlName="estadoCotizacion"
+            [ngClass]="{'invalid-field': !!isFieldInvalid('estadoCotizacion')}" >
+            <option value="" disabled>Seleccione un estado</option>
+            <option value="Solicitada">Solicitada</option>
+            <option value="Recibida">Recibida</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rechazada">Rechazada</option>
+          </select>
+          <div class="error-message" *ngIf="isFieldInvalid('estadoCotizacion')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+
+      <!-- Referencia Solicitud -->
+      <div class="form-row">
+        <div class="form-group">
+          <label for="referenciaSolicitud">Referencia Solicitud</label>
+          <input 
+            type="text" 
+            id="referenciaSolicitud" 
+            formControlName="referenciaSolicitud" 
+            maxlength="50" 
+            placeholder="Referencia de la solicitud">
+        </div>
+      </div>
+
+      <!-- Observaciones -->
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="observacionesSolicitud">Observaciones de Solicitud</label>
+          <textarea 
+            id="observacionesSolicitud" 
+            formControlName="observacionesSolicitud" 
+            rows="3" 
+            placeholder="Observaciones aplicables a todas las cotizaciones"></textarea>
+        </div>
+      </div>
+
+      <!-- Contador de Cotizaciones -->
+      <div class="info-box" *ngIf="proveedoresSeleccionados.length > 0">
+        <span class="info-icon">ℹ️</span>
+        <span>Se crearán <strong>{{proveedoresSeleccionados.length}}</strong> cotización(es)</span>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="form-actions">
+        <button type="button" class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn-guardar" [disabled]="isLoading">
+          <span *ngIf="isLoading">Guardando...</span>
+          <span *ngIf="!isLoading">Crear {{proveedoresSeleccionados.length}} Cotización(es)</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

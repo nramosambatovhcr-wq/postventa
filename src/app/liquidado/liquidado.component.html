@@ -1,0 +1,180 @@
+<!-- dashboard.component.html -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Importaciones</div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            placeholder="Buscar por Proforma, BL, Invoice..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+        <div class="acciones-usuario">
+          <button class="boton boton-primario" (click)="createNewImport()">Nueva Importación</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Importaciones</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de sus importaciones automotrices</p>
+      </div>
+      
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">Total Importaciones</div>
+          <div class="valor-estadistica">{{ stats.totalImportaciones }}</div>
+          <div class="cambio-estadistica">+12% vs mes anterior</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">En Tránsito</div>
+          <div class="valor-estadistica">{{ stats.enTransito }}</div>
+          <div class="cambio-estadistica">+8% vs mes anterior</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">Pendientes de Liquidación</div>
+          <div class="valor-estadistica">{{ stats.pendientesLiquidacion }}</div>
+          <div class="cambio-estadistica">-5% vs mes anterior</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">Tiempo Promedio</div>
+          <div class="valor-estadistica">{{ stats.tiempoPromedio }} días</div>
+          <div class="cambio-estadistica">-2 días vs mes anterior</div>
+        </div>
+      </div>
+      
+  <!--    <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Importaciones Recientes</div>
+          <div class="acciones-tabla">
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <button class="boton boton-contorno" (click)="exportData()">Exportar</button>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Proforma</th>
+              <th>Invoice No.</th>
+              <th>BL</th>
+              <th>Contenedor</th>
+              <th>Fecha Embarque</th>
+              <th>Fecha Llegada</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista" (click)="viewDetails(item.id)">
+              <td>{{ item.codigocot }}</td>
+              <td>{{ item.invoicen }}</td>
+              <td>{{ item.bl }}</td>
+              <td>{{ item.contenedor || '-' }}</td>
+              <td>{{ item.fechaEmbarque || '-' }}</td>
+              <td>{{ item.fechaLlegada || '-' }}</td>
+              <td>
+                <span class="estado" [ngClass]="'estado-' + item.liquidacion.toLowerCase().replace(' ', '-')">
+                  {{ item.liquidacion }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="pie-tabla">
+          <div>Mostrando {{ itemsPerPage }} de {{ stats.totalImportaciones }} importaciones</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of [1, 2, 3]" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              {{ page }}
+            </button>
+            <button class="boton-pagina" *ngIf="totalPages > 3">...</button>
+            <button 
+              *ngIf="totalPages > 3" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': totalPages === currentPage}"
+              (click)="changePage(totalPages)">
+              {{ totalPages }}
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>-->
+   
+   
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Importaciones Liquidadas</div>
+          <div class="acciones-tabla">
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <button class="boton boton-contorno" (click)="exportData()">Exportar</button>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Proforma</th>
+                <th>Invoice No.</th>
+                <th>Invoice BL</th>
+                <th>BL</th>
+                <th class="hide-mobile">Contenedor</th>
+                <th class="hide-mobile">Fecha Embarque</th>
+                <th class="hide-mobile">Fecha Llegada</th>
+                <th>Estado</th>
+                <th *ngIf="usuario?.rol === 'admin'">Ver Detalles</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" (click)="viewDetails(item.id)" class="fila-datos">
+                <td data-label="Proforma">{{ item.codigocot }}</td>
+                <td data-label="Invoice No.">{{ item.invoicen }}</td>
+                <td data-label="Invoice BL">{{ item.invoicebl }}</td>
+                <td data-label="BL">{{ item.bl || '-' }}</td>
+                <td data-label="Contenedor" >{{ item.contenedor || '-' }}</td>
+                <td data-label="Fecha Embarque">{{ item.embarque ? (item.embarque | date:'dd/MM/yyyy') : '-' }}</td>
+                <td data-label="Fecha Llegada">{{ item.arrivo ? (item.arrivo | date:'dd/MM/yyyy') : '-' }}</td>
+                <td data-label="Estado">
+                  <span class="estado" [ngClass]="'estado-' + item.estado.toLowerCase().replace(' ', '-')">
+                    {{ item.estado }}
+                  </span>
+                </td>
+                <td *ngIf="usuario?.rol === 'admin'">
+                  <button (click)="ver(item.id)" >Ver</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ itemsPerPage }} de {{ stats.totalImportaciones }} importaciones</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+   
+    </section>
+  </main>
+ 
+  

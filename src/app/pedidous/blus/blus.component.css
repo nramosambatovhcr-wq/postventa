@@ -1,0 +1,1711 @@
+/* dashboard.component.css */
+:host {
+    display: block;
+}
+
+/* Variables (como variables CSS) */
+:root {
+    --color-primario: #0a84ff;
+    --color-secundario: #30d158;
+    --color-advertencia: #ff9f0a;
+    --color-peligro: #ff453a;
+    --gris-1: #f2f2f7;
+    --gris-2: #e5e5ea;
+    --gris-3: #d1d1d6;
+    --gris-4: #c7c7cc;
+    --gris-5: #aeaeb2;
+    --color-texto: #1c1c1e;
+    --fuente-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+    /* Added for consistency and refinement */
+    --color-primario-hover: #0975e6;
+    --color-secundario-hover: #269c4a;
+    --gris-0: #fafafa;
+}
+
+/* Estilos Globales */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: var(--fuente-sans);
+}
+
+body {
+    background-color: var(--gris-0); /* Use a very light grey for background */
+    color: var(--color-texto);
+    line-height: 1.6;
+}
+
+.contenedor {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+}
+
+/* Cabecera */
+.cabecera {
+    background-color: var(--color-primario);
+    color: white;
+    padding: 15px 0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.contenido-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+.contenedor-busqueda {
+    display: flex;
+    flex-grow: 1;
+    max-width: 300px;
+}
+
+.busqueda {
+    width: 100%;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 16px;
+}
+
+.busqueda::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.busqueda:focus {
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Panel principal */
+.panel {
+    background-color: white;
+    margin: 20px auto;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.panel-cabecera {
+    padding: 20px;
+    border-bottom: 1px solid var(--gris-2);
+}
+
+.panel-titulo {
+    font-size: 28px;
+    color: var(--color-texto);
+    margin-bottom: 5px;
+    font-weight: 700;
+}
+
+.panel-subtitulo {
+    font-size: 16px;
+    color: var(--gris-5);
+}
+
+.panel-contenido {
+    padding: 20px;
+}
+
+/* Estadísticas */
+.contenedor-estadisticas {
+    display: flex;
+    justify-content: space-around;
+    padding: 20px;
+    background-color: var(--gris-1);
+    border-bottom: 1px solid var(--gris-2);
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.tarjeta-estadistica {
+    background-color: white;
+    border-radius: 10px;
+    padding: 15px 20px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    flex: 1;
+    min-width: 150px;
+    max-width: 200px;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tarjeta-estadistica:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.valor-estadistica {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-primario);
+    margin-bottom: 5px;
+}
+
+.etiqueta-estadistica {
+    font-size: 14px;
+    color: var(--gris-5);
+}
+
+/* Acordeón */
+.acordeon {
+    margin-top: 20px;
+}
+
+.accordion-item {
+    background-color: white;
+    border: 1px solid var(--gris-2);
+    border-radius: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.accordion-item.expanded {
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+}
+
+.accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    cursor: pointer;
+    background-color: var(--gris-0);
+    border-bottom: 1px solid var(--gris-2);
+    transition: background-color 0.3s ease;
+    flex-wrap: wrap; /* Permite que los elementos se envuelvan */
+    gap: 10px; /* Espacio entre los elementos del header */
+}
+
+.accordion-header:hover {
+    background-color: var(--gris-1);
+}
+
+.bl-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.bl-number {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-primario);
+}
+
+.bl-description {
+    font-size: 14px;
+    color: var(--gris-5);
+}
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+}
+
+.accordion-item.expanded .accordion-icon {
+    transform: rotate(180deg);
+}
+
+.accordion-content {
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease-out, opacity 0.3s ease-out;
+}
+
+.accordion-content.open {
+    max-height: 500px; /* Ajusta según la altura máxima esperada del contenido */
+    opacity: 1;
+    transition: max-height 0.4s ease-in, opacity 0.3s ease;
+    padding: 15px;
+}
+
+.accordion-body {
+    padding: 15px 20px;
+}
+
+/* Detalles de BL e Invoices */
+.invoice-bl-details {
+    margin-top: 15px;
+}
+
+.invoice-bl-subtitle {
+    font-size: 18px;
+    color: var(--color-texto);
+    margin-bottom: 15px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--gris-2);
+    padding-bottom: 10px;
+}
+
+.invoice-bl-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.invoice-card {
+    background-color: white;
+    border: 1px solid var(--gris-3);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.invoice-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.invoice-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background-color: var(--gris-1);
+    border-bottom: 1px solid var(--gris-2);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.invoice-number {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--color-primario);
+}
+
+.invoice-status {
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* Estilos para el contenedor de detalles de invoice para disposición horizontal */
+.invoice-details-container {
+  display: flex;
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan en pantallas pequeñas */
+  gap: 15px; /* Espacio entre los elementos de detalle */
+  margin-bottom: 15px; /* Espacio entre los detalles y las acciones */
+  padding-bottom: 15px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.detail-item {
+  flex: 1 1 auto; /* Permite que los elementos crezcan y se encojan, y tengan un tamaño base automático */
+  min-width: 150px; /* Ancho mínimo para cada detalle antes de envolver */
+  font-size: 14px;
+}
+
+.detail-item strong {
+  display: block; /* Mueve el título fuerte a su propia línea */
+  color: var(--color-primario);
+  font-weight: 600;
+  margin-bottom: 5px;
+}
+
+/* Ajustes para los botones de acción para mejor disposición horizontal */
+.invoice-actions {
+  display: flex;
+  flex-wrap: wrap; /* Permite que los botones se envuelvan si no hay espacio */
+  gap: 8px; /* Espacio entre los botones */
+  justify-content: flex-end; /* Alinea los botones a la derecha */
+  align-items: center;
+}
+
+/* Modificar estilos existentes para asegurar compatibilidad */
+.invoice-card-body.open {
+  /* Asegura que el cuerpo de la tarjeta de invoice también tenga una altura que permita ver los detalles y acciones */
+  max-height: 200px; /* Ajusta según sea necesario para mostrar los detalles de la invoice */
+  opacity: 1;
+  transition: max-height 0.4s ease-in, opacity 0.3s ease;
+  padding: 15px; /* Añadir padding al cuerpo para espaciar el contenido */
+}
+
+/* Opcional: Si el .invoice-card-body necesita un overflow para su contenido */
+.invoice-card-body {
+  overflow: hidden; /* Asegura que el contenido extra no se desborde antes de expandir */
+  /* ... estilos de transición existentes ... */
+}
+
+
+.boton-accion {
+    background-color: var(--color-primario);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.boton-accion:hover {
+    background-color: var(--color-primario-hover);
+    transform: translateY(-1px);
+}
+
+.boton-accion svg {
+    fill: white;
+}
+
+/* Estilos específicos para botones de acción */
+.boton-accion.editar { background-color: #007bff; }
+.boton-accion.editar:hover { background-color: #0056b3; }
+.boton-accion.eliminar { background-color: #dc3545; }
+.boton-accion.eliminar:hover { background-color: #c82333; }
+.boton-accion.detalles { background-color: #6c757d; }
+.boton-accion.detalles:hover { background-color: #5a6268; }
+.boton-accion.agregar-detalle { background-color: #28a745; }
+.boton-accion.agregar-detalle:hover { background-color: #218838; }
+
+
+/* Paginación */
+/* Contenedor principal de la paginación */
+/* Contenedor principal de la paginación */
+.pie-tabla {
+    display: flex;
+    justify-content: space-between; /* Alinear información a la izquierda y botones a la derecha */
+    align-items: center;
+    margin-top: 1.5rem;
+    padding: 0.5rem 0;
+    border-top: 1px solid var(--gris-2); /* Línea divisoria sutil */
+}
+
+/* Estilo para la información de la paginación */
+.pagination-info {
+    font-size: 0.9rem;
+    color: var(--gris-5); /* Color de texto más suave */
+    font-weight: 400;
+}
+
+/* Contenedor de los botones de paginación */
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem; /* Espacio más compacto entre los botones */
+}
+
+/* Estilo base para todos los botones de paginación */
+.pagination-button {
+    background-color: var(--gris-1); /* Fondo gris claro */
+    color: var(--color-texto);
+    border: 1px solid var(--gris-3); /* Borde sutil */
+    padding: 0.5rem 0.8rem; /* Relleno uniforme */
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    text-align: center;
+    min-width: 40px; /* Ancho mínimo para mantener la forma */
+}
+
+/* Efecto al pasar el mouse sobre los botones (no deshabilitados) */
+.pagination-button:hover:not(:disabled) {
+    background-color: var(--gris-2);
+    border-color: var(--gris-4);
+    transform: translateY(-1px); /* Ligero efecto de levantamiento */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Estado del botón activo (página actual) */
+.pagination-button.active {
+    background-color: var(--color-primario);
+    color: white;
+    border-color: var(--color-primario);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Estado del botón activo al pasar el mouse */
+.pagination-button.active:hover {
+    background-color: var(--color-primario-hover);
+    border-color: var(--color-primario-hover);
+}
+
+/* Estado de los botones deshabilitados */
+.pagination-button:disabled {
+    background-color: var(--gris-1);
+    color: var(--gris-4);
+    border-color: var(--gris-3);
+    cursor: not-allowed;
+    opacity: 0.7; /* Ligeramente transparente */
+    transform: none;
+    box-shadow: none;
+}
+
+/* Estilo para el contenedor de los puntos suspensivos */
+.pagination-dots {
+    color: var(--gris-5);
+    font-size: 0.9rem;
+    padding: 0 0.5rem;
+    user-select: none; /* Evita que el texto sea seleccionable */
+}
+
+/* Opcional: Estilo para los iconos de Font Awesome */
+.pagination-button .fas {
+    font-size: 0.8rem;
+}
+
+/* Mensaje de no resultados/cargando */
+.no-results, .loading-indicator {
+    text-align: center;
+    padding: 30px;
+    color: var(--gris-5);
+    font-size: 18px;
+}
+
+/* Reusing existing status styles for consistency */
+.estado {
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  display: inline-block;
+}
+
+.estado.pendiente {
+    background-color: #fff3e0;
+    color: #ff9800;
+}
+
+.estado.aprobada {
+    background-color: #e8f5e9;
+    color: #4caf50;
+}
+
+.estado.revision {
+    background-color: #e3f2fd;
+    color: #2196f3;
+}
+
+.estado.anulada {
+    background-color: #ffebee;
+    color: #f44336;
+}
+
+.estado.entregada {
+    background-color: #e0f2f7;
+    color: #00bcd4;
+}
+
+.estado.subir-detalle {
+    background-color: #f3e5f5;
+    color: #9c27b0;
+}
+
+/* Media Queries para Responsividad */
+@media screen and (max-width: 768px) {
+  .contenido-cabecera {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .contenedor-busqueda {
+    margin-top: 10px;
+    max-width: 100%;
+  }
+
+  .panel-titulo {
+    font-size: 24px;
+  }
+
+  .tarjeta-estadistica {
+    flex-basis: 45%;
+    max-width: 45%;
+  }
+
+  .accordion-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .bl-info {
+    width: 100%;
+  }
+
+  .bl-number {
+    font-size: 16px;
+  }
+
+  .estado {
+    align-self: flex-end; /* Alinea el estado a la derecha en pantallas pequeñas */
+  }
+
+  .invoice-bl-list {
+    grid-template-columns: 1fr; /* Una columna en pantallas más pequeñas */
+  }
+
+  .invoice-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+  }
+
+  .invoice-card-body .invoice-actions {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .boton-accion {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 4px;
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .info-row strong {
+    min-width: unset;
+    margin-right: 0;
+    margin-bottom: 3px;
+  }
+
+  .invoice-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .accordion-content.open {
+    max-height: 500px;
+  }
+
+  .accordion-body {
+    padding: 10px;
+  }
+
+  .accordion-item {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .invoice-item-details {
+    font-size: 12px;
+  }
+
+  .acciones-invoice {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* Estilos adicionales para mejorar la tabla */
+.tabla-pedidos {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tabla-pedidos th,
+.tabla-pedidos td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--gris-2);
+}
+.tabla-pedidos td:last-child {
+    padding: 8px 15px;
+}
+
+.tabla-pedidos th {
+  background-color: var(--gris-1);
+  color: var(--color-texto);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 14px;
+}
+
+.tabla-pedidos tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-pedidos tbody tr:hover {
+  background-color: var(--gris-0);
+}
+
+/* Estilos para el texto de detalles en la tabla */
+.tabla-pedidos .detalle-text {
+  color: var(--gris-5);
+  font-size: 13px;
+}
+
+
+/* Estilos base para el acordeón */
+.btn-expand-all {
+  background: var(--color-primario);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.btn-expand-all:hover {
+  background: var(--color-primario-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.btn-expand-all:active {
+  transform: translateY(0);
+}
+
+.btn-expand-all .btn-text {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Clase para cuando está expandido */
+.btn-expand-all.expanded {
+  background: #dc3545;
+}
+
+.btn-expand-all.expanded:hover {
+  background: #c82333;
+}
+
+/* Animación suave para el cambio de ícono */
+.btn-expand-all svg {
+  transition: transform 0.2s ease;
+}
+
+.btn-expand-all:hover svg {
+  transform: scale(1.1);
+}
+
+/* Estilos responsivos */
+@media screen and (max-width: 768px) {
+  .btn-expand-all {
+    min-width: 100px;
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+  
+  .btn-expand-all .btn-text {
+    display: none;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .btn-expand-all {
+    min-width: 32px;
+    padding: 6px;
+  }
+}
+
+/* Efecto visual cuando se está expandiendo/contrayendo */
+.invoices-scroll-container.transitioning {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+/* Indicador visual de estado expandido */
+.section-header.expanded {
+  border-bottom: 2px solid #28a745;
+}
+
+.section-header.expanded .section-title {
+  color: #28a745;
+  border-bottom-color: #28a745;
+}
+
+.accordion-cell {
+  position: relative;
+  min-width: 300px;
+}
+
+.accordion-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
+  font-weight: 500;
+}
+
+.accordion-header:hover {
+  background-color: var(--gris-1);
+}
+
+.accordion-icon {
+  transition: transform 0.3s ease;
+  color: var(--color-primario);
+  flex-shrink: 0;
+}
+
+.accordion-icon.rotated {
+  transform: rotate(180deg);
+}
+
+/* MEJORA PRINCIPAL: Acordeón con altura dinámica y scroll */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease-out, opacity 0.3s ease;
+  background-color: var(--gris-0);
+  border-radius: 6px;
+  margin-top: 8px;
+  opacity: 0;
+}
+
+.accordion-content.open {
+  max-height: 70vh; /* Altura máxima del 70% del viewport */
+  opacity: 1;
+  transition: max-height 0.4s ease-in, opacity 0.3s ease;
+}
+
+.accordion-body {
+  padding: 20px;
+  border: 1px solid var(--gris-2);
+  border-radius: 6px;
+  background: #f8f9fa;
+  max-height: calc(70vh - 40px); /* Altura máxima menos el padding */
+  overflow-y: auto; /* Scroll vertical cuando sea necesario */
+}
+
+/* Estilos para la información principal del BL */
+.bl-main-info {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  flex-shrink: 0; /* No se comprime */
+}
+
+.info-row {
+  margin-bottom: 10px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+}
+
+.info-row:last-child {
+  margin-bottom: 0;
+}
+
+.info-row strong {
+  color: var(--color-primario);
+  font-weight: 600;
+  min-width: 120px;
+  margin-right: 10px;
+}
+
+/* Estilos mejorados para la sección de InvoiceBL Items */
+.invoicebl-items-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Permite que el contenedor se comprima */
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  flex-shrink: 0;
+}
+
+.section-title {
+  color: var(--color-primario);
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  border-bottom: 2px solid var(--color-primario);
+  padding-bottom: 5px;
+}
+
+.section-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-expand-all {
+  background: var(--color-primario);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 8px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-expand-all:hover {
+  background: var(--color-primario-dark);
+  transform: translateY(-1px);
+}
+
+/* CONTENEDOR DE SCROLL PARA LOS INVOICES */
+.invoices-scroll-container {
+  flex: 1;
+  overflow-y: auto;
+  max-height: 400px; /* Altura máxima para el scroll */
+  padding-right: 8px; /* Espacio para la barra de scroll */
+  margin-right: -8px;
+}
+
+/* Estilos personalizados para la barra de scroll */
+.invoices-scroll-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.invoices-scroll-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.invoices-scroll-container::-webkit-scrollbar-thumb {
+  background: var(--color-primario);
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.invoices-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: var(--color-primario-dark);
+  opacity: 1;
+}
+
+/* Firefox scrollbar */
+.invoices-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-primario) #f1f1f1;
+}
+
+.accordion-item {
+  margin-bottom: 15px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+}
+
+.accordion-item:hover {
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  transform: translateY(-1px);
+}
+
+.accordion-item:last-child {
+  margin-bottom: 0;
+}
+
+.invoice-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e9ecef;
+  gap: 10px;
+}
+
+.invoice-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.invoice-number {
+  color: var(--color-primario);
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.invoice-id {
+  font-size: 12px;
+  color: #6c757d;
+}
+
+.invoice-description {
+  font-size: 13px;
+  color: #495057;
+  word-wrap: break-word;
+}
+
+.invoice-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Estilos para las acciones de invoice */
+.acciones-invoice {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.estado-small {
+  font-size: 12px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+
+.invoice-item-details {
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.invoice-item-details div {
+  margin-bottom: 5px;
+}
+
+.invoice-item-details div:last-child {
+  margin-bottom: 0;
+}
+
+.invoice-item-details strong {
+  color: #495057;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.no-invoices-message {
+  text-align: center;
+  padding: 20px;
+  color: #6c757d;
+  font-style: italic;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+/* Estilos para los botones de acción */
+.boton-accion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+
+.boton-accion:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.boton-accion.editar {
+  background-color: #28a745;
+  color: white;
+}
+
+.boton-accion.editar:hover {
+  background-color: #218838;
+}
+
+.boton-accion.eliminar {
+  background-color: #dc3545;
+  color: white;
+}
+
+.boton-accion.eliminar:hover {
+  background-color: #c82333;
+}
+
+.boton-accion.detalles {
+  background-color: #17a2b8;
+  color: white;
+}
+
+.boton-accion.detalles:hover {
+  background-color: #138496;
+}
+
+.boton-accion.agregar-detalle {
+  background-color: #6f42c1;
+  color: white;
+}
+
+.boton-accion.agregar-detalle:hover {
+  background-color: #5a2d91;
+}
+
+/* Estados */
+.estado {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.estado.pendiente {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.estado.transito {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.estado.activa {
+  background-color: #cce5ff;
+  color: #004085;
+  border: 1px solid #b3d7ff;
+}
+
+.estado.embarque {
+  background-color: #e2e3e5;
+  color: #383d41;
+  border: 1px solid #d6d8db;
+}
+
+.estado.aduana {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.estado.liquidado {
+  background-color: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+}
+
+.estado.aprobada {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.estado.revision {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+.estado.entregada {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.estado.anulada {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+/* Responsive */
+@media screen and (max-width: 768px) {
+  .accordion-cell {
+    min-width: unset;
+  }
+
+  .accordion-content.open {
+    max-height: 600px;
+  }
+
+  .accordion-body {
+    padding: 15px;
+  }
+
+  .invoice-header-right {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .acciones-invoice {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .boton-accion {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 4px;
+  }
+
+  .info-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .info-row strong {
+    min-width: unset;
+    margin-right: 0;
+    margin-bottom: 3px;
+  }
+
+  .invoice-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .accordion-content.open {
+    max-height: 500px;
+  }
+
+  .accordion-body {
+    padding: 10px;
+  }
+
+  .accordion-item {
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+
+  .invoice-item-details {
+    font-size: 12px;
+  }
+
+  .acciones-invoice {
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* Estilos adicionales para mejorar la tabla */
+.tabla-pedidos {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.tabla-pedidos th {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 10px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.tabla-pedidos td {
+  padding: 15px 10px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+.tabla-pedidos tr:hover {
+  background-color: #f8f9fa;
+}
+
+.bl-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bl-number {
+  font-weight: 600;
+  color: var(--color-primario);
+}
+
+.bl-summary {
+  font-size: 12px;
+  color: #6c757d;
+}
+/* dashboardbl.component.css */
+
+/* ... (código CSS existente) ... */
+
+/* Estilos para el contenedor principal de opciones de la tabla */
+.opciones-tabla {
+  display: flex; /* Habilita Flexbox para alinear los hijos (filtros y acciones) horizontalmente */
+  justify-content: space-between; /* Distribuye el espacio para separar los filtros de las acciones */
+  align-items: center; /* Alinea los elementos verticalmente al centro */
+  padding: 15px 20px; /* Relleno interno */
+  background-color: var(--gris-1); /* Un fondo ligeramente gris para destacarlo */
+  border-bottom: 1px solid var(--gris-2); /* Línea divisoria en la parte inferior */
+  margin-bottom: 20px; /* Espacio debajo de esta sección */
+  border-radius: 8px; /* Bordes redondeados */
+  flex-wrap: wrap; /* Permite que los elementos se envuelvan a la siguiente línea en pantallas pequeñas */
+  gap: 20px; /* Espacio entre 'filtros-fecha' y 'acciones-tabla' */
+}
+
+/* Estilos para el contenedor de filtros de fecha */
+.filtros-fecha {
+  display: flex; /* Flexbox para alinear 'fecha-desde' y 'fecha-hasta' horizontalmente */
+  gap: 15px; /* Espacio entre los campos de fecha */
+  align-items: center; /* Alinea los elementos verticalmente al centro */
+  flex-wrap: wrap; /* Permite que los campos de fecha se envuelvan */
+}
+
+.fecha-desde,
+.fecha-hasta {
+  display: flex; /* Flexbox para alinear la etiqueta y el input en cada campo de fecha */
+  align-items: center;
+  gap: 8px; /* Espacio entre la etiqueta y el input */
+}
+
+.filtros-fecha label {
+  font-weight: 600;
+  color: var(--color-texto);
+  font-size: 14px;
+}
+
+.filtros-fecha input[type="date"] {
+  padding: 8px 10px;
+  border: 1px solid var(--gris-3);
+  border-radius: 5px;
+  font-size: 14px;
+  color: var(--color-texto);
+  background-color: white;
+  appearance: none; /* Elimina estilos por defecto del navegador en algunos casos */
+}
+
+.filtros-fecha input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primario);
+  box-shadow: 0 0 0 2px rgba(10, 132, 255, 0.2);
+}
+
+/* Estilos para el contenedor de botones de acción */
+.acciones-tabla {
+  display: flex; /* Flexbox para alinear los botones horizontalmente */
+  gap: 10px; /* Espacio entre los botones */
+  flex-wrap: wrap; /* Permite que los botones se envuelvan */
+}
+
+/* Estilos para los botones secundarios (Excel, CSV) */
+.boton-secundario {
+  background-color: var(--gris-4); /* Un gris más oscuro para botones secundarios */
+  color: rgb(11, 11, 11);
+  border: none;
+  padding: 10px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: inline-flex; /* Permite alinear el ícono y el texto */
+  align-items: center;
+  gap: 8px; /* Espacio entre el ícono y el texto del botón */
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.boton-secundario:hover {
+  background-color: var(--gris-5); /* Color más oscuro al pasar el ratón */
+  transform: translateY(-1px); /* Efecto de elevación sutil */
+}
+
+.boton-secundario svg {
+  fill: white; /* Color del ícono */
+}
+
+/* Media Queries para responsividad (ajusta si es necesario) */
+@media screen and (max-width: 768px) {
+  .opciones-tabla {
+    flex-direction: column; /* Apila los filtros y acciones en columnas */
+    align-items: flex-start; /* Alinea los elementos a la izquierda */
+    padding: 15px;
+  }
+
+  .filtros-fecha,
+  .acciones-tabla {
+    width: 100%; /* Ocupan todo el ancho disponible */
+    justify-content: flex-start; /* Alinea los elementos a la izquierda */
+    margin-bottom: 15px; /* Espacio entre las secciones apiladas */
+  }
+
+  .acciones-tabla {
+    margin-bottom: 0; /* Elimina el margen inferior en la última sección */
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .filtros-fecha {
+    flex-direction: column; /* Apila los campos de fecha también */
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
+
+.modal {
+  display: none; /* Oculto por defecto */
+  position: fixed; /* Posición fija para cubrir toda la pantalla */
+  z-index: 1000; /* Alto z-index para estar por encima de otros elementos */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Habilita el scroll si el contenido es demasiado grande */
+  background-color: rgba(0, 0, 0, 0.4); /* Fondo semi-transparente */
+  justify-content: center; /* Centra el contenido horizontalmente */
+  align-items: center; /* Centra el contenido verticalmente */
+}
+
+.modal.show-modal {
+  display: flex; /* Muestra el modal cuando tenga la clase show-modal */
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: auto; /* Centra el modal en la pantalla */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 80%; /* Ancho del modal */
+  max-width: 1000px; /* Ancho máximo para el modal */
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  animation-name: animatetop;
+  animation-duration: 0.4s;
+  position: relative; /* Necesario para posicionar el botón de cerrar */
+}
+
+/* Animación para la aparición del modal */
+@keyframes animatetop {
+  from {
+    top: -300px;
+    opacity: 0;
+  }
+  to {
+    top: 0;
+    opacity: 1;
+  }
+}
+
+/* Botón de cerrar */
+.close-button {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: black;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.modal {
+  display: none; /* Oculto por defecto */
+  position: fixed; /* Posición fija para cubrir toda la pantalla */
+  z-index: 1000; /* Alto z-index para estar por encima de otros elementos */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Habilita el scroll si el contenido es demasiado grande */
+  background-color: rgba(0, 0, 0, 0.6); /* Fondo semi-transparente más oscuro */
+  justify-content: center; /* Centra el contenido horizontalmente */
+  align-items: center; /* Centra el contenido verticalmente */
+}
+
+.modal.show-modal {
+  display: flex; /* Muestra el modal cuando tenga la clase show-modal */
+}
+
+.modal-content {
+  background-color: #fefefe;
+  margin: auto; /* Centra el modal en la pantalla */
+  padding: 30px; /* Aumenta el padding */
+  border: 1px solid #888;
+  width: 100%; /* Ancho del modal, ajusta según necesidad */
+  max-width: 1000px; /* Ancho máximo para el modal, ajusta según necesidad */
+  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+  animation-name: animatetop;
+  animation-duration: 0.4s;
+  position: relative; /* Necesario para posicionar el botón de cerrar */
+  border-radius: 8px; /* Bordes redondeados */
+}
+
+/* Animación para la aparición del modal */
+@keyframes animatetop {
+  from {
+    top: -300px;
+    opacity: 0;
+  }
+  to {
+    top: 0;
+    opacity: 1;
+  }
+}
+
+/* Botón de cerrar */
+.close-button {
+  color: #aaa;
+  font-size: 32px; /* Tamaño más grande */
+  font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  cursor: pointer;
+  transition: color 0.3s ease; /* Transición suave al pasar el mouse */
+}
+
+.close-button:hover,
+.close-button:focus {
+  color: #333; /* Color más oscuro al pasar el mouse */
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Estilos para la tabla dentro del modal */
+.table-responsive {
+  margin-top: 20px; /* Espacio superior para la tabla */
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th, .table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+  vertical-align: top; /* Alinea el contenido de las celdas en la parte superior */
+}
+
+.table th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.table-striped tbody tr:nth-child(odd) {
+  background-color: #f9f9f9;
+}
+
+/* Estilos para alinear iconos horizontalmente en la columna de acciones */
+
+/* Contenedor principal de acciones en la celda de la tabla */
+.tabla-pedidos td:last-child {
+    padding: 8px 15px;
+}
+
+/* Contenedor de acciones - alineación horizontal */
+.acciones-tabla-celda {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    flex-wrap: nowrap; /* Evita que se envuelvan a la siguiente línea */
+    min-width: 120px; /* Ancho mínimo para asegurar espacio */
+}
+
+/* Estilos para el acordeón (flecha desplegable) */
+.accordion-header {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    background-color: transparent;
+    border: none;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.accordion-header:hover {
+    background-color: var(--gris-1);
+}
+
+.accordion-icon {
+    transition: transform 0.3s ease;
+    color: var(--color-primario);
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+}
+
+.accordion-icon.rotated {
+    transform: rotate(180deg);
+}
+
+/* Estilos para los iconos de información y agregar */
+.details-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    background-color: transparent;
+    border: none;
+    min-width: 32px;
+    min-height: 32px;
+    color: var(--color-primario);
+}
+
+.details-icon:hover {
+    background-color: var(--gris-1);
+    transform: translateY(-1px);
+}
+
+.details-icon svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+}
+
+/* Estilos específicos para diferentes tipos de iconos */
+.details-icon.info-icon {
+    color: #17a2b8; /* Color azul para información */
+}
+
+.details-icon.add-icon {
+    color: #28a745; /* Color verde para agregar */
+}
+
+.details-icon.info-icon:hover {
+    background-color: rgba(23, 162, 184, 0.1);
+}
+
+.details-icon.add-icon:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+/* Responsive: En pantallas pequeñas, mantener horizontal pero más compacto */
+@media screen and (max-width: 768px) {
+    .acciones-tabla-celda {
+        gap: 4px;
+        min-width: 100px;
+    }
+    
+    .accordion-header,
+    .details-icon {
+        min-width: 28px;
+        min-height: 28px;
+        padding: 4px;
+    }
+    
+    .accordion-icon,
+    .details-icon svg {
+        width: 14px;
+        height: 14px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .acciones-tabla-celda {
+        gap: 2px;
+        min-width: 90px;
+    }
+    
+    .accordion-header,
+    .details-icon {
+        min-width: 24px;
+        min-height: 24px;
+        padding: 2px;
+    }
+    
+    .accordion-icon,
+    .details-icon svg {
+        width: 12px;
+        height: 12px;
+    }
+}
+
+/* Asegurar que la columna de acciones tenga un ancho fijo */
+.tabla-pedidos th:last-child,
+.tabla-pedidos td:last-child {
+    width: 140px;
+    min-width: 140px;
+    text-align: left;
+}
+
+@media screen and (max-width: 768px) {
+    .tabla-pedidos th:last-child,
+    .tabla-pedidos td:last-child {
+        width: 110px;
+        min-width: 110px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .tabla-pedidos th:last-child,
+    .tabla-pedidos td:last-child {
+        width: 100px;
+        min-width: 100px;
+    }
+}
+
+/* Estilos generales para los íconos de estado */
+.status-icon {
+    width: 70px; /* Ajusta el tamaño del ícono */
+    height: 70px;
+    vertical-align: middle;
+    /* Para centrar la imagen si el contenedor es más grande */
+    display: block;
+    margin: 0 auto;
+}
+
+/* Opcional: Estilos para cada ícono si quieres darles un color o efecto especial */
+img[alt="Pendiente"] {
+    /* Filtro para dar un tono amarillo */
+    filter: hue-rotate(60deg) saturate(1.5);
+}
+
+img[alt="En Tránsito"] {
+    /* Filtro para dar un tono azul */
+    filter: hue-rotate(200deg);
+}
+
+/* Puedes añadir más estilos para los otros estados si lo deseas */

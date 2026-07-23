@@ -1,0 +1,624 @@
+<div class="container mt-4">
+  <!-- encabezado -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="fw-bold">Vehículos Registrados</h4>
+    <button class="btn btn-primary" (click)="mostrarModalVehiculovv()">
+      <i class="fa fa-plus"></i> Nuevo Vehículo
+    </button>
+    <button class="btn btn-success" (click)="reportesdd()">
+      <i class="fa fa-plus"></i> Ver Reporte
+    </button>
+  </div>
+
+  <!-- tabla -->
+  <div class="table-responsive">
+    <table class="table table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>#</th><th>Línea</th><th>Modelo</th><th>Chasis</th>
+          <th>Motor</th><th>Caja</th><!--<th>Drive</th><th>Frontal</th><th>Diferencial</th>-->
+          <th>Asignación</th><th>Revisión</th><th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let v of vehiculos; let i = index">
+          <td>{{ i + 1 }}</td>
+          <td><span class="badge bg-secondary">{{ v.linea }}</span></td>
+          <td>{{ v.modelo }}</td>
+          <td><small class="text-muted">{{ v.chasis }}</small></td>
+          <td>{{ v.motor }}</td>
+          <td>{{ v.caja }}</td>
+       <!--   <td>{{ v.drive }}</td>
+          <td>{{ v.frontal }}</td>
+          <td>{{ v.diferencial }}</td>-->
+
+         <!-- Asignación -->
+<td>
+  <span class="badge" [ngClass]="v.asignaciones?.length ? 'bg-success' : 'bg-secondary'">
+    {{ v.asignaciones?.length ? 'Asignado' : 'Sin asignar' }}
+  </span>
+  <small *ngIf="v.asignaciones?.length" class="d-block usuarios-asignados">
+    Usuarios: {{ getUsuariosAsignados(v.asignaciones) }}<br>
+    {{ v.asignaciones[0].fecha | date:'short' }}
+  </small>
+</td>
+
+<!-- Revisión -->
+<td>
+  <span class="badge"
+        [ngClass]="v.revision?.id ? badgeEstadoClase(v.revision.estado) : 'bg-secondary'"
+        [style.cursor]="v.revision?.id ? 'pointer' : 'default'"
+        (click)="abrirModalEstadoRevision(v)"
+        [title]="v.revision?.id ? 'Click para cambiar estado' : ''">
+    {{ v.revision?.id ? v.revision.estado : 'Sin revisar' }}
+  </span>
+  <small *ngIf="v.revision?.id" class="d-block text-muted">
+    {{ v.revision.fechaInicio | date:'short' }}
+  </small>
+</td>
+
+          <td><small>{{ v.fecha | date:'short' }}</small></td>
+          <td>
+            <button class="btn btn-sm btn-outline-info" (click)="abrirModalVer(v)" title="Ver detalles">
+    <i class="fa fa-eye"></i>
+  </button>
+  <button
+  class="btn btn-sm btn-outline-primary"
+  (click)="irAOtraPagina(v.id)"
+  title="Ir a otra página">
+  <i class="fa fa-arrow-right"></i>
+</button>
+  <button class="btn btn-sm btn-outline-warning me-1" (click)="abrirModalEditar(v)" title="Editar">
+    <i class="fa fa-edit"></i>
+  </button>
+  <button class="btn btn-sm btn-outline-danger" (click)="abrirModalEliminar(v)" title="Eliminar">
+    <i class="fa fa-trash"></i>
+  </button>
+</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Nuevo Vehículo -->
+<div class="modal fade show d-block" *ngIf="mostrarModalVehiculo" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content shadow-lg">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Nuevo Vehículo Base</h5>
+        <button class="btn-close btn-close-white" (click)="cerrarModalVehiculo()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <!-- Línea -->
+          <div class="col-md-12">
+            <label>Línea</label>
+            <select class="form-select" [(ngModel)]="idlinea" (change)="onLineaChange()">
+              <option value="">Seleccione línea</option>
+              <option *ngFor="let l of lineas" [value]="l.codigo">{{ l.codigo }}</option>
+            </select>
+          </div>
+
+          <!-- Modelo + ícono "+" -->
+          <div class="col-md-12">
+            <label>Modelo</label>
+            <div class="d-flex align-items-center gap-2">
+              <div class="custom-select flex-grow-1">
+                <div class="select-box" (click)="toggleModeloDropdown()">
+                  <span>{{ modeloTexto }}</span><span class="arrow">🔽</span>
+                </div>
+                <div class="dropdown" *ngIf="mostrarModeloDropdown">
+                  <input class="form-control search-input" placeholder="Buscar modelo..." [(ngModel)]="modeloFilter" (input)="filtrarModelos()">
+                  <ul class="options-list">
+                    <li *ngFor="let m of modelosFiltrados" (click)="seleccionarModelo(m)" class="option-item">{{ m.codigo }}</li>
+                  </ul>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalModelo()" title="Nuevo modelo">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Chasis + ícono "+" -->
+          <div class="col-md-12">
+            <label>Chasis</label>
+            <div class="d-flex align-items-center gap-2">
+              <div class="custom-select flex-grow-1">
+                <div class="select-box" (click)="toggleChasisDropdown()">
+                  <span>{{ chasisTexto }}</span><span class="arrow">🔽</span>
+                </div>
+                <div class="dropdown" *ngIf="mostrarChasisDropdown">
+                  <input class="form-control search-input" placeholder="Buscar chasis..." [(ngModel)]="chasisFilter" (input)="filtrarChasis()">
+                  <ul class="options-list">
+                    <li *ngFor="let c of chasisesFiltrados" (click)="seleccionarChasis(c)" class="option-item">{{ c.codigo }}</li>
+                  </ul>
+                </div>
+              </div>
+              <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalChasis()" title="Nuevo chasis">
+                <i class="fa fa-plus"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Usuarios a asignar -->
+          <div class="col-md-12 mt-3">
+            <label>Asignar a usuarios (opcional):</label>
+            <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+              <div class="form-check" *ngFor="let u of usuariosDisponibles">
+                <input class="form-check-input" type="checkbox" [(ngModel)]="u.selected" [value]="u.id">
+                <label class="form-check-label">{{ u.nombre }} <small class="text-muted">({{ u.rol }})</small></label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalVehiculo()">Cancelar</button>
+        <button class="btn btn-success btn-sm" (click)="guardarVehiculoModal()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Modelo -->
+<div class="modal fade show d-block" *ngIf="mostrarModalModelo" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nuevo Modelo</h6>
+        <button type="button" class="btn-close" (click)="cerrarModalModelo()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoModeloCodigo" placeholder="Ej: AX100">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearModelo()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalModelo()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Chasis -->
+<div class="modal fade show d-block" *ngIf="mostrarModalChasis" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nuevo Chasis</h6>
+        <button type="button" class="btn-close" (click)="cerrarModalChasis()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoChasisCodigo" placeholder="Ej: CH123456">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearChasis()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalChasis()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Confirmar Eliminación -->
+<div class="modal fade show d-block" *ngIf="mostrarModalEliminar" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h6 class="modal-title">Confirmar Eliminación</h6>
+        <button class="btn-close btn-close-white" (click)="cerrarModalEliminar()"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Está seguro de que desea eliminar este vehículo?</p>
+        <ul>
+          <li><strong>Línea:</strong> {{ vehiculoAEliminar?.linea }}</li>
+          <li><strong>Modelo:</strong> {{ vehiculoAEliminar?.modelo }}</li>
+          <li><strong>Chasis:</strong> {{ vehiculoAEliminar?.chasis }}</li>
+        </ul>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalEliminar()">Cancelar</button>
+        <button class="btn btn-danger btn-sm" (click)="confirmarEliminacion()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Modal: Cambiar estado de revisión -->
+<div class="modal fade show d-block" *ngIf="mostrarModalEstadoRevision" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">Cambiar estado de revisión</h5>
+        <button class="btn-close btn-close-white" (click)="cerrarModalEstadoRevision()"></button>
+      </div>
+      <div class="modal-body">
+        <ul class="list-unstyled mb-3">
+          <li><strong>Modelo:</strong> {{ revisionVehiculo?.modelo }}</li>
+          <li><strong>Chasis:</strong> {{ revisionVehiculo?.chasis }}</li>
+          <li>
+            <strong>Estado actual:</strong>
+            <span class="badge ms-1" [ngClass]="badgeEstadoClase(revisionVehiculo?.revision?.estado)">
+              {{ revisionVehiculo?.revision?.estado }}
+            </span>
+          </li>
+        </ul>
+
+        <label class="form-label">Nuevo estado</label>
+        <select class="form-select" [(ngModel)]="nuevoEstadoRevision">
+          <option value="" disabled>Seleccione...</option>
+          <option *ngFor="let e of estadosRevision" [value]="e.value">{{ e.label }}</option>
+        </select>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm"
+                (click)="cerrarModalEstadoRevision()"
+                [disabled]="guardandoEstadoRevision">Cancelar</button>
+        <button class="btn btn-info btn-sm text-white"
+                (click)="confirmarEstadoRevision()"
+                [disabled]="guardandoEstadoRevision">
+          {{ guardandoEstadoRevision ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+ 
+<!-- Modal Editar Vehículo -->
+<div class="modal fade show d-block" *ngIf="mostrarModalEditar" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content shadow-lg">
+      <div class="modal-header bg-warning text-dark">
+        <h5 class="modal-title">Editar Vehículo</h5>
+        <button class="btn-close" (click)="cerrarModalEditar()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+  <!-- LÍNEA (solo lectura) -->
+  <div class="col-md-12">
+    <label>Línea</label>
+    <input type="text" class="form-control" [value]="lineaEditarTexto" readonly />
+  </div>
+
+  <!-- MODELO -->
+  <div class="col-md-12">
+    <label>Modelo</label>
+    <div class="d-flex align-items-center gap-2">
+      <div class="custom-select flex-grow-1">
+        <div class="select-box" (click)="toggleModeloDropdownEditar()">
+          <span>{{ modeloEditarTexto }}</span><span class="arrow">🔽</span>
+        </div>
+        <div class="dropdown" *ngIf="mostrarModeloDropdownEditar">
+          <input class="form-control search-input" placeholder="Buscar modelo..." [(ngModel)]="modeloFilterEditar" (input)="filtrarModelosEditar()">
+          <ul class="options-list">
+            <li *ngFor="let m of modelosFiltradosEditar" (click)="seleccionarModeloEditar(m)" class="option-item">{{ m.codigo }}</li>
+          </ul>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalModelo()" title="Nuevo modelo"><i class="fa fa-plus"></i></button>
+    </div>
+  </div>
+
+  <!-- CHASIS -->
+  <div class="col-md-12">
+    <label>Chasis</label>
+    <div class="d-flex align-items-center gap-2">
+      <div class="custom-select flex-grow-1">
+        <div class="select-box" (click)="toggleChasisDropdownEditar()">
+          <span>{{ chasisEditarTexto }}</span><span class="arrow">🔽</span>
+        </div>
+        <div class="dropdown" *ngIf="mostrarChasisDropdownEditar">
+          <input class="form-control search-input" placeholder="Buscar chasis..." [(ngModel)]="chasisFilterEditar" (input)="filtrarChasisEditar()">
+          <ul class="options-list">
+            <li *ngFor="let c of chasisesFiltradosEditar" (click)="seleccionarChasisEditar(c)" class="option-item">{{ c.codigo }}</li>
+          </ul>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalChasis()" title="Nuevo chasis"><i class="fa fa-plus"></i></button>
+    </div>
+  </div>
+
+  <!-- MOTOR -->
+  <div class="col-md-6">
+  <label>Motor</label>
+  <div class="d-flex align-items-center gap-2">
+    <div class="custom-select flex-grow-1">
+      <div class="select-box" (click)="toggleMotorDropdownEditar()">
+        <span>{{ motorEditarTexto }}</span><span class="arrow">🔽</span>
+      </div>
+      <div class="dropdown" *ngIf="mostrarMotorDropdownEditar">
+        <input class="form-control search-input" placeholder="Buscar motor..." [(ngModel)]="motorFilterEditar" (input)="filtrarMotoresEditar()">
+        <ul class="options-list">
+          <li *ngFor="let m of motoresFiltradosEditar" (click)="seleccionarMotorEditar(m)" class="option-item">{{ m.codigo }}</li>
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalMotor()" title="Nuevo motor">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+</div>
+
+  <!-- CAJA -->
+ <div class="col-md-6">
+  <label>Caja</label>
+  <div class="d-flex align-items-center gap-2">
+    <div class="custom-select flex-grow-1">
+      <div class="select-box" (click)="toggleCajaDropdownEditar()">
+        <span>{{ cajaEditarTexto }}</span><span class="arrow">🔽</span>
+      </div>
+      <div class="dropdown" *ngIf="mostrarCajaDropdownEditar">
+        <input class="form-control search-input" placeholder="Buscar caja..." [(ngModel)]="cajaFilterEditar" (input)="filtrarCajasEditar()">
+        <ul class="options-list">
+          <li *ngFor="let c of cajasFiltradosEditar" (click)="seleccionarCajaEditar(c)" class="option-item">{{ c.codigo }}</li>
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalCaja()" title="Nueva caja">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+</div>
+
+  <!-- DRIVE -->
+  <div class="col-md-4">
+  <label>Drive</label>
+  <div class="d-flex align-items-center gap-2">
+    <div class="custom-select flex-grow-1">
+      <div class="select-box" (click)="toggleDriveDropdownEditar()">
+        <span>{{ driveEditarTexto }}</span><span class="arrow">🔽</span>
+      </div>
+      <div class="dropdown" *ngIf="mostrarDriveDropdownEditar">
+        <input class="form-control search-input" placeholder="Buscar drive..." [(ngModel)]="driveFilterEditar" (input)="filtrarDrivesEditar()">
+        <ul class="options-list">
+          <li *ngFor="let d of drivesFiltradosEditar" (click)="seleccionarDriveEditar(d)" class="option-item">{{ d.codigo }}</li>
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalDrive()" title="Nuevo drive">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+</div>
+
+  <!-- FRONTAL -->
+  <div class="col-md-4">
+  <label>Frontal</label>
+  <div class="d-flex align-items-center gap-2">
+    <div class="custom-select flex-grow-1">
+      <div class="select-box" (click)="toggleFrontalDropdownEditar()">
+        <span>{{ frontalEditarTexto }}</span><span class="arrow">🔽</span>
+      </div>
+      <div class="dropdown" *ngIf="mostrarFrontalDropdownEditar">
+        <input class="form-control search-input" placeholder="Buscar frontal..." [(ngModel)]="frontalFilterEditar" (input)="filtrarFrontalesEditar()">
+        <ul class="options-list">
+          <li *ngFor="let f of frontalesFiltradosEditar" (click)="seleccionarFrontalEditar(f)" class="option-item">{{ f.codigo }}</li>
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalFrontal()" title="Nuevo frontal">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+</div>
+
+  <!-- DIFERENCIAL -->
+  <div class="col-md-4">
+  <label>Diferencial</label>
+  <div class="d-flex align-items-center gap-2">
+    <div class="custom-select flex-grow-1">
+      <div class="select-box" (click)="toggleDiferencialDropdownEditar()">
+        <span>{{ diferencialEditarTexto }}</span><span class="arrow">🔽</span>
+      </div>
+      <div class="dropdown" *ngIf="mostrarDiferencialDropdownEditar">
+        <input class="form-control search-input" placeholder="Buscar diferencial..." [(ngModel)]="diferencialFilterEditar" (input)="filtrarDiferencialesEditar()">
+        <ul class="options-list">
+          <li *ngFor="let d of diferencialesFiltradosEditar" (click)="seleccionarDiferencialEditar(d)" class="option-item">{{ d.codigo }}</li>
+        </ul>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-primary btn-sm" (click)="abrirModalDiferencial()" title="Nuevo diferencial">
+      <i class="fa fa-plus"></i>
+    </button>
+  </div>
+</div>
+
+  <!-- USUARIOS ASIGNADOS -->
+  <div class="col-md-12 mt-3">
+    <label>Asignar a usuarios (opcional):</label>
+    <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+      <div class="form-check" *ngFor="let u of usuariosDisponiblesEditar">
+        <input class="form-check-input" type="checkbox" [(ngModel)]="u.selected" [value]="u.id">
+        <label class="form-check-label">{{ u.nombre }} <small class="text-muted">({{ u.rol }})</small></label>
+      </div>
+    </div>
+  </div>
+</div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalEditar()">Cancelar</button>
+        <button class="btn btn-primary btn-sm" (click)="guardarEdicion()">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ver Detalles Completos -->
+<div class="modal fade show d-block" *ngIf="mostrarModalVer" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content shadow-lg">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">Detalles del Vehículo</h5>
+        <button class="btn-close btn-close-white" (click)="cerrarModalVer()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Línea:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.linea }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Modelo:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.modelo }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Chasis:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.chasis }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Motor:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.motor }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Caja:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.caja }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Drive:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.drive }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Frontal:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.frontal }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Diferencial:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.diferencial }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Fecha de registro:</strong></div>
+          <div class="col-md-9">{{ vehiculoSeleccionado?.fecha | date:'medium' }}</div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Asignaciones:</strong></div>
+          <div class="col-md-9">
+            <span *ngIf="!vehiculoSeleccionado?.asignaciones?.length">Sin asignaciones</span>
+            <ul *ngIf="vehiculoSeleccionado?.asignaciones?.length">
+              <li *ngFor="let a of vehiculoSeleccionado.asignaciones">
+                {{ a.nombre }} ({{ a.rol }}) - {{ a.fecha | date:'short' }}
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="row mb-2">
+          <div class="col-md-3"><strong>Revisión:</strong></div>
+          <div class="col-md-9">
+            <span *ngIf="!vehiculoSeleccionado?.revision?.id">Sin revisión</span>
+            <span *ngIf="vehiculoSeleccionado?.revision?.id">
+              {{ vehiculoSeleccionado.revision.estado }} - {{ vehiculoSeleccionado.revision.fechaInicio | date:'short' }}
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalVer()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODALES PARA CREAR COMPONENTES ===== -->
+
+<!-- Modal Nuevo Motor -->
+<div class="modal fade show d-block" *ngIf="mostrarModalMotor" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nuevo Motor</h6>
+        <button class="btn-close" (click)="cerrarModalMotor()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoMotorCodigo" placeholder="Ej: MOT123">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearMotor()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalMotor()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nueva Caja -->
+<div class="modal fade show d-block" *ngIf="mostrarModalCaja" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nueva Caja</h6>
+        <button class="btn-close" (click)="cerrarModalCaja()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoCajaCodigo" placeholder="Ej: CAJ456">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearCaja()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalCaja()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Drive -->
+<div class="modal fade show d-block" *ngIf="mostrarModalDrive" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nuevo Drive</h6>
+        <button class="btn-close" (click)="cerrarModalDrive()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoDriveCodigo" placeholder="Ej: DRV789">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearDrive()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalDrive()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Frontal -->
+<div class="modal fade show d-block" *ngIf="mostrarModalFrontal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nuevo Frontal</h6>
+        <button class="btn-close" (click)="cerrarModalFrontal()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoFrontalCodigo" placeholder="Ej: FRO012">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearFrontal()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalFrontal()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nuevo Diferencial -->
+<div class="modal fade show d-block" *ngIf="mostrarModalDiferencial" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title">Nuevo Diferencial</h6>
+        <button class="btn-close" (click)="cerrarModalDiferencial()"></button>
+      </div>
+      <div class="modal-body">
+        <label>Código</label>
+        <input type="text" class="form-control" [(ngModel)]="nuevoDiferencialCodigo" placeholder="Ej: DIF345">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm" (click)="crearDiferencial()">Guardar</button>
+        <button class="btn btn-secondary btn-sm" (click)="cerrarModalDiferencial()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+</div>

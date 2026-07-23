@@ -1,0 +1,2437 @@
+/* conteoglobal.component.css */
+
+/* ══════════════════════════════════════════════════════════════
+   ✅ NUEVO: elimina el retraso de ~300ms que algunos navegadores/
+   WebViews móviles aplican antes de habilitar foco/teclado (esperan
+   para descartar un doble-tap de zoom). Es lo que hacía sentir que
+   "tarda en dejar escribir" justo al tocar un campo. Se aplica a
+   todos los inputs, selects y botones de este componente.
+   ══════════════════════════════════════════════════════════════ */
+input,
+select,
+textarea,
+button,
+.btn,
+.inline-input,
+.inline-select,
+.inline-input-cantidad {
+  touch-action: manipulation;
+}
+
+.conteo-container {
+  padding: 20px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+/* Header */
+.header-section-obsoleto {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 25px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.header-section-obsoleto h2 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.header-section-obsoleto i {
+  margin-right: 10px;
+  font-size: 32px;
+}
+
+/* Controles y Filtros */
+.controles-section-obsoleto {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 8px;
+}
+
+/* Controles Rápidos */
+.controles-rapidos {
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.controles-rapidos .btn {
+  font-size: 14px;
+  font-weight: 500;
+  padding: 10px;
+}
+
+/* Estadísticas */
+.estadisticas-section {
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 4px solid;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.total {
+  border-left-color: #007bff;
+}
+
+.stat-card.pendiente {
+  border-left-color: #6c757d;
+}
+
+.stat-card.contado {
+  border-left-color: #28a745;
+}
+
+.stat-card.diferencia {
+  border-left-color: #ffc107;
+}
+
+.stat-icon {
+  font-size: 40px;
+  margin-right: 15px;
+  opacity: 0.8;
+}
+
+.stat-card.total .stat-icon {
+  color: #007bff;
+}
+
+.stat-card.pendiente .stat-icon {
+  color: #6c757d;
+}
+
+.stat-card.contado .stat-icon {
+  color: #28a745;
+}
+
+.stat-card.diferencia .stat-icon {
+  color: #ffc107;
+}
+
+.stat-content h3 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+}
+
+.stat-content p {
+  margin: 0;
+  color: #6c757d;
+  font-size: 14px;
+}
+
+/* Barra de Progreso */
+.progress-section {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-top: 15px;
+}
+
+.progress {
+  border-radius: 10px;
+}
+
+.progress-bar {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Tabla */
+.tabla-conteo {
+  background: white;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.table {
+  margin-bottom: 0;
+}
+
+.table thead th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table tbody tr {
+  transition: background-color 0.2s;
+}
+
+.table tbody tr:hover {
+  background-color: #f1f3f5 !important;
+}
+
+.table-success {
+  background-color: #d4edda !important;
+}
+
+.table-warning {
+  background-color: #fff3cd !important;
+}
+
+/* Input Group para Conteo */
+.input-group-sm .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 14px;
+}
+
+.input-group-sm input[type="number"] {
+  max-width: 80px;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+/* Badges */
+.badge {
+  font-size: 11px;
+  padding: 5px 8px;
+}
+
+/* Botones */
+.btn {
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Paginación */
+.paginacion {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid #dee2e6;
+}
+
+.pagination .page-link {
+  color: #667eea;
+  border: 1px solid #dee2e6;
+  margin: 0 2px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: #667eea;
+  border-color: #667eea;
+}
+
+.pagination .page-link:hover {
+  background-color: #f8f9fa;
+  color: #667eea;
+}
+
+.pagination .page-item.disabled .page-link {
+  cursor: not-allowed;
+}
+
+/* ✅ Elipsis "…" de la paginación compacta (no clickeable) */
+.pagination .page-ellipsis {
+  color: #adb5bd;
+  cursor: default;
+  pointer-events: none;
+  background: transparent;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Spinner */
+.spinner-border {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .conteo-container {
+    padding: 10px;
+  }
+
+  .header-section-obsoleto h2 {
+    font-size: 20px;
+  }
+
+  .stat-card {
+    margin-bottom: 10px;
+  }
+
+  .stat-content h3 {
+    font-size: 24px;
+  }
+
+  .table-responsive {
+    font-size: 12px;
+  }
+
+  .input-group-sm input[type="number"] {
+    max-width: 60px;
+  }
+
+  /* ✅ MODALES BOOTSTRAP: que se ajusten al ancho del teléfono con scroll interno.
+     Antes (modal-lg) mantenían un ancho fijo y desbordaban la pantalla en móvil. */
+  .modal.fade .modal-dialog,
+  .modal.fade .modal-dialog.modal-lg {
+    max-width: 100%;
+    width: auto;
+    margin: 0.5rem;
+  }
+  .modal.fade .modal-content {
+    max-height: calc(100dvh - 1rem);
+  }
+  .modal.fade .modal-body {
+    overflow-x: hidden;   /* el modal no crece de ancho: las tablas usan su propio scroll */
+  }
+  .modal.fade .modal-body .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ✅ PAGINACIÓN: compacta y envolvente en pantallas chicas */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 4px;
+    row-gap: 6px;
+  }
+  .pagination .page-link {
+    padding: 0.25rem 0.55rem;
+    font-size: 0.82rem;
+    margin: 0;
+  }
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.tabla-conteo {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Tooltips personalizados */
+[title] {
+  cursor: help;
+}
+
+/* Mejoras visuales */
+.input-group-text {
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* Estados de los inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1;
+}
+
+/* Texto de diferencia */
+.text-danger {
+  font-weight: bold;
+}
+
+.text-success {
+  font-weight: bold;
+}
+
+/* ============================================================
+   MODAL DETALLE DE CONTEO — Añadir a conteoglobal.component.css
+   ============================================================ */
+
+/* ── OVERLAY ── */
+.modal-detalle-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(3px);
+  z-index: 1040;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.modal-detalle-overlay.activo {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── PANEL LATERAL (slide desde la derecha) ── */
+.modal-detalle-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100dvh;
+  width: 520px;
+  max-width: 100vw;
+  background: #fff;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -8px 0 32px rgba(0,0,0,0.18);
+}
+.modal-detalle-panel.activo {
+  transform: translateX(0);
+}
+
+/* ── HEADER ── */
+.mdp-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 60%, #0f3460 100%);
+  color: #fff;
+  flex-shrink: 0;
+}
+.mdp-header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.mdp-header-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #e94560;
+  background: rgba(233, 69, 96, 0.12);
+  border: 1px solid rgba(233, 69, 96, 0.3);
+  border-radius: 20px;
+  padding: 3px 10px;
+  width: fit-content;
+}
+.mdp-titulo {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.mdp-articulo-code {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+.mdp-articulo-nombre {
+  font-size: 13px;
+  font-weight: 400;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+.mdp-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.55);
+}
+.mdp-header-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mdp-btn-cerrar {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.mdp-btn-cerrar:hover {
+  background: rgba(233, 69, 96, 0.4);
+}
+
+/* ── BODY SCROLLABLE ── */
+.mdp-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.mdp-body::-webkit-scrollbar { width: 5px; }
+.mdp-body::-webkit-scrollbar-track { background: #f1f1f1; }
+.mdp-body::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 10px; }
+
+/* ── SECCIONES ── */
+.mdp-seccion {
+  padding: 18px 20px;
+  border-bottom: 1px solid #eef0f4;
+}
+.mdp-seccion-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: #7c8db5;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.mdp-seccion-titulo i { font-size: 14px; }
+
+/* ── STOCK GRID ── */
+.mdp-stock-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.mdp-stock-card {
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+  border: 1px solid transparent;
+}
+.mdp-stock-total    { background: #f0f4ff; border-color: #d0daf8; }
+.mdp-stock-reserva  { background: #fff8e7; border-color: #fce19d; }
+.mdp-stock-disponible { background: #edfbf3; border-color: #a6edc2; }
+.mdp-stock-diferencia { background: #f4f4f4; border-color: #ddd; }
+.mdp-stock-diferencia.positivo { background: #fff8e7; border-color: #fbbf24; }
+.mdp-stock-diferencia.negativo { background: #fff1f2; border-color: #fca5a5; }
+.mdp-stock-diferencia.neutro   { background: #edfbf3; border-color: #a6edc2; }
+.mdp-stock-valor {
+  font-size: 22px;
+  font-weight: 800;
+  color: #1a1a2e;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.mdp-stock-label {
+  font-size: 10px;
+  color: #7c8db5;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ── CONTEO FÍSICO ── */
+.mdp-conteo-fisico {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+.mdp-btn-cantidad {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.mdp-btn-menos {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fff1f2;
+}
+.mdp-btn-menos:hover { background: #ef4444; color: #fff; }
+.mdp-btn-mas {
+  border-color: #22c55e;
+  color: #22c55e;
+  background: #f0fdf4;
+}
+.mdp-btn-mas:hover { background: #22c55e; color: #fff; }
+.mdp-input-cantidad-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.mdp-input-cantidad {
+  width: 120px;
+  height: 56px;
+  text-align: center;
+  font-size: 32px;
+  font-weight: 800;
+  color: #1a1a2e;
+  border: 2px solid #d0daf8;
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.mdp-input-cantidad:focus { border-color: #4f6ef7; }
+/* Quitar flechas del input number */
+.mdp-input-cantidad::-webkit-outer-spin-button,
+.mdp-input-cantidad::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mdp-input-cantidad[type=number] { -moz-appearance: textfield; }
+.mdp-input-unidad {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+/* ── ATAJOS ── */
+.mdp-atajos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+  align-items: center;
+}
+.mdp-atajo-label {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.mdp-btn-atajo {
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid #d0daf8;
+  border-radius: 6px;
+  background: #f8faff;
+  color: #3b5bdb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.mdp-btn-atajo:hover { background: #3b5bdb; color: #fff; border-color: #3b5bdb; }
+
+/* ── UBICACIÓN ── */
+.mdp-ubicacion-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+}
+.mdp-field-group { display: flex; flex-direction: column; gap: 6px; }
+.mdp-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4b5563;
+}
+.mdp-input {
+  height: 40px;
+  padding: 0 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a2e;
+  outline: none;
+  transition: border-color 0.15s;
+  width: 100%;
+}
+.mdp-input:focus { border-color: #4f6ef7; }
+.mdp-ubicacion-sistema {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.mdp-ub-sistema-label { color: #9ca3af; }
+.mdp-ub-sistema-valor {
+  color: #6366f1;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* ── ESTADOS DEL PRODUCTO ── */
+.mdp-estados-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.mdp-btn-estado {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  transition: all 0.15s;
+  text-align: left;
+}
+.mdp-btn-estado i { font-size: 16px; }
+.mdp-btn-estado[data-color="success"] { --ac: #16a34a; --ab: #f0fdf4; --abr: #bbf7d0; }
+.mdp-btn-estado[data-color="danger"]  { --ac: #dc2626; --ab: #fff1f2; --abr: #fecaca; }
+.mdp-btn-estado[data-color="secondary"] { --ac: #6b7280; --ab: #f3f4f6; --abr: #d1d5db; }
+.mdp-btn-estado[data-color="warning"] { --ac: #d97706; --ab: #fffbeb; --abr: #fde68a; }
+.mdp-btn-estado:hover { border-color: var(--ac); background: var(--ab); color: var(--ac); }
+.mdp-btn-estado.activo {
+  background: var(--ab);
+  border-color: var(--ac);
+  color: var(--ac);
+  font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06);
+}
+.mdp-btn-estado.activo i { color: var(--ac); }
+
+/* ── IMÁGENES ── */
+.mdp-img-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+  text-transform: lowercase;
+  letter-spacing: 0;
+}
+.mdp-dropzone {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #c7d2fe;
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  background: #f8faff;
+  transition: all 0.15s;
+  margin-bottom: 14px;
+}
+.mdp-dropzone:hover { border-color: #6366f1; background: #eef2ff; }
+.mdp-dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: #6366f1;
+}
+.mdp-dropzone-content i { font-size: 28px; }
+.mdp-dropzone-content span { font-size: 14px; font-weight: 600; }
+.mdp-dropzone-content small { font-size: 11px; color: #9ca3af; }
+
+.mdp-galeria {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.mdp-galeria-item {
+  position: relative;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1.5px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+}
+.mdp-galeria-img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  display: block;
+}
+.mdp-galeria-overlay {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+}
+.mdp-galeria-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+.mdp-galeria-btn:hover { transform: scale(1.1); }
+.mdp-galeria-principal { background: rgba(0,0,0,0.5); color: #fbbf24; }
+.mdp-galeria-principal.activo { background: #fbbf24; color: #1a1a2e; }
+.mdp-galeria-eliminar { background: rgba(220,38,38,0.85); color: #fff; }
+.mdp-galeria-footer {
+  padding: 5px 6px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.mdp-galeria-desc {
+  border: none;
+  outline: none;
+  font-size: 10px;
+  color: #6b7280;
+  width: 100%;
+  background: transparent;
+}
+.mdp-badge-principal {
+  font-size: 9px;
+  background: #fbbf24;
+  color: #1a1a2e;
+  font-weight: 700;
+  border-radius: 4px;
+  padding: 2px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ── OBSERVACIONES ── */
+.mdp-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1a1a2e;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.mdp-textarea:focus { border-color: #4f6ef7; }
+.mdp-char-count {
+  text-align: right;
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+/* ── RECONTEO ── */
+.mdp-seccion-reconteo { background: #fafbff; }
+.mdp-reconteo-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.mdp-toggle-info { display: flex; flex-direction: column; gap: 2px; }
+.mdp-switch .form-check-input { width: 44px; height: 24px; cursor: pointer; }
+.mdp-switch .form-check-input:checked { background-color: #6366f1; border-color: #6366f1; }
+.mdp-switch .form-check-label { font-size: 13px; font-weight: 600; color: #374151; }
+.mdp-motivo-reconteo { margin-top: 12px; }
+
+/* ── FOOTER ── */
+.mdp-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-top: 1px solid #eef0f4;
+  background: #f8faff;
+  flex-shrink: 0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.mdp-footer-resumen {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+  flex-wrap: wrap;
+}
+.mdp-resumen-item { white-space: nowrap; }
+.mdp-resumen-sep { color: #d1d5db; }
+.mdp-resumen-dif { font-size: 15px; font-weight: 800; }
+.mdp-footer-botones { display: flex; gap: 8px; }
+.mdp-btn-cancelar {
+  height: 42px;
+  padding: 0 18px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.mdp-btn-cancelar:hover { background: #f3f4f6; }
+.mdp-btn-cancelar:disabled { opacity: 0.5; cursor: not-allowed; }
+.mdp-btn-guardar {
+  height: 42px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #4f6ef7 0%, #6366f1 100%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+  box-shadow: 0 3px 12px rgba(99,102,241,0.35);
+}
+.mdp-btn-guardar:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.mdp-btn-guardar:disabled { opacity: 0.65; cursor: not-allowed; transform: none; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 576px) {
+  .modal-detalle-panel { width: 100vw; }
+  .mdp-stock-grid { grid-template-columns: repeat(2, 1fr); }
+  .mdp-galeria { grid-template-columns: repeat(2, 1fr); }
+  .mdp-estados-grid { grid-template-columns: 1fr; }
+  .mdp-footer { flex-direction: column; }
+  .mdp-footer-botones { width: 100%; }
+  .mdp-btn-cancelar, .mdp-btn-guardar { flex: 1; justify-content: center; }
+}
+
+/* =====================================================
+   COLORES DE FILAS — agregar a conteoglobal.component.css
+   ===================================================== */
+
+/* ✅ Verde: contado y guardado en backend */
+tr.fila-contada-backend td {
+  background-color: #d1f2e1 !important;
+  border-left: 4px solid #198754 !important;
+}
+
+tr.fila-contada-backend:hover td {
+  background-color: #b7e9ce !important;
+}
+
+/* 🟡 Amarillo: contado en esta sesión pero aún no guardado */
+tr.fila-contada-sesion td {
+  background-color: #fff8d6 !important;
+  border-left: 4px solid #ffc107 !important;
+}
+
+tr.fila-contada-sesion:hover td {
+  background-color: #fef0a0 !important;
+}
+
+/* 🟣 Artículo NUEVO (no consta en el inventario del sistema) — prioridad visual.
+   Va DESPUÉS de las reglas verde/amarillo para ganar por orden de cascada. */
+tr.fila-articulo-nuevo td {
+  background-color: #efeaff !important;
+  border-left: 4px solid #6f42c1 !important;
+}
+tr.fila-articulo-nuevo:hover td {
+  background-color: #e4dbff !important;
+}
+
+/* Etiqueta "FUERA DE INVENTARIO" debajo del código del artículo */
+.badge-articulo-nuevo {
+  display: flex;               /* fuerza salto de línea bajo el código */
+  width: fit-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 3px;
+  margin-top: 4px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: #6f42c1;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  line-height: 1.35;
+  white-space: normal;         /* que envuelva si no cabe en la columna angosta */
+  word-break: normal;
+}
+.badge-articulo-nuevo i { font-size: 10px; flex-shrink: 0; }
+
+/* ✅ Columna ESTADO: color + NOMBRE del estado (no solo el color) */
+.estado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;      /* ícono y nombre no se separan en líneas distintas */
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  line-height: 1.2;
+}
+.estado-badge i { font-size: 12px; }
+/* Estado "Fuera de inventario" → morado, igual que su etiqueta en la columna Artículo */
+.badge.bg-estado-fuera {
+  background-color: #6f42c1 !important;
+  color: #fff !important;
+}
+/* ═══════════════════════════════════════════════════
+   CELDA CONTEO FÍSICO — modo backend (ya contado)
+   ═══════════════════════════════════════════════════ */
+
+.td-conteo-fisico {
+  vertical-align: middle;
+  padding: 6px 8px !important;
+}
+
+/* Bloque completo del ítem contado */
+.conteo-backend-bloque {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 8px;
+}
+
+/* Línea de cantidad */
+.conteo-backend-cantidad {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  line-height: 1;
+}
+
+.conteo-backend-num {
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #15803d;
+  line-height: 1;
+}
+
+.conteo-backend-uds {
+  font-size: 0.65rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+/* Líneas de detalle (ubicacion, usuario, fecha) */
+.conteo-backend-detalle {
+  font-size: 0.68rem;
+  color: #374151;
+  text-align: center;
+  line-height: 1.3;
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conteo-backend-detalle i {
+  color: #2563eb;
+  font-size: 0.65rem;
+}
+
+/* Badge de multiples conteos */
+.conteo-backend-multi {
+  margin-top: 2px;
+}
+
+.conteo-backend-multi .badge {
+  font-size: 0.60rem;
+  padding: 2px 6px;
+}
+/* ── Indicadores de ordenamiento — sin dependencia de Bootstrap Icons ── */
+
+/* Contenedor del indicador */
+thead.table-dark th span[class*="sort-"] {
+  display: inline-block;
+  margin-left: 4px;
+  font-style: normal;
+  font-size: 12px;
+  vertical-align: middle;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+/* SIN ordenar: flecha doble ⇅ en blanco semitransparente */
+.sort-neutral::before {
+  content: ' ⇅';
+  color: rgba(255, 255, 255, 0.55);
+}
+thead.table-dark th:hover .sort-neutral::before {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Ordenado ASCENDENTE ↑ */
+.sort-asc::before {
+  content: ' ↑';
+  color: #ffc107;
+  font-weight: 700;
+  font-size: 14px;
+  text-shadow: 0 0 6px rgba(255, 193, 7, 0.8);
+}
+
+/* Ordenado DESCENDENTE ↓ */
+.sort-desc::before {
+  content: ' ↓';
+  color: #ffc107;
+  font-weight: 700;
+  font-size: 14px;
+  text-shadow: 0 0 6px rgba(255, 193, 7, 0.8);
+}
+
+/* Subrayado amarillo en la cabecera activa */
+thead.table-dark th:has(.sort-asc),
+thead.table-dark th:has(.sort-desc) {
+  border-bottom: 3px solid #ffc107 !important;
+  padding-bottom: 4px;
+}
+
+thead.table-dark th {
+  user-select: none;
+  cursor: pointer;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ✅ NUEVO: Agregar al final de conteoglobal.component.css
+   ══════════════════════════════════════════════════════════════ */
+
+/* Badge de N conteos clicable */
+.badge-conteos-click {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.badge-conteos-click:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Botón de ver imágenes con contador */
+.btn-ver-imagenes {
+  position: relative;
+}
+.btn-ver-imagenes .badge-img-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #dc3545;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  border-radius: 50%;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  padding: 0 3px;
+}
+
+/* Banner de conteo adicional dentro del modal detalle */
+.mdp-banner-adicional {
+  background: #e7f6fd;
+  border: 1px solid #0dcaf0;
+  border-left: 5px solid #0dcaf0;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.mdp-banner-adicional-contenido {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.mdp-banner-adicional-contenido > i {
+  color: #0aa2c0;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+.mdp-banner-detalle {
+  font-size: 0.85rem;
+  color: #055160;
+  margin-top: 4px;
+}
+
+/* Previsualización del total acumulado */
+.mdp-total-acumulado {
+  margin-top: 10px;
+  background: #f0f9f1;
+  border: 1px dashed #198754;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.9rem;
+  color: #14532d;
+  text-align: center;
+}
+.mdp-total-acumulado .mdp-total-num {
+  color: #198754;
+  font-size: 1.05rem;
+}
+
+/* Galería del modal de imágenes */
+.galeria-imagenes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.galeria-imagen-item {
+  position: relative;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+.galeria-imagen-thumb {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  cursor: zoom-in;
+  display: block;
+  transition: transform 0.2s ease;
+}
+.galeria-imagen-thumb:hover {
+  transform: scale(1.04);
+}
+.galeria-imagen-desc {
+  font-size: 0.75rem;
+  color: #495057;
+  padding: 4px 6px;
+  border-top: 1px solid #dee2e6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.galeria-badge-principal {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  font-size: 0.65rem;
+}
+
+/* Lightbox de imagen ampliada */
+.imagen-lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+.imagen-lightbox-img {
+  max-width: 92vw;
+  max-height: 90vh;
+  object-fit: contain;
+  border-radius: 6px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+.imagen-lightbox-cerrar {
+  position: absolute;
+  top: 18px;
+  right: 22px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #fff;
+  font-size: 1.4rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.imagen-lightbox-cerrar:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.celda-imagen-thumb-wrap {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.celda-imagen-thumb {
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  transition: transform 0.15s ease;
+}
+.celda-imagen-thumb-wrap:hover .celda-imagen-thumb {
+  transform: scale(1.08);
+  border-color: #0d6efd;
+}
+.celda-imagen-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  background: #0d6efd;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 8px;
+  line-height: 1.2;
+}
+.celda-imagen-vacia {
+  font-size: 1.1rem;
+  opacity: 0.4;
+}
+.conteo-backend-cantidad-click {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.conteo-backend-cantidad-click:hover {
+  background: rgba(13, 110, 253, 0.08);
+  border-radius: 4px;
+}
+/* ══════════════════════════════════════════════════════════════
+   ✅ NUEVO: Botones de la columna ACCIONES rediseñados
+   (íconos grandes + etiqueta + color distintivo por acción)
+   ══════════════════════════════════════════════════════════════ */
+
+.td-acciones-col {
+  vertical-align: middle;
+  padding: 6px 4px !important;
+}
+
+.acciones-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-accion {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  width: 96px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  border: 1.5px solid transparent;
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease,
+              background 0.15s ease, color 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-accion i {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.btn-accion:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.18);
+}
+
+.btn-accion:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-accion-label {
+  letter-spacing: 0.2px;
+}
+
+/* Contar / Sumar conteo — azul */
+.accion-contar {
+  background: #e7f1ff;
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+.accion-contar:hover {
+  background: #0d6efd;
+  color: #fff;
+}
+
+/* Detalle por ubicación — turquesa */
+.accion-detalle {
+  background: #e6fbfd;
+  border-color: #0aa2c0;
+  color: #0aa2c0;
+}
+.accion-detalle:hover {
+  background: #0aa2c0;
+  color: #fff;
+}
+
+/* Reset — gris */
+.accion-reset {
+  background: #f1f3f5;
+  border-color: #adb5bd;
+  color: #495057;
+}
+.accion-reset:hover {
+  background: #6c757d;
+  border-color: #6c757d;
+  color: #fff;
+}
+
+/* Contador (n° de conteos) sobre el botón de ubicaciones */
+.btn-accion-badge {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  background: #dc3545;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 50%;
+  min-width: 17px;
+  height: 17px;
+  line-height: 17px;
+  text-align: center;
+  padding: 0 3px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+/* ══════════════════════════════════════════════════════════════ */
+/* ✅ NUEVO: CONTEO INLINE (edición directa sobre la fila)          */
+/* ══════════════════════════════════════════════════════════════ */
+
+/* Cabeceras de las columnas editables */
+.th-inline {
+  background-color: #2c3550 !important;
+  font-size: 12px;
+}
+
+.th-inline i {
+  margin-right: 3px;
+  opacity: 0.8;
+}
+
+/* Celdas editables */
+.td-inline,
+.td-inline-conteo {
+  vertical-align: middle;
+  padding: 6px 5px !important;
+  background-color: #fbfcff;
+}
+
+/* Acumulado vacío */
+.acumulado-vacio {
+  font-size: 18px;
+  display: block;
+  text-align: center;
+}
+
+/* ── Cantidad con +/- ── */
+.inline-cantidad-group {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0;
+  border: 1.5px solid #ced4da;
+  border-radius: 8px;
+  overflow: hidden;
+  background: white;
+  max-width: 140px;
+  margin: 0 auto;
+}
+
+.btn-inline-step {
+  border: none;
+  background: #f1f3f5;
+  color: #495057;
+  width: 32px;
+  min-width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.btn-inline-step:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.btn-inline-menos:hover:not(:disabled) {
+  background: #f8d7da;
+  color: #dc3545;
+}
+
+.btn-inline-mas:hover:not(:disabled) {
+  background: #d1e7dd;
+  color: #198754;
+}
+
+.btn-inline-step:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inline-input-cantidad {
+  width: 100%;
+  min-width: 45px;
+  border: none;
+  outline: none;
+  text-align: center;
+  font-weight: 700;
+  font-size: 15px;
+  color: #212529;
+  padding: 6px 2px;
+  -moz-appearance: textfield;
+}
+
+.inline-input-cantidad::-webkit-outer-spin-button,
+.inline-input-cantidad::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.inline-input-cantidad:focus {
+  background: #eef4ff;
+}
+
+.inline-input-cantidad:disabled {
+  background: #f8f9fa;
+  color: #adb5bd;
+}
+
+/* Atajo "= Sistema" y total previsto debajo del input */
+.inline-cantidad-extra {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
+  min-height: 18px;
+}
+
+.btn-inline-atajo {
+  border: 1px dashed #3a7bd5;
+  background: transparent;
+  color: #3a7bd5;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-inline-atajo:hover:not(:disabled) {
+  background: #3a7bd5;
+  color: white;
+}
+
+.btn-inline-atajo:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.inline-total-previsto {
+  font-size: 11px;
+  color: #0d6efd;
+  white-space: nowrap;
+}
+
+.inline-total-previsto strong {
+  font-size: 12px;
+}
+
+/* ── Inputs de texto (ubicación / observación) ── */
+.inline-input {
+  width: 100%;
+  border: 1.5px solid #ced4da;
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 12.5px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  background: white;
+}
+
+.inline-input:focus {
+  border-color: #3a7bd5;
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.15);
+}
+
+.inline-input:disabled {
+  background: #f8f9fa;
+  color: #adb5bd;
+}
+
+.inline-input::placeholder {
+  color: #adb5bd;
+  font-size: 12px;
+}
+
+/* ── Select de estado del artículo ── */
+.inline-select {
+  width: 100%;
+  border: 1.5px solid #ced4da;
+  border-radius: 7px;
+  padding: 6px 4px;
+  font-size: 12px;
+  outline: none;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.inline-select:focus {
+  border-color: #3a7bd5;
+  box-shadow: 0 0 0 2px rgba(58, 123, 213, 0.15);
+}
+
+.inline-select:disabled {
+  background: #f8f9fa;
+  color: #adb5bd;
+  cursor: not-allowed;
+}
+
+/* ── Fotos inline en la fila ── */
+.fotos-inline-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-foto-inline {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 30px;
+  border: 1.5px dashed #6c757d;
+  border-radius: 7px;
+  color: #6c757d;
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-bottom: 0;
+}
+
+.btn-foto-inline:hover {
+  border-color: #3a7bd5;
+  color: #3a7bd5;
+  background: #eef4ff;
+}
+
+.btn-foto-inline.tiene-fotos {
+  border-style: solid;
+  border-color: #198754;
+  color: #198754;
+  background: #d1e7dd;
+}
+
+.btn-foto-count {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #198754;
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+}
+
+.fotos-inline-previews {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  max-width: 80px;
+}
+
+.foto-inline-mini {
+  width: 22px;
+  height: 22px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.foto-inline-mini:hover {
+  border-color: #dc3545;
+  opacity: 0.7;
+  transform: scale(1.1);
+}
+
+/* ── Botón Guardar inline ── */
+.accion-guardar-inline {
+  background: #198754;
+  color: white;
+  border-color: #198754;
+}
+
+.accion-guardar-inline:hover:not(:disabled) {
+  background: #157347;
+  border-color: #157347;
+  color: white;
+}
+
+.accion-guardar-inline:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* ✅ NUEVO: BOTONES CÁMARA + GALERÍA (captura móvil)               */
+/* ══════════════════════════════════════════════════════════════ */
+
+.fotos-inline-botones {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.btn-foto-camara {
+  border-color: #3a7bd5;
+  color: #3a7bd5;
+}
+
+.btn-foto-camara:hover {
+  background: #3a7bd5;
+  color: white;
+  border-color: #3a7bd5;
+}
+
+.btn-foto-galeria {
+  border-color: #6c757d;
+  color: #6c757d;
+}
+
+/* Fila del dropzone del modal: seleccionar + tomar foto */
+.mdp-captura-row {
+  display: flex;
+  gap: 10px;
+}
+
+.mdp-captura-row .mdp-dropzone {
+  flex: 1;
+}
+
+.mdp-dropzone-camara {
+  flex: 0 0 38% !important;
+  border-color: #3a7bd5;
+}
+
+.mdp-dropzone-camara .mdp-dropzone-content i {
+  color: #3a7bd5;
+}
+
+/* En pantallas pequeñas, botones de captura más grandes y cómodos al tacto */
+@media (max-width: 768px) {
+  .btn-foto-inline {
+    width: 42px;
+    height: 38px;
+    font-size: 17px;
+  }
+
+  .mdp-captura-row {
+    flex-direction: column;
+  }
+
+  .mdp-dropzone-camara {
+    flex: 1 !important;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* ✅ NUEVO: signos +/− siempre visibles en el contador inline      */
+/* ══════════════════════════════════════════════════════════════ */
+
+.signo-step {
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1;
+  display: block;
+}
+
+/* Botón MENOS: rojo permanente para que se distinga */
+.btn-inline-menos {
+  background: #fdecec;
+  color: #dc3545;
+}
+
+.btn-inline-menos:hover:not(:disabled) {
+  background: #dc3545;
+  color: white;
+}
+
+/* Botón MÁS: verde permanente para que se distinga */
+.btn-inline-mas {
+  background: #e4f4ea;
+  color: #198754;
+}
+
+.btn-inline-mas:hover:not(:disabled) {
+  background: #198754;
+  color: white;
+}
+
+.btn-inline-step:disabled .signo-step {
+  opacity: 0.5;
+}
+/* ══════════════════════════════════════════════════════════════ */
+/* ✅ NUEVO: EDICIÓN DE CONTEO PROPIO en el modal de detalle        */
+/* ══════════════════════════════════════════════════════════════ */
+
+.fila-editando-conteo {
+  background-color: #fff8e6 !important;
+  box-shadow: inset 3px 0 0 #ffc107;
+}
+
+.fila-editando-conteo td {
+  background-color: transparent !important;
+}
+
+.btn-editar-conteo {
+  font-size: 12px;
+  padding: 4px 10px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.edit-conteo-cantidad {
+  max-width: 80px;
+  margin: 0 auto;
+  font-size: 14px;
+}
+
+.edit-conteo-acciones {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+/* ✅ Íconos en SVG en línea: no dependen de ninguna fuente de íconos,
+   por lo que siempre se ven, sin importar la versión de Bootstrap Icons
+   instalada (bi-check-lg / bi-x-lg no existen en versiones antiguas y
+   se mostraban como un bloque de color vacío). */
+.icono-accion {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.icono-candado {
+  width: 14px;
+  height: 14px;
+  color: #adb5bd;
+}
+
+/* Botones de acción (Guardar / Cancelar) más claros: tamaño uniforme,
+   ícono centrado y color reforzado para diferenciarlos de un vistazo */
+.edit-conteo-acciones .btn {
+  padding: 0;
+  width: 32px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  line-height: 1;
+}
+
+.edit-conteo-acciones .btn .icono-accion {
+  width: 17px;
+  height: 17px;
+}
+
+.edit-conteo-acciones .btn.btn-success {
+  background-color: #198754;
+  border-color: #198754;
+  color: #fff;
+}
+
+.edit-conteo-acciones .btn.btn-success:hover {
+  background-color: #157347;
+  border-color: #146c43;
+}
+
+.edit-conteo-acciones .btn.btn-outline-secondary {
+  color: #495057;
+  border-color: #adb5bd;
+}
+
+.edit-conteo-acciones .btn.btn-outline-secondary:hover {
+  background-color: #495057;
+  border-color: #495057;
+  color: #fff;
+}
+
+/* ══════════════════════════════════════════════════════════════ */
+/* ✅ NUEVO: TIEMPO REAL en el modal de detalle de conteos          */
+/* ══════════════════════════════════════════════════════════════ */
+
+.sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #055160;
+  background-color: rgba(255, 255, 255, 0.55);
+  border-radius: 20px;
+  padding: 4px 10px;
+  margin-left: auto;
+  margin-right: 10px;
+}
+
+.sync-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #198754;
+  box-shadow: 0 0 0 rgba(25, 135, 84, 0.5);
+}
+
+.sync-dot-activa {
+  animation: sync-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sync-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.6); }
+  70%  { box-shadow: 0 0 0 6px rgba(25, 135, 84, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+}
+
+/* Fila que acaba de llegar por sincronización (conteo de otro usuario) */
+.fila-conteo-nueva {
+  animation: fila-nueva-flash 2.5s ease-out;
+}
+
+@keyframes fila-nueva-flash {
+  0%   { background-color: #fff3cd; }
+  100% { background-color: transparent; }
+}
+
+/* ✅ NUEVO: indicador "En vivo" de la pantalla principal (arriba de las tarjetas) */
+.sync-indicator-global {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #055160;
+  background-color: #e7f6f8;
+  border: 1px solid #b6effb;
+  border-radius: 20px;
+  padding: 4px 12px;
+  margin-bottom: 10px;
+}
+/* ══════════════════════════════════════════════════════════════════
+   ✅ NUEVO: CABECERAS CONGELADAS + 3 PRIMERAS COLUMNAS FIJAS
+   (Artículo, Nombre, Ubicación siempre visibles al hacer scroll)
+   ══════════════════════════════════════════════════════════════════
+   Clave: para que position:sticky funcione, el scroll (vertical y
+   horizontal) debe ocurrir DENTRO de .table-responsive, no en la
+   página. Por eso se le da una altura máxima al contenedor.        */
+
+.tabla-conteo {
+  /* Anchos de las 3 columnas congeladas (ajustables) */
+  --w-fija-1: 110px;   /* Artículo   */
+}
+
+.tabla-conteo .table-responsive {
+  max-height: calc(100vh - 140px); /* el scroll de la tabla vive aquí adentro */
+  overflow: auto;
+  /* Scroll táctil suave en móvil */
+  -webkit-overflow-scrolling: touch;
+}
+
+/* border-collapse:separate es necesario: con collapse (default de Bootstrap)
+   los bordes se quedan pegados al contenido y las celdas sticky se ven rotas */
+.tabla-conteo .table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* ── Cabecera congelada (ya tenía sticky top:0; se refuerza el fondo y el borde) ── */
+.tabla-conteo .table thead th {
+  background-color: #212529; /* fondo sólido: el contenido no se transparenta al pasar por debajo */
+  border-bottom: 2px solid #495057;
+}
+
+/* ── Columnas congeladas ── */
+.tabla-conteo th.col-fija,
+.tabla-conteo td.col-fija {
+  position: sticky;
+  z-index: 5;
+}
+
+.tabla-conteo .col-fija-1 {
+  left: 0;
+  min-width: var(--w-fija-1);
+  max-width: var(--w-fija-1);
+  /* Sombra que separa la columna congelada de la zona que se desplaza */
+  box-shadow: 4px 0 6px -2px rgba(0, 0, 0, 0.18);
+}
+
+/* Esquinas (cabecera + columna congelada a la vez): por encima de todo */
+.tabla-conteo thead th.col-fija {
+  z-index: 15;
+  background-color: #212529;
+}
+
+/* Fondo sólido de las celdas congeladas en filas PENDIENTES (blancas).
+   Sin esto, el contenido que se desplaza se vería a través de la celda.
+   Nota: sin !important, para que los verdes/amarillos de fila contada
+   (que sí usan !important) sigan pintando también la zona congelada.   */
+.tabla-conteo tbody td.col-fija {
+  background-color: #ffffff;
+}
+
+/* Hover coherente también en la zona congelada */
+.tabla-conteo .table tbody tr:hover td.col-fija {
+  background-color: #f1f3f5;
+}
+
+/* Que los textos largos no deformen las columnas congeladas */
+.tabla-conteo td.col-fija,
+.tabla-conteo td.col-fija .nombre-repuesto {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tabla-conteo td.col-fija-1 strong {
+  word-break: break-all;
+  font-size: 12px;
+}
+
+/* ── Ajustes MÓVIL: columnas congeladas más angostas para dejar
+      espacio a la zona desplazable en pantallas de ~360px ── */
+@media (max-width: 768px) {
+  .tabla-conteo {
+    --w-fija-1: 84px;
+  }
+
+  .tabla-conteo .table-responsive {
+    max-height: calc(100vh - 110px);
+  }
+
+  .tabla-conteo td.col-fija,
+  .tabla-conteo th.col-fija {
+    font-size: 11px;
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+
+}
+
+/* Con border-collapse:separate, evitar bordes dobles entre celdas:
+   cada celda dibuja solo su borde derecho e inferior */
+.tabla-conteo .table-bordered > :not(caption) > * > * {
+  border-width: 0 1px 1px 0;
+}
+.tabla-conteo .table-bordered {
+  border-left: 1px solid #dee2e6;
+  border-top: 1px solid #dee2e6;
+}
+/* ══════════════════════════════════════════════════════════════════
+   ✅ NUEVO: PANEL SUPERIOR COMPACTO — título + filtros en acordeón
+   (reemplaza a .header-section y .controles-section)
+   ══════════════════════════════════════════════════════════════════ */
+
+.panel-superior {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 14px;
+  overflow: hidden; /* el degradado del título respeta el radio */
+}
+
+/* ── Barra de título (clic para abrir/cerrar filtros) ── */
+.panel-titulo {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.panel-titulo-izq {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.panel-icono {
+  font-size: 26px;
+  opacity: 0.95;
+  flex-shrink: 0;
+}
+
+.panel-textos {
+  min-width: 0;
+}
+
+.panel-textos h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.panel-subtitulo {
+  display: block;
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Botón visual "Filtros" a la derecha de la barra */
+.btn-toggle-filtros {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.panel-titulo:hover .btn-toggle-filtros {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.badge-filtros {
+  background: #ffc107;
+  color: #212529;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+}
+
+.chevron-filtros {
+  font-size: 12px;
+}
+
+/* ── Zona colapsable (animación suave con grid-template-rows) ── */
+.panel-filtros {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.28s ease;
+}
+
+.panel-filtros.abierto {
+  grid-template-rows: 1fr;
+}
+
+.panel-filtros-inner {
+  overflow: hidden; /* requerido por la técnica 0fr→1fr */
+}
+
+/* ── Cuadrícula de filtros ── */
+.filtros-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px 12px;
+  padding: 14px 16px 16px;
+}
+
+.filtro-span-2 {
+  grid-column: span 2;
+}
+
+.filtro-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #6c757d;
+  margin-bottom: 4px;
+}
+
+.filtro-acciones {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+/* ── Móvil: dos columnas y acciones apiladas ── */
+@media (max-width: 768px) {
+  .panel-titulo {
+    padding: 10px 12px;
+  }
+
+  .panel-textos h2 {
+    font-size: 15px;
+  }
+
+  .panel-icono {
+    font-size: 22px;
+  }
+
+  .btn-toggle-texto {
+    display: none; /* solo icono de embudo + badge + chevron */
+  }
+
+  .filtros-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px 8px;
+    padding: 10px 12px 12px;
+  }
+
+  /* Bodega y Búsqueda a lo ancho; Estado/Clase y Grupo/Orden en pares */
+  .filtro-span-2 {
+    grid-column: 1 / -1;
+  }
+
+  .filtro-acciones {
+    flex-direction: column-reverse;
+  }
+
+  .filtro-acciones .btn {
+    width: 100%;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ✅ Panel de filtros sobre la tabla + barra de avance de revisión
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Barra de título estática (solo el nombre de la pantalla, sin toggle) */
+.panel-titulo-estatico {
+  cursor: default;
+}
+
+/* Panel de filtros pegado a la tabla */
+.panel-filtros-tabla {
+  margin-bottom: 8px; /* queda visualmente unido a la tabla */
+}
+
+.panel-titulo-filtros {
+  padding: 9px 14px;
+}
+
+.titulo-filtros {
+  font-size: 15px !important;
+}
+
+.panel-icono-filtros {
+  font-size: 18px;
+}
+
+/* En la barra de filtros, el badge va junto al título */
+.panel-titulo-filtros .badge-filtros {
+  margin-left: 2px;
+}
+
+/* Contador de artículos visibles en la barra de filtros */
+.panel-titulo-filtros .btn-toggle-texto {
+  display: inline !important; /* visible también en móvil (es información útil) */
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ✅ Acordeón de ESTADÍSTICAS (tarjetas + avance) dentro del panel superior
+   ══════════════════════════════════════════════════════════════════ */
+
+/* Resumen "ok · dif" en la barra: visible también en móvil cuando está colapsado */
+.panel-titulo-estadisticas .btn-toggle-texto {
+  display: inline !important;
+  font-weight: 600;
+  font-size: 12px;
+}
+.btn-toggle-estadisticas .resumen-ok  { color: #b7f7c8; font-weight: 700; }
+.btn-toggle-estadisticas .resumen-dif { color: #ffe08a; font-weight: 700; }
+
+/* Cuerpo colapsable: reutiliza .panel-filtros/.abierto para la animación 0fr→1fr.
+   Fondo suave para que las tarjetas blancas y la barra de avance contrasten. */
+.estadisticas-section-inner {
+  padding: 14px 16px 16px;
+  background: #f4f5fb;
+}
+
+/* ── Barra de avance de revisión real ── */
+.progreso-encabezado {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.progreso-detalle {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 600;
+}
+
+.progreso-barra {
+  background-color: #e9ecef; /* lo pendiente se ve gris */
+  border-radius: 6px;
+}
+
+.progreso-barra .progress-bar {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.progreso-leyenda {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.leyenda-cuadro {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 4px;
+  vertical-align: baseline;
+}
+
+.leyenda-verde   { background-color: #198754; }
+.leyenda-amarilla{ background-color: #ffc107; }
+.leyenda-gris    { background-color: #e9ecef; border: 1px solid #ced4da; }
+/* ══════════════════════════════════════════════════════════════
+   ✅ NUEVO: indicadores de "conteo pendiente de sincronizar"
+   ══════════════════════════════════════════════════════════════ */
+
+.badge-pendiente {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  margin-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #7c4a03;
+  background: #fff3cd;
+  border: 1px solid #ffe08a;
+  border-radius: 999px;
+  white-space: nowrap;
+  animation: pendientePulse 1.8s ease-in-out infinite;
+}
+
+.badge-pendiente--sm {
+  font-size: 0.66rem;
+  padding: 1px 6px;
+}
+
+@keyframes pendientePulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
+.banner-pendientes {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 0 0 12px 0;
+  background: #fff8e6;
+  border: 1px solid #ffe08a;
+  border-left: 4px solid #f0ad4e;
+  border-radius: 8px;
+  color: #7c4a03;
+  font-size: 0.85rem;
+}
+
+.banner-pendientes__icono {
+  font-size: 1.1rem;
+  animation: pendientePulse 1.8s ease-in-out infinite;
+}
+
+.banner-pendientes__spinner {
+  margin-left: auto;
+  font-style: italic;
+  opacity: 0.8;
+}

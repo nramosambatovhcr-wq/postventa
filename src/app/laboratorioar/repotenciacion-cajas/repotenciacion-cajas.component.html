@@ -1,0 +1,1405 @@
+<!-- repotenciacion-cajas.component.html -->
+<div class="container-fluid">
+
+  <!-- ══════════════════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════════════════ -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">
+        <i class="fas fa-tools me-2"></i>VHCR Importaciones — Repotenciación de Componentes
+      </h1>
+      <p class="dashboard-subtitle">Gestión de Cajas de Cambio y Diferenciales / Transferencias</p>
+    </div>
+  </div>
+
+  <!-- ALERTAS -->
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>{{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VISTA: LISTADO
+  ══════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="vistaActual === 'listado'">
+
+    <!-- Estadísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon total"><i class="fas fa-box"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.total }}</h3><p>TOTAL</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon caja"><i class="fas fa-cog"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.cajasCambio }}</h3><p>CAJAS</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon diferencial"><i class="fas fa-wrench"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.diferenciales }}</h3><p>DIFERENCIALES</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pending"><i class="fas fa-clock"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.pendientes }}</h3><p>PENDIENTES</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon process"><i class="fas fa-spinner fa-spin"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.enProceso }}</h3><p>EN PROCESO</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon completed"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.completados }}</h3><p>COMPLETADOS</p></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon delivered"><i class="fas fa-shipping-fast"></i></div>
+        <div class="stat-content"><h3>{{ estadisticas.entregados }}</h3><p>ENTREGADOS</p></div>
+      </div>
+    </div>
+
+    <!-- Controles y Filtros -->
+    <div class="controls-section">
+      <div class="controls-left">
+        <button class="btn btn-primary btn-nuevo" (click)="abrirModalNuevo()">
+          <i class="fas fa-plus me-1"></i>Nueva Repotenciación
+        </button>
+        <button class="btn btn-outline-secondary" (click)="cargarRepotenciaciones()" [disabled]="cargando">
+          <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
+        </button>
+      </div>
+      <div class="filters-section">
+        <div class="filter-group">
+          <label>Buscar:</label>
+          <input type="text" class="form-control" placeholder="Agencia, modelo, serie..."
+                 [(ngModel)]="terminoBusqueda" (input)="onFiltroChange()">
+        </div>
+        <div class="filter-group">
+          <label>Tipo:</label>
+          <select class="form-select" [(ngModel)]="filtroTipo" (change)="onFiltroChange()">
+            <option *ngFor="let t of tipos" [value]="t.value">{{ t.label }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Estado:</label>
+          <select class="form-select" [(ngModel)]="filtroEstado" (change)="onFiltroChange()">
+            <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Desde:</label>
+          <input type="date" class="form-control" [(ngModel)]="fechaDesde" (change)="onFiltroChange()">
+        </div>
+        <div class="filter-group">
+          <label>Hasta:</label>
+          <input type="date" class="form-control" [(ngModel)]="fechaHasta" (change)="onFiltroChange()">
+        </div>
+        <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+          <i class="fas fa-times"></i> Limpiar
+        </button>
+      </div>
+      <div class="export-section">
+        <button class="btn btn-success" (click)="exportarExcel()">
+          <i class="fas fa-file-excel me-1"></i>Excel
+        </button>
+        <button class="btn btn-info text-white" (click)="exportarCSV()">
+          <i class="fas fa-file-csv me-1"></i>CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="table-container">
+      <div *ngIf="cargando" class="loading-overlay">
+        <div class="spinner-border text-primary" role="status"></div>
+      </div>
+
+      <table class="table table-modern">
+        <thead>
+          <tr>
+            <th>TIPO</th>
+            <th>AGENCIA</th>
+            <th>MODELO / SERIE</th>
+            <th>CLIENTE</th>
+            <th>ORDEN</th>
+            <th>ESTADO</th>
+            <th>REGISTRO</th>
+            <th>ENVÍO</th>
+            <th>RECEPCIÓN</th>
+            <th>USUARIO</th>
+          <!--  <th>IMGS</th>-->
+            <th>ACCIONES</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let rep of repotenciacionesFiltradas; let i = index">
+            <!-- Fila principal -->
+            <tr [class.table-row-even]="i % 2 === 0">
+              <td>
+                <span class="badge" [ngClass]="esDiferencial(rep) ? 'badge-info' : 'badge-primary'">
+                  <i class="fas me-1" [ngClass]="esDiferencial(rep) ? 'fa-wrench' : 'fa-cog'"></i>
+                  {{ esDiferencial(rep) ? 'DIF' : 'CAJA' }}
+                </span>
+              </td>
+              <td class="fw-semibold">{{ rep.agencia }}</td>
+              <td>
+                <div class="fw-semibold">{{ rep.modelo }}</div>
+                <small class="text-muted">{{ rep.serie }}</small>
+              </td>
+              <td>{{ rep.cliente }}</td>
+              <td class="fw-semibold text-primary">{{ rep.ordenTrabajo }}</td>
+              <td>
+                <span class="badge" [ngClass]="claseEstado(rep.estado)">
+                  <i class="fas me-1" [ngClass]="iconoEstado(rep.estado)"></i>{{ rep.estado }}
+                </span>
+              </td>
+              <td>
+                <small title="Registrado por: {{ rep.usuariocreaNombre || 'N/A' }}">
+                  <i class="fas fa-plus-circle me-1 text-primary"></i>{{ formatearFecha(rep.fechaCreacion) }}
+                </small>
+              </td>
+              <td><small>{{ formatearFecha(rep.fechaIngreso) }}</small></td>
+              <td>
+                <small *ngIf="rep.recepcion"
+                       class="text-success fw-semibold"
+                       title="Recibido por: {{ rep.recepcion.recibidoPorNombre }} — Condición: {{ rep.recepcion.condicionFisica }}">
+                  <i class="fas fa-clipboard-check me-1"></i>{{ formatearFecha(rep.recepcion.fechaRecepcion) }}
+                </small>
+                <small *ngIf="!rep.recepcion" class="text-muted" title="Aún no recepcionado en laboratorio">—</small>
+              </td>
+              <td>
+                <span class="badge badge-secondary">{{ rep.usuariocreaNombre || 'N/A' }}</span>
+              </td>
+          <!--    <td>
+                
+                <div class="imgs-indicators">
+                  <span class="img-dot" [class.active]="rep.imagenPlaca" title="Placa">
+                    <i class="fas fa-id-card"></i>
+                  </span>
+                  <span class="img-dot" [class.active]="rep.fotografias?.length === 4" title="4 Fotos">
+                    <i class="fas fa-camera"></i>
+                    <small>{{ rep.fotografias?.length || 0 }}</small>
+                  </span>
+                </div>
+              </td>-->
+              <td>
+                <div class="action-buttons">
+                  <!-- Ver detalle -->
+                  <button class="btn btn-sm btn-outline-secondary" (click)="verDetalle(rep)" title="Ver detalle completo">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <!-- ② Cambiar estado -->
+                  <button class="btn btn-sm btn-outline-warning" (click)="abrirModalEstado(rep)" title="Cambiar estado">
+                    <i class="fas fa-exchange-alt"></i>
+                  </button>
+                  <!-- ③ Recepción laboratorio — oculto si ya fue recepcionado -->
+                  <button class="btn btn-sm btn-outline-success" (click)="abrirModalRecepcion(rep)"
+                          title="Recepcionar en laboratorio"
+                          *ngIf="!yaFueRecepcionado(rep)">
+                    <i class="fas fa-clipboard-check"></i>
+                  </button>
+                  <!-- Indicador visual cuando ya fue recepcionado -->
+                  <span *ngIf="yaFueRecepcionado(rep)"
+                        class="badge bg-success"
+                        title="Recepcionado: {{ rep.recepcion?.recibidoPorNombre }} — {{ rep.recepcion?.condicionFisica }}">
+                    <i class="fas fa-clipboard-check"></i>
+                  </span>
+                  <!-- ④ Asignar mecánico — oculto si ya tiene mecánico asignado -->
+                  <button class="btn btn-sm btn-outline-secondary" (click)="abrirModalMecanico(rep)"
+                          title="Asignar mecánico"
+                          *ngIf="!rep.mecanicoId">
+                    <i class="fas fa-user-cog"></i>
+                  </button>
+                  <!-- Badge: ya tiene mecánico asignado -->
+                  <span *ngIf="rep.mecanicoId"
+                        class="badge bg-secondary px-2 py-1"
+                        style="cursor:default; font-size:0.75rem;"
+                        title="Mecánico: {{ rep.mecanicoNombre }} | Asignado: {{ rep.fechaAsignacion | date:'dd/MM/yyyy HH:mm' }}">
+                    <i class="fas fa-user-cog me-1"></i>{{ rep.mecanicoNombre }}
+                  </span>
+                  <!-- ⑤ Aprobar repuestos — visible cuando la caja está en espera -->
+                  <button class="btn btn-sm btn-danger"
+                          (click)="abrirModalRepuestos(rep)"
+                          title="Revisar / aprobar repuestos"
+                          *ngIf="tieneRepuestosPendientes(rep)">
+                    <i class="fas fa-dolly-flatbed"></i>
+                  </button>
+                  <!-- Imágenes -->
+                  <button class="btn btn-sm btn-outline-info" (click)="abrirModalImagenes(rep)" title="Gestionar imágenes">
+                    <i class="fas fa-images"></i>
+                  </button>
+                  <!-- Editar -->
+                <!--<button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditar(rep)" title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>-->  
+                  <!-- Eliminar -->
+                <!--   <button class="btn btn-sm btn-outline-danger" (click)="eliminarRepotenciacion(rep)" title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>-->  
+                </div>
+              </td>
+            </tr>
+
+           
+          </ng-container>
+        </tbody>
+      </table>
+
+      <div *ngIf="repotenciacionesFiltradas.length === 0 && !cargando" class="no-data">
+        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+        <p>No se encontraron repotenciaciones</p>
+      </div>
+    </div>
+
+  </ng-container><!-- /listado -->
+
+
+  <!-- ══════════════════════════════════════════════════════════
+       VISTA: DETALLE COMPLETO
+  ══════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="vistaActual === 'detalle'">
+
+    <!-- Botón volver -->
+    <div class="mb-3 d-flex align-items-center gap-2">
+      <button class="btn btn-outline-secondary" (click)="volverAlListado()">
+        <i class="fas fa-arrow-left me-2"></i>Volver al listado
+      </button>
+      <h5 class="mb-0 ms-2 text-muted">
+        Detalle — Orden <strong class="text-primary">{{ repotenciacionSeleccionada?.ordenTrabajo }}</strong>
+      </h5>
+    </div>
+
+    <div *ngIf="cargandoDetalle" class="text-center py-5">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-2 text-muted">Cargando detalle...</p>
+    </div>
+
+    <ng-container *ngIf="!cargandoDetalle && repotenciacionSeleccionada as rep">
+
+      <!-- Botones de acción rápida en detalle -->
+      <div class="detalle-acciones mb-3">
+        <button class="btn btn-warning" (click)="abrirModalEstado(rep)">
+          <i class="fas fa-exchange-alt me-2"></i>Cambiar Estado
+        </button>
+        <button class="btn btn-success" (click)="abrirModalRecepcion(rep)"
+                *ngIf="!yaFueRecepcionado(rep)">
+          <i class="fas fa-clipboard-check me-2"></i>Recepcionar en Lab.
+        </button>
+        <!-- Asignar mecánico — solo si no tiene uno asignado -->
+        <button class="btn btn-secondary" (click)="abrirModalMecanico(rep)"
+                *ngIf="!rep.mecanicoId">
+          <i class="fas fa-user-cog me-2"></i>Asignar Mecánico
+        </button>
+        <!-- Badge mecánico ya asignado -->
+        <span *ngIf="rep.mecanicoId"
+              class="badge bg-secondary px-3 py-2 d-inline-flex align-items-center gap-1"
+              style="font-size:0.8rem;">
+          <i class="fas fa-user-cog"></i>
+          {{ rep.mecanicoNombre }}
+        </span>
+        <!-- ⑤ Aprobar repuestos -->
+        <button class="btn btn-danger" (click)="abrirModalRepuestos(rep)"
+                *ngIf="tieneRepuestosPendientes(rep)">
+          <i class="fas fa-dolly-flatbed me-2"></i>Aprobar Repuestos
+        </button>
+        <button class="btn btn-info text-white" (click)="abrirModalImagenes(rep)">
+          <i class="fas fa-images me-2"></i>Gestionar Imágenes
+        </button>
+      <!--  <button class="btn btn-primary" (click)="abrirModalEditar(rep)">
+          <i class="fas fa-edit me-2"></i>Editar
+        </button>-->
+      </div>
+
+      <div class="row g-3">
+
+        <!-- ── Tarjeta: Estado y progreso ───────────────────────────── -->
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="badge fs-6 px-3 py-2" [ngClass]="claseEstado(rep.estado)">
+                  <i class="fas me-2" [ngClass]="iconoEstado(rep.estado)"></i>{{ rep.estado }}
+                </span>
+                <div>
+                  <small class="text-muted d-block">
+                    <i class="fas fa-user me-1"></i>{{ rep.usuariocreaNombre || 'N/A' }}
+                    &nbsp;·&nbsp;
+                    <i class="fas fa-calendar me-1"></i>{{ formatearFechaHora(rep.fechaCreacion) }}
+                  </small>
+                  <small class="text-muted" *ngIf="rep.fechaActualizacion">
+                    <i class="fas fa-edit me-1"></i>Actualizado: {{ formatearFechaHora(rep.fechaActualizacion) }}
+                  </small>
+                </div>
+              </div>
+
+              <!-- Mecánico asignado -->
+              <div *ngIf="rep.mecanicoNombre" class="alert alert-success py-2 small mb-3 d-flex align-items-center gap-2">
+                <i class="fas fa-user-cog text-success fa-lg"></i>
+                <div>
+                  <strong>Mecánico asignado:</strong> {{ rep.mecanicoNombre }}
+                  <span *ngIf="rep.fechaAsignacion" class="text-muted ms-2">
+                    — {{ formatearFechaHora(rep.fechaAsignacion) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Info de recepción si existe -->
+              <div *ngIf="rep.recepcion" class="alert alert-info py-2 small mb-3">
+                <div class="d-flex align-items-center gap-2 mb-1">
+                  <i class="fas fa-clipboard-check text-info fa-lg"></i>
+                  <strong>Recepción en Laboratorio</strong>
+                </div>
+                <div class="row g-1 small">
+                  <div class="col-6">
+                    <span class="text-muted">Recibido por:</span> {{ rep.recepcion.recibidoPorNombre }}
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Fecha:</span> {{ formatearFechaHora(rep.recepcion.fechaRecepcion) }}
+                  </div>
+                  <div class="col-6">
+                    <span class="text-muted">Condición:</span>
+                    <span class="badge ms-1"
+                          [ngClass]="rep.recepcion.condicionFisica === 'BUENA' ? 'bg-success' :
+                                     rep.recepcion.condicionFisica === 'DAÑADA' ? 'bg-warning text-dark' : 'bg-danger'">
+                      {{ rep.recepcion.condicionFisica }}
+                    </span>
+                  </div>
+                  <div class="col-12" *ngIf="rep.recepcion.observaciones">
+                    <span class="text-muted">Obs:</span> {{ rep.recepcion.observaciones }}
+                  </div>
+                </div>
+              </div>
+              <!-- Barra progreso -->
+              <div class="progress mb-1" style="height:10px; border-radius:999px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated"
+                     [ngClass]="claseBsEstado(rep.estado)"
+                     [style.width.%]="porcentajeEstado(rep.estado)">
+                </div>
+              </div>
+              <div class="d-flex justify-content-between" style="font-size:0.72rem; color:#aaa;">
+                <span>Pendiente</span><span>En Proceso</span><span>Completado</span><span>Entregado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tarjeta: Caja de Cambio ───────────────────────────────── -->
+        <div class="col-md-6">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-header bg-transparent border-0 pb-0">
+              <h6 class="mb-0"><i class="fas fa-cog me-2 text-primary"></i>Caja de Cambio</h6>
+            </div>
+            <div class="card-body">
+              <dl class="row small mb-0">
+                <dt class="col-5 text-muted">Agencia</dt>     <dd class="col-7">{{ rep.agencia }}</dd>
+                <dt class="col-5 text-muted">Modelo</dt>      <dd class="col-7 fw-semibold">{{ rep.modelo }}</dd>
+                <dt class="col-5 text-muted">Serie Caja</dt> <dd class="col-7">{{ rep.serie }}</dd>
+                <dt class="col-5 text-muted">Cliente</dt>     <dd class="col-7">{{ rep.cliente }}</dd>
+                <dt class="col-5 text-muted">Orden Trabajo</dt>
+                <dd class="col-7 fw-semibold text-primary">{{ rep.ordenTrabajo }}</dd>
+                <dt class="col-5 text-muted">Guía Remisión</dt> <dd class="col-7">{{ rep.guiaRemision }}</dd>
+                <dt class="col-5 text-muted">Fecha Ingreso</dt>
+                <dd class="col-7">{{ formatearFechaHora(rep.fechaIngreso) }}</dd>
+                <ng-container *ngIf="rep.fechaEntrega">
+                  <dt class="col-5 text-muted">Fecha Entrega</dt>
+                  <dd class="col-7">{{ formatearFechaHora(rep.fechaEntrega) }}</dd>
+                </ng-container>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tarjeta: Diferencial (condicional) ───────────────────── -->
+        <div class="col-md-6" *ngIf="esDiferencial(rep)">
+          <div class="card shadow-sm border-0 h-100 border-info" style="border-left: 4px solid #0dcaf0 !important;">
+            <div class="card-header bg-transparent border-0 pb-0">
+              <h6 class="mb-0"><i class="fas fa-wrench me-2 text-info"></i>Diferencial / Transferencia</h6>
+            </div>
+            <div class="card-body">
+              <dl class="row small mb-0">
+                <dt class="col-5 text-muted">Agencia</dt>      <dd class="col-7">{{ rep.agenciaDif }}</dd>
+                <dt class="col-5 text-muted">Modelo</dt>       <dd class="col-7 fw-semibold">{{ rep.modeloDif }}</dd>
+                <dt class="col-5 text-muted">Serie</dt>        <dd class="col-7">{{ rep.serieDif }}</dd>
+                <dt class="col-5 text-muted">Cliente</dt>      <dd class="col-7">{{ rep.clienteDif }}</dd>
+                <dt class="col-5 text-muted">Orden Trabajo</dt>
+                <dd class="col-7 fw-semibold text-info">{{ rep.ordenTrabajoDif }}</dd>
+                <dt class="col-5 text-muted">Guía Remisión</dt><dd class="col-7">{{ rep.guiaRemisionDif }}</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tarjeta: Observaciones / Tutorial ────────────────────── -->
+        <div class="col-12" *ngIf="rep.observaciones  ">
+          <div class="card shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pb-0">
+              <h6 class="mb-0"><i class="fas fa-comment-alt me-2 text-secondary"></i>Notas adicionales</h6>
+            </div>
+            <div class="card-body small">
+              <p *ngIf="rep.observaciones" class="mb-2" style="white-space: pre-line;">{{ rep.observaciones }}</p>
+              
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tarjeta: Seguimiento del taller (solo lectura) ───────── -->
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="fas fa-stream me-2 text-secondary"></i>Línea de tiempo de la orden</h6>
+              <span *ngIf="cargandoSeguimiento" class="spinner-border spinner-border-sm text-secondary"></span>
+            </div>
+            <div class="card-body">
+
+              <div class="seguimiento-timeline">
+
+                <!-- ① REGISTRO DE LA ORDEN -->
+                <div class="seg-step seg-hecho">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-primary"><i class="fas fa-plus"></i></span>
+                    <div>
+                      <strong>Registro de la orden</strong>
+                      <small class="text-muted d-block">
+                        {{ formatearFechaHora(rep.fechaCreacion) }}
+                        <ng-container *ngIf="rep.usuariocreaNombre"> · por {{ rep.usuariocreaNombre }}</ng-container>
+                      </small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body" *ngIf="fotosRegistro.length">
+                    <div class="seg-imgs">
+                      <img *ngFor="let img of fotosRegistro; let i = index"
+                           [src]="img.url" class="seg-thumb" [alt]="img.tag"
+                           loading="lazy" decoding="async"
+                           [title]="img.tag" (click)="abrirVisorLista(fotosRegistro, i)">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ② ENVÍO / INGRESO -->
+                <div class="seg-step seg-hecho" *ngIf="rep.fechaIngreso">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-secondary"><i class="fas fa-truck"></i></span>
+                    <div>
+                      <strong>Envío / Ingreso</strong>
+                      <small class="text-muted d-block">{{ formatearFechaHora(rep.fechaIngreso) }}</small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body small">
+                    <span class="text-muted">Guía de remisión:</span> {{ rep.guiaRemision }}
+                    <ng-container *ngIf="rep.guiaRemisionDif">
+                      &nbsp;·&nbsp;<span class="text-muted">Guía dif.:</span> {{ rep.guiaRemisionDif }}
+                    </ng-container>
+                  </div>
+                </div>
+
+                <!-- ③ ASIGNACIÓN DE MECÁNICO -->
+                <div class="seg-step seg-hecho" *ngIf="rep.mecanicoId">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-dark"><i class="fas fa-user-cog"></i></span>
+                    <div>
+                      <strong>Mecánico asignado</strong>
+                      <small class="text-muted d-block">
+                        <ng-container *ngIf="rep.fechaAsignacion">{{ formatearFechaHora(rep.fechaAsignacion) }} · </ng-container>{{ rep.mecanicoNombre }}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+                <div class="seg-step seg-pendiente" *ngIf="!rep.mecanicoId">
+                  <div class="seg-step-head">
+                    <span class="seg-dot seg-dot-pendiente"><i class="fas fa-user-cog"></i></span>
+                    <div>
+                      <strong>Mecánico asignado</strong>
+                      <small class="text-muted d-block">Pendiente</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ④ RECEPCIÓN EN LABORATORIO -->
+                <div class="seg-step seg-hecho" *ngIf="rep.recepcion">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-success"><i class="fas fa-clipboard-check"></i></span>
+                    <div>
+                      <strong>Recepción en laboratorio</strong>
+                      <small class="text-muted d-block">
+                        {{ formatearFechaHora(rep.recepcion.fechaRecepcion) }} · por {{ rep.recepcion.recibidoPorNombre }}
+                      </small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body small">
+                    <div class="mb-1">
+                      <span class="text-muted">Condición:</span>
+                      <span class="badge ms-1"
+                            [ngClass]="rep.recepcion.condicionFisica === 'BUENA' ? 'bg-success' :
+                                       rep.recepcion.condicionFisica === 'DAÑADA' ? 'bg-warning text-dark' : 'bg-danger'">
+                        {{ rep.recepcion.condicionFisica }}
+                      </span>
+                    </div>
+                    <p *ngIf="rep.recepcion.observaciones" class="mb-2 text-muted">{{ rep.recepcion.observaciones }}</p>
+                    <div *ngIf="fotosRecepcion.length" class="seg-imgs">
+                      <img *ngFor="let img of fotosRecepcion; let i = index"
+                           [src]="img.url" class="seg-thumb" alt="Recepción"
+                           loading="lazy" decoding="async"
+                           [title]="img.tag" (click)="abrirVisorLista(fotosRecepcion, i)">
+                    </div>
+                  </div>
+                </div>
+                <div class="seg-step seg-pendiente" *ngIf="!rep.recepcion">
+                  <div class="seg-step-head">
+                    <span class="seg-dot seg-dot-pendiente"><i class="fas fa-clipboard-check"></i></span>
+                    <div>
+                      <strong>Recepción en laboratorio</strong>
+                      <small class="text-muted d-block">Pendiente</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- DESARME -->
+                <div class="seg-step" *ngIf="desarme">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-info"><i class="fas fa-tools"></i></span>
+                    <div>
+                      <strong>Desarme</strong>
+                      <small class="text-muted d-block">
+                        Inicio: {{ formatearFechaHora(desarme.fechaInicio) }}
+                        <ng-container *ngIf="desarme.fechaFin"> · Fin: {{ formatearFechaHora(desarme.fechaFin) }}</ng-container>
+                      </small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body">
+                    <p *ngIf="desarme.observaciones" class="small mb-2" style="white-space:pre-line;">{{ desarme.observaciones }}</p>
+                    <div *ngIf="desarme.piezas?.length" class="table-responsive">
+                      <table class="table table-sm align-middle mb-2">
+                        <thead class="table-light">
+                          <tr><th>Código</th><th>Pieza</th><th>Estado</th><th>Reemplazo</th><th>Obs.</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let p of desarme.piezas">
+                            <td>{{ p.codigo || '—' }}</td>
+                            <td>{{ p.nombre }}</td>
+                            <td><span class="badge bg-secondary">{{ p.estado }}</span></td>
+                            <td>
+                              <span class="badge" [ngClass]="p.requiereReemplazo ? 'bg-danger' : 'bg-success'">
+                                {{ p.requiereReemplazo ? 'Sí' : 'No' }}
+                              </span>
+                            </td>
+                            <td class="small text-muted">{{ p.observaciones || '—' }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div *ngIf="imgsDesarme.length" class="seg-imgs">
+                      <img *ngFor="let img of imgsDesarme; let i = index"
+                           [src]="img.url" class="seg-thumb" alt="Desarme"
+                           loading="lazy" decoding="async"
+                           [title]="img.tag" (click)="abrirVisorLista(imgsDesarme, i)">
+                    </div>
+                  </div>
+                </div>
+                <div class="seg-step seg-pendiente" *ngIf="!desarme && !cargandoSeguimiento">
+                  <div class="seg-step-head">
+                    <span class="seg-dot seg-dot-pendiente"><i class="fas fa-tools"></i></span>
+                    <div>
+                      <strong>Desarme</strong>
+                      <small class="text-muted d-block">Pendiente</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- REPUESTOS -->
+                <div class="seg-step" *ngIf="solicitudesRepuestos.length">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-warning text-dark"><i class="fas fa-dolly-flatbed"></i></span>
+                    <div>
+                      <strong>Solicitudes de repuestos</strong>
+                      <small class="text-muted d-block">{{ solicitudesRepuestos.length }} solicitud(es)</small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body">
+                    <div *ngFor="let sol of solicitudesRepuestos" class="border rounded p-2 mb-2">
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <small class="text-muted">{{ formatearFechaHora(sol.fechaSolicitud) }}</small>
+                        <span class="badge" [ngClass]="claseEstadoSolicitud(sol.estado)">{{ sol.estado }}</span>
+                      </div>
+                      <div class="table-responsive">
+                        <table class="table table-sm mb-0">
+                          <thead class="table-light">
+                            <tr>
+                              <th>Código</th><th>Descripción</th>
+                              <th class="text-center">Solic.</th><th class="text-center">Aprob.</th><th>Estado</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr *ngFor="let r of sol.repuestos">
+                              <td>{{ r.codigo || '—' }}</td>
+                              <td>{{ r.descripcion }}</td>
+                              <td class="text-center">{{ r.cantidadSolicitada }}</td>
+                              <td class="text-center">{{ r.cantidadAprobada ?? '—' }}</td>
+                              <td><span class="badge" [ngClass]="claseEstadoSolicitud(r.estado)">{{ r.estado }}</span></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger" (click)="abrirModalRepuestos(rep)"
+                            *ngIf="tieneRepuestosPendientes(rep)">
+                      <i class="fas fa-clipboard-check me-1"></i>Revisar / aprobar
+                    </button>
+                  </div>
+                </div>
+
+                <!-- REPARACIÓN -->
+                <div class="seg-step" *ngIf="reparacion">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-info"><i class="fas fa-hammer"></i></span>
+                    <div>
+                      <strong>Reparación</strong>
+                      <small class="text-muted d-block">
+                        Inicio: {{ formatearFechaHora(reparacion.fechaInicio) }}
+                        <ng-container *ngIf="reparacion.fechaFin"> · Fin: {{ formatearFechaHora(reparacion.fechaFin) }}</ng-container>
+                      </small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body">
+                    <ul *ngIf="reparacion.trabajosRealizados?.length" class="small mb-2 ps-3">
+                      <li *ngFor="let t of reparacion.trabajosRealizados">{{ t }}</li>
+                    </ul>
+                    <p *ngIf="reparacion.observaciones" class="small mb-2" style="white-space:pre-line;">{{ reparacion.observaciones }}</p>
+                    <div class="small mb-2">
+                      Prueba de funcionamiento:
+                      <span class="badge" [ngClass]="reparacion.pruebaFuncionamiento ? 'bg-success' : 'bg-secondary'">
+                        {{ reparacion.pruebaFuncionamiento ? 'Aprobada' : 'Pendiente' }}
+                      </span>
+                    </div>
+                    <div *ngIf="imgsReparacion.length" class="seg-imgs">
+                      <img *ngFor="let img of imgsReparacion; let i = index"
+                           [src]="img.url" class="seg-thumb" alt="Reparación"
+                           loading="lazy" decoding="async"
+                           [title]="img.tag" (click)="abrirVisorLista(imgsReparacion, i)">
+                    </div>
+                  </div>
+                </div>
+                <div class="seg-step seg-pendiente" *ngIf="!reparacion && !cargandoSeguimiento">
+                  <div class="seg-step-head">
+                    <span class="seg-dot seg-dot-pendiente"><i class="fas fa-hammer"></i></span>
+                    <div>
+                      <strong>Reparación</strong>
+                      <small class="text-muted d-block">Pendiente</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ENTREGA -->
+                <div class="seg-step" *ngIf="entrega">
+                  <div class="seg-step-head">
+                    <span class="seg-dot bg-primary"><i class="fas fa-box-open"></i></span>
+                    <div>
+                      <strong>Entrega</strong>
+                      <small class="text-muted d-block">{{ formatearFechaHora(entrega.fechaEntrega) }}</small>
+                    </div>
+                  </div>
+                  <div class="seg-step-body small">
+                    <div><strong>Entregado a:</strong> {{ entrega.entregadoA }}</div>
+                    <div *ngIf="entrega.observaciones" class="text-muted">{{ entrega.observaciones }}</div>
+                    <div *ngIf="imgsEntrega.length" class="seg-imgs mt-2">
+                      <img *ngFor="let img of imgsEntrega; let i = index"
+                           [src]="img.url" class="seg-thumb" alt="Entrega"
+                           loading="lazy" decoding="async"
+                           [title]="img.tag" (click)="abrirVisorLista(imgsEntrega, i)">
+                    </div>
+                  </div>
+                </div>
+                <div class="seg-step seg-pendiente" *ngIf="!entrega && !cargandoSeguimiento">
+                  <div class="seg-step-head">
+                    <span class="seg-dot seg-dot-pendiente"><i class="fas fa-box-open"></i></span>
+                    <div>
+                      <strong>Entrega</strong>
+                      <small class="text-muted d-block">Pendiente</small>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Tarjeta: Imágenes ─────────────────────────────────────── -->
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
+              <h6 class="mb-0"><i class="fas fa-camera me-2 text-secondary"></i>Imágenes adjuntas</h6>
+              <button class="btn btn-sm btn-outline-info" (click)="abrirModalImagenes(rep)">
+                <i class="fas fa-upload me-1"></i>Gestionar
+              </button>
+            </div>
+            <div class="card-body">
+
+              <!-- Sin imágenes -->
+              <div *ngIf="!rep.imagenPlaca && !rep.fotografias?.length" class="text-center py-3 text-muted">
+                <i class="fas fa-image fa-2x mb-2 d-block"></i>
+                No se han adjuntado imágenes aún.
+              </div>
+
+              <div class="detalle-imgs-grid">
+                <!-- Placa -->
+                <div class="detalle-img-item" *ngIf="rep.imagenPlaca">
+                  <img [src]="rep.imagenPlaca.url" alt="Placa" class="detalle-thumb"
+                       loading="lazy" decoding="async"
+                       (click)="abrirVisorLista(galeriaAdjuntas, 0)">
+                  <div class="detalle-img-footer">
+                    <small><i class="fas fa-id-card text-warning me-1"></i>Placa</small>
+                    <button class="btn btn-xs btn-outline-danger ms-1"
+                            (click)="eliminarImagenIndividual(rep.imagenPlaca!.id); $event.stopPropagation()" title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Fotografías -->
+                <div class="detalle-img-item" *ngFor="let foto of rep.fotografias; let i = index">
+                  <img [src]="foto.url" [alt]="'Vista ' + (i+1)" class="detalle-thumb"
+                       loading="lazy" decoding="async"
+                       (click)="abrirVisorLista(galeriaAdjuntas, i + (rep.imagenPlaca ? 1 : 0))">
+                  <div class="detalle-img-footer">
+                    <small>Vista {{ i + 1 }}</small>
+                    <button class="btn btn-xs btn-outline-danger ms-1"
+                            (click)="eliminarImagenIndividual(foto.id); $event.stopPropagation()" title="Eliminar">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /row -->
+    </ng-container>
+  </ng-container><!-- /detalle -->
+
+</div><!-- /container-fluid -->
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL ① CREAR / EDITAR
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas me-2" [ngClass]="modoEdicion ? 'fa-edit' : 'fa-plus'"></i>
+          {{ modoEdicion ? 'Editar Repotenciación' : 'Nueva Repotenciación' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form #repForm="ngForm">
+
+          <!-- CAJA DE CAMBIO -->
+          <div class="section-header">
+            <h5><i class="fas fa-cog me-2"></i>CAJA DE CAMBIO</h5>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Agencia *</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.agencia" name="agencia" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Modelo *</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.modelo" name="modelo" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Serie Caja *</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.serie" name="serie" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cliente *</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.cliente" name="cliente" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Orden de Trabajo *</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.ordenTrabajo" name="ordenTrabajo" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Guía de Remisión *</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.guiaRemision" name="guiaRemision" required>
+            </div>
+          </div>
+
+          <!-- DIFERENCIAL -->
+          <div class="section-header mt-2">
+            <h5><i class="fas fa-wrench me-2"></i>DIFERENCIAL / TRANSFERENCIA <small class="text-muted fw-normal">(opcional)</small></h5>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Agencia</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.agenciaDif" name="agenciaDif">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Modelo</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.modeloDif" name="modeloDif">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Serie</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.serieDif" name="serieDif">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.clienteDif" name="clienteDif">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Orden de Trabajo</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.ordenTrabajoDif" name="ordenTrabajoDif">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Guía de Remisión</label>
+              <input type="text" class="form-control" [(ngModel)]="formulario.guiaRemisionDif" name="guiaRemisionDif">
+            </div>
+          </div>
+
+          <!-- INFO ADICIONAL -->
+          <div class="section-header mt-2">
+            <h5><i class="fas fa-info-circle me-2"></i>INFORMACIÓN ADICIONAL</h5>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="formulario.estado" name="estado">
+                <option value="PENDIENTE">Pendiente</option>
+                <option value="EN_PROCESO">En Proceso</option>
+                <option value="COMPLETADO">Completado</option>
+                <option value="ENTREGADO">Entregado</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha Ingreso</label>
+              <input type="datetime-local" class="form-control" [(ngModel)]="formulario.fechaIngreso" name="fechaIngreso">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha Entrega</label>
+              <input type="datetime-local" class="form-control" [(ngModel)]="formulario.fechaEntrega" name="fechaEntrega">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Observaciones</label>
+              <textarea class="form-control" rows="3" [(ngModel)]="formulario.observaciones" name="observaciones"></textarea>
+            </div>
+             
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button class="btn btn-primary" (click)="guardarRepotenciacion()" [disabled]="cargando">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL ② CAMBIO DE ESTADO
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModalEstado" [style.display]="mostrarModalEstado ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-exchange-alt me-2 text-warning"></i>Cambiar Estado
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalEstado()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Info de la repotenciación -->
+        <div class="alert alert-light small mb-3">
+          <i class="fas fa-cog me-1 text-primary"></i>
+          <strong>{{ repotenciacionSeleccionada?.modelo }}</strong> —
+          OT: {{ repotenciacionSeleccionada?.ordenTrabajo }} —
+          Cliente: {{ repotenciacionSeleccionada?.cliente }}
+        </div>
+
+        <!-- Estado actual -->
+        <div class="mb-3 text-center">
+          <small class="text-muted d-block mb-1">Estado actual</small>
+          <span class="badge fs-6" [ngClass]="claseEstado(repotenciacionSeleccionada?.estado || '')">
+            <i class="fas me-1" [ngClass]="iconoEstado(repotenciacionSeleccionada?.estado || '')"></i>
+            {{ repotenciacionSeleccionada?.estado }}
+          </span>
+        </div>
+
+        <!-- Selector de nuevo estado -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nuevo estado:</label>
+          <div class="estado-selector">
+            <button *ngFor="let e of estadosCambio"
+                    class="btn estado-btn"
+                    [class]="e.clase"
+                    [class.activo]="nuevoEstado === e.value"
+                    (click)="nuevoEstado = e.value">
+              <i class="fas me-2" [ngClass]="e.icono"></i>{{ e.label }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Observación del cambio -->
+        <div class="mb-3">
+          <label class="form-label">Observación del cambio <small class="text-muted">(opcional)</small></label>
+          <textarea class="form-control" rows="3" [(ngModel)]="observacionEstado"
+                    placeholder="Describe el motivo del cambio de estado..."></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalEstado()">Cancelar</button>
+        <button class="btn btn-warning" (click)="confirmarCambioEstado()" [disabled]="cargandoEstado">
+          <span *ngIf="cargandoEstado" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargandoEstado" class="fas fa-save me-2"></i>
+          Confirmar Cambio
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL ③ RECEPCIÓN EN LABORATORIO
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModalRecepcion" [style.display]="mostrarModalRecepcion ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-clipboard-check me-2"></i>Recepción en Laboratorio
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalRecepcion()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Info componente -->
+        <div class="alert alert-light mb-3 small">
+          <div class="row">
+            <div class="col-6">
+              <strong>Componente:</strong><br>
+              {{ repotenciacionSeleccionada?.modelo }}<br>
+              <small class="text-muted">{{ repotenciacionSeleccionada?.serie }}</small>
+            </div>
+            <div class="col-6">
+              <strong>OT / Guía:</strong><br>
+              {{ repotenciacionSeleccionada?.ordenTrabajo }}<br>
+              <small class="text-muted">{{ repotenciacionSeleccionada?.guiaRemision }}</small>
+            </div>
+          </div>
+          <div class="mt-2">
+            <strong>Agencia:</strong> {{ repotenciacionSeleccionada?.agencia }} &nbsp;·&nbsp;
+            <strong>Cliente:</strong> {{ repotenciacionSeleccionada?.cliente }}
+          </div>
+        </div>
+
+        <!-- Fecha de recepción -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Fecha y hora de recepción *</label>
+          <input type="datetime-local" class="form-control" [(ngModel)]="recepcion.fechaRecepcion">
+        </div>
+
+        <!-- Recibido por — selector de mecánicos -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Recibido por *</label>
+          <select class="form-select" [(ngModel)]="recepcion.recibidoPorId">
+            <option [ngValue]="0" disabled>-- Seleccione quién recibe --</option>
+            <option *ngFor="let mec of mecanicos" [ngValue]="mec.id">{{ mec.nombre }}</option>
+          </select>
+        </div>
+
+        <!-- Condición física -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Condición física del componente *</label>
+          <div class="condicion-selector">
+            <div *ngFor="let c of condicionesFisicas"
+                 class="condicion-opcion"
+                 [class.selected]="recepcion.condicionFisica === c.value"
+                 (click)="recepcion.condicionFisica = c.value">
+              <i class="fas me-2" [ngClass]="c.icono"></i>{{ c.label }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Observaciones de recepción</label>
+          <textarea class="form-control" rows="3" [(ngModel)]="recepcion.observaciones"
+                    placeholder="Detalles adicionales del componente recibido..."></textarea>
+        </div>
+
+        <!-- Confirmación -->
+        <div class="alert alert-warning">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="confirmado" [(ngModel)]="recepcion.confirmado">
+            <label class="form-check-label fw-semibold" for="confirmado">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              Confirmo que verifiqué físicamente el componente y los datos están correctos.
+             
+            </label>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalRecepcion()">Cancelar</button>
+        <button class="btn btn-success" (click)="confirmarRecepcion()" [disabled]="cargandoEstado">
+          <span *ngIf="cargandoEstado" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargandoEstado" class="fas fa-clipboard-check me-2"></i>
+          Confirmar Recepción
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL IMÁGENES
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModalImagenes" [style.display]="mostrarModalImagenes ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-images me-2"></i>Imágenes — OT: {{ repotenciacionSeleccionada?.ordenTrabajo }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalImagenes()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Imágenes actuales -->
+        <div *ngIf="repotenciacionSeleccionada?.imagenPlaca || repotenciacionSeleccionada?.fotografias?.length" class="mb-4">
+          <h6 class="text-muted mb-2"><i class="fas fa-eye me-1"></i>Imágenes actuales</h6>
+          <div class="imgs-actuales-grid">
+            <div *ngIf="repotenciacionSeleccionada?.imagenPlaca" class="img-actual-item">
+              <img [src]="repotenciacionSeleccionada?.imagenPlaca?.url" alt="Placa" class="img-actual-thumb"
+                   loading="lazy" decoding="async">
+              <div class="img-actual-footer">
+                <small><i class="fas fa-id-card text-warning me-1"></i>Placa</small>
+                <button class="btn btn-xs btn-outline-danger"
+                        (click)="eliminarImagenIndividual(repotenciacionSeleccionada!.imagenPlaca!.id)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+            <div *ngFor="let foto of repotenciacionSeleccionada?.fotografias; let i = index" class="img-actual-item">
+              <img [src]="foto.url" [alt]="'Foto ' + (i+1)" class="img-actual-thumb"
+                   loading="lazy" decoding="async">
+              <div class="img-actual-footer">
+                <small>Vista {{ i + 1 }}</small>
+                <button class="btn btn-xs btn-outline-danger" (click)="eliminarImagenIndividual(foto.id)">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Upload placa -->
+        <div class="upload-section mb-4">
+          <h6><i class="fas fa-id-card me-2 text-warning"></i>Nueva imagen de placa</h6>
+          <input type="file" class="form-control mb-2" accept="image/*" (change)="onPlacaSelected($event)">
+          <div *ngIf="previsualizacionPlaca" class="mt-2">
+            <img [src]="previsualizacionPlaca" alt="Preview" class="img-preview">
+            <small class="text-success ms-2"><i class="fas fa-check-circle"></i> Lista para subir</small>
+          </div>
+        </div>
+
+        <!-- Upload 4 fotos -->
+        <div class="upload-section">
+          <h6><i class="fas fa-camera me-2 text-info"></i>4 fotografías de diferentes vistas</h6>
+          <input type="file" class="form-control mb-2" multiple accept="image/*" (change)="onFotografiasSelected($event)">
+          <div *ngIf="previsualizacionesFotos.length > 0" class="fotos-preview-grid mt-2">
+            <div *ngFor="let p of previsualizacionesFotos; let i = index" class="foto-preview-item">
+              <img [src]="p" [alt]="'Preview ' + (i+1)" class="foto-preview-thumb">
+              <small class="text-center d-block mt-1">Foto {{ i+1 }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info mt-3 small">
+          <i class="fas fa-info-circle me-2"></i>
+          JPG, PNG o WEBP · Máx. 5 MB por imagen · 1 placa + 4 fotografías
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalImagenes()">Cerrar</button>
+        <button class="btn btn-primary" (click)="subirImagenes()"
+                [disabled]="(!archivoPlaca && archivosFotografias.length === 0) || cargandoImgs">
+          <span *ngIf="cargandoImgs" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargandoImgs" class="fas fa-upload me-2"></i>Subir Imágenes
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay backdrop -->
+<div *ngIf="mostrarModal || mostrarModalImagenes || mostrarModalEstado || mostrarModalRecepcion || mostrarModalMecanico || mostrarModalRepuestos"
+     class="modal-backdrop fade show"></div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL ④ ASIGNAR MECÁNICO
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModalMecanico"
+     [style.display]="mostrarModalMecanico ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-md">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-user-cog me-2"></i>Asignar Mecánico
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalMecanico()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Info componente -->
+        <div class="alert alert-light small mb-3">
+          <i class="fas fa-cog me-1 text-primary"></i>
+          <strong>{{ repotenciacionSeleccionada?.modelo }}</strong> —
+          OT: {{ repotenciacionSeleccionada?.ordenTrabajo }} —
+          Cliente: {{ repotenciacionSeleccionada?.cliente }}
+        </div>
+
+        <!-- Mecánico actual -->
+        <div *ngIf="repotenciacionSeleccionada?.mecanicoNombre" class="alert alert-success small mb-3">
+          <i class="fas fa-user-check me-2"></i>
+          Mecánico actual: <strong>{{ repotenciacionSeleccionada?.mecanicoNombre }}</strong>
+        </div>
+
+        <!-- Aviso estado -->
+        <div class="alert alert-warning small mb-3">
+          <i class="fas fa-info-circle me-2"></i>
+          Al asignar un mecánico el estado cambiará automáticamente a <strong>EN PROCESO</strong>.
+        </div>
+
+        <!-- Lista de mecánicos -->
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Seleccionar mecánico:</label>
+          <div class="mecanicos-lista">
+            <div *ngFor="let mec of mecanicos"
+                 class="mecanico-opcion"
+                 [class.selected]="mecanicoSeleccionadoId === mec.id"
+                 (click)="mecanicoSeleccionadoId = mec.id">
+              <div class="mecanico-avatar">
+                <i class="fas fa-user-cog"></i>
+              </div>
+              <div class="mecanico-info flex-grow-1">
+                <div class="fw-semibold">{{ mec.nombre }}</div>
+                <small class="text-muted">{{ mec.email }}</small>
+              </div>
+              <i *ngIf="mecanicoSeleccionadoId === mec.id"
+                 class="fas fa-check-circle text-success ms-2 fs-5"></i>
+            </div>
+            <div *ngIf="mecanicos.length === 0" class="text-center text-muted py-3">
+              <i class="fas fa-user-slash fa-2x mb-2 d-block"></i>
+              No hay mecánicos disponibles
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalMecanico()">Cancelar</button>
+        <button class="btn btn-dark" (click)="confirmarAsignacionMecanico()"
+                [disabled]="!mecanicoSeleccionadoId || cargandoEstado">
+          <span *ngIf="cargandoEstado" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargandoEstado" class="fas fa-user-check me-2"></i>
+          Asignar y poner En Proceso
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL ⑤ APROBACIÓN DE REPUESTOS
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModalRepuestos"
+     [style.display]="mostrarModalRepuestos ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-dolly-flatbed me-2"></i>Revisión de Repuestos — OT: {{ repotenciacionSeleccionada?.ordenTrabajo }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalRepuestos()"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Info componente -->
+        <div class="alert alert-light small mb-3">
+          <i class="fas fa-cog me-1 text-primary"></i>
+          <strong>{{ repotenciacionSeleccionada?.modelo }}</strong> —
+          Cliente: {{ repotenciacionSeleccionada?.cliente }} —
+          Mecánico: {{ repotenciacionSeleccionada?.mecanicoNombre || 'N/A' }}
+        </div>
+
+        <!-- Cargando -->
+        <div *ngIf="cargandoRepuestos" class="text-center py-4">
+          <div class="spinner-border text-danger"></div>
+          <p class="text-muted mt-2 mb-0">Procesando solicitudes...</p>
+        </div>
+
+        <!-- Sin solicitudes -->
+        <div *ngIf="!cargandoRepuestos && solicitudesRepuestos.length === 0" class="text-center py-4 text-muted">
+          <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+          No hay solicitudes de repuestos para esta repotenciación.
+        </div>
+
+        <!-- Solicitudes -->
+        <div *ngFor="let sol of solicitudesRepuestos" class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <div>
+              <i class="fas fa-clipboard-list me-2 text-danger"></i>
+              <strong>Solicitud #{{ sol.id }}</strong>
+              <small class="text-muted ms-2">{{ formatearFechaHora(sol.fechaSolicitud) }}</small>
+            </div>
+            <span class="badge" [ngClass]="claseEstadoSolicitud(sol.estado)">{{ sol.estado }}</span>
+          </div>
+          <div class="card-body">
+            <p *ngIf="sol.observaciones" class="small text-muted mb-3">
+              <i class="fas fa-comment-alt me-1"></i>{{ sol.observaciones }}
+            </p>
+
+            <div class="table-responsive">
+              <table class="table table-sm align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Código</th><th>Descripción</th>
+                    <th class="text-center" style="width:90px;">Solic.</th>
+                    <th class="text-center" style="width:120px;">Aprobar</th>
+                    <th style="width:230px;">Decisión</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of sol.repuestos">
+                    <td>{{ r.codigo || '—' }}</td>
+                    <td>{{ r.descripcion }}</td>
+                    <td class="text-center fw-semibold">{{ r.cantidadSolicitada }}</td>
+                    <td>
+                      <input type="number" min="0" [max]="r.cantidadSolicitada"
+                             class="form-control form-control-sm text-center"
+                             [(ngModel)]="r.cantidadAprobada"
+                             [disabled]="r.estado === 'RECHAZADO' || !solicitudPendiente(sol)">
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm w-100" role="group">
+                        <button type="button" class="btn"
+                                [ngClass]="r.estado === 'APROBADO' ? 'btn-success' : 'btn-outline-success'"
+                                [disabled]="!solicitudPendiente(sol)"
+                                (click)="setEstadoRepuesto(r, 'APROBADO')" title="Aprobar">
+                          <i class="fas fa-check"></i>
+                        </button>
+                        <button type="button" class="btn"
+                                [ngClass]="r.estado === 'RECHAZADO' ? 'btn-danger' : 'btn-outline-danger'"
+                                [disabled]="!solicitudPendiente(sol)"
+                                (click)="setEstadoRepuesto(r, 'RECHAZADO')" title="Rechazar">
+                          <i class="fas fa-times"></i>
+                        </button>
+                        <button type="button" class="btn"
+                                [ngClass]="r.estado === 'PENDIENTE' ? 'btn-warning text-dark' : 'btn-outline-warning'"
+                                [disabled]="!solicitudPendiente(sol)"
+                                (click)="setEstadoRepuesto(r, 'PENDIENTE')" title="Dejar pendiente">
+                          <i class="fas fa-clock"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="d-flex justify-content-end mt-2" *ngIf="solicitudPendiente(sol)">
+              <button class="btn btn-danger btn-sm" (click)="confirmarAprobacionRepuestos(sol)" [disabled]="cargandoRepuestos">
+                <span *ngIf="cargandoRepuestos" class="spinner-border spinner-border-sm me-2"></span>
+                <i *ngIf="!cargandoRepuestos" class="fas fa-save me-2"></i>Guardar decisión
+              </button>
+            </div>
+            <div *ngIf="!solicitudPendiente(sol)" class="text-end small text-muted">
+              <i class="fas fa-lock me-1"></i>Solicitud resuelta — {{ formatearFechaHora(sol.fechaRespuesta) }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Observación general -->
+        <div class="mb-2" *ngIf="solicitudesRepuestos.length">
+          <label class="form-label small fw-semibold">Observación general de la revisión (opcional)</label>
+          <textarea class="form-control" rows="2" [(ngModel)]="observacionAprobacion"
+                    placeholder="Nota que se adjuntará a la solicitud al guardar..."></textarea>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalRepuestos()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     VISOR DE IMÁGENES (LIGHTBOX)
+══════════════════════════════════════════════════════════════ -->
+<div class="visor-overlay" *ngIf="visorAbierto" (click)="cerrarVisor()">
+
+  <!-- Barra superior: contador + etapa + cerrar -->
+  <div class="visor-header" (click)="$event.stopPropagation()">
+    <div class="visor-info">
+      <span class="visor-contador">{{ visorIndice + 1 }} / {{ visorImagenes.length }}</span>
+      <span class="visor-tag" *ngIf="visorImagenActual?.tag">{{ visorImagenActual?.tag }}</span>
+    </div>
+    <button type="button" class="visor-btn-cerrar" (click)="cerrarVisor()" title="Cerrar (Esc)">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Imagen principal (clic en el fondo cierra, en la imagen no) -->
+  <div class="visor-imagen-container">
+    <img *ngIf="visorImagenActual"
+         [src]="visorImagenActual.url"
+         class="visor-imagen"
+         draggable="false"
+         loading="eager"
+         fetchpriority="high"
+         (click)="$event.stopPropagation()">
+  </div>
+
+  <!-- Flechas de navegación -->
+  <ng-container *ngIf="visorImagenes.length > 1">
+    <button type="button" class="visor-flecha visor-flecha-izq" title="Anterior (←)"
+            (click)="visorAnterior(); $event.stopPropagation()">
+      <i class="fas fa-chevron-left"></i>
+    </button>
+    <button type="button" class="visor-flecha visor-flecha-der" title="Siguiente (→)"
+            (click)="visorSiguiente(); $event.stopPropagation()">
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </ng-container>
+
+  <!-- Pie: descripción + miniaturas -->
+  <div class="visor-footer" (click)="$event.stopPropagation()">
+    <small class="visor-nombre" *ngIf="visorImagenActual?.descripcion">{{ visorImagenActual?.descripcion }}</small>
+    <div class="visor-thumbs" *ngIf="visorImagenes.length > 1">
+      <img *ngFor="let img of visorImagenes; let i = index"
+           [src]="img.url"
+           class="visor-thumb"
+           [class.activo]="i === visorIndice"
+           loading="lazy" decoding="async"
+           [title]="img.tag"
+           (click)="irAImagen(i)">
+    </div>
+  </div>
+</div>

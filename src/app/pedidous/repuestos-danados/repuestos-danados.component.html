@@ -1,0 +1,639 @@
+<!-- ============================================================
+     PÁGINA PRINCIPAL
+     ============================================================ -->
+<div class="page">
+
+  <!-- ── Cabecera ──────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header__title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+      </svg>
+      <h1>Registro de Repuestos Dañados</h1>
+    </div>
+    <div class="page-header__actions">
+    <!--  <button class="btn btn--primary" (click)="abrirModalNuevoVacio()" [disabled]="loading">
+        + Nuevo Registro Manual
+      </button>-->
+      <button class="btn btn--outline" (click)="exportarExcel()"
+              [disabled]="loading || registrosFiltrados.length === 0">
+        Exportar Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       PESTAÑAS
+       ════════════════════════════════════════════════════════ -->
+  <div class="tabs">
+    <button class="tab-btn"
+            [class.tab-btn--active]="tabActiva === 'inventario'"
+            (click)="tabActiva = 'inventario'">
+      📦 Inventario de la Agencia
+      <span *ngIf="inventarioAgencia.length > 0" class="tab-badge">
+        {{ inventarioFiltrado.length }}
+      </span>
+    </button>
+    <button class="tab-btn"
+            [class.tab-btn--active]="tabActiva === 'registros'"
+            (click)="tabActiva = 'registros'">
+      🔧 Registros Dañados
+      <span class="tab-badge tab-badge--red">{{ registros.length }}</span>
+    </button>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       PESTAÑA 1: INVENTARIO ORACLE
+       ════════════════════════════════════════════════════════ -->
+  <div *ngIf="tabActiva === 'inventario'" class="tab-panel">
+
+    <div class="inv-section__header">
+      <p class="inv-section__hint">Haz clic en un artículo para registrarlo como dañado</p>
+      <span *ngIf="inventarioAgencia.length > 0" class="chip chip--gris">
+        {{ inventarioFiltrado.length }} de {{ inventarioAgencia.length }} artículos
+      </span>
+    </div>
+
+    <!-- Búsqueda dentro del inventario -->
+    <div class="filtros">
+      <div class="filtro-field filtro-field--lg">
+        <label>Buscar en inventario</label>
+        <input type="text"
+               placeholder="Código, nombre o grupo…"
+               [(ngModel)]="busquedaInventario"
+               (ngModelChange)="aplicarFiltroInventario()">
+      </div>
+      <div class="filtro-field filtro-field--btn">
+        <button class="btn btn--ghost" (click)="busquedaInventario = ''; aplicarFiltroInventario()">✕ Limpiar</button>
+      </div>
+    </div>
+
+    <!-- Estado: cargando -->
+    <div *ngIf="cargandoInventario" class="estado-vacio">
+      <div class="spinner"></div>
+      <p>Cargando inventario Oracle…</p>
+    </div>
+
+    <!-- Estado: error -->
+    <div *ngIf="errorInventario && !cargandoInventario" class="estado-vacio estado-vacio--error">
+      <span>⚠️ No se pudo cargar el inventario.</span>
+      <button class="btn btn--sm btn--outline" (click)="reintentarCargaInventario()">Reintentar</button>
+    </div>
+
+    <!-- Tabla de inventario -->
+    <div *ngIf="!cargandoInventario && !errorInventario" class="inv-tabla-wrap">
+      <table class="inv-tabla" *ngIf="inventarioPagina.length > 0; else sinArticulos">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Nombre</th>
+            <th>Grupo</th>
+            <th class="inv-col-num">Stock</th>
+            <th class="inv-col-num">Precio</th>
+            <th class="inv-col-num">Costo Prom.</th>
+            <th class="inv-col-acc">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of inventarioPagina"
+              class="inv-fila--clickable"
+              (click)="seleccionarArticuloDesdePrincipal(item)"
+              title="Clic para registrar como dañado">
+            <td class="inv-codigo"><strong>{{ item.articulo }}</strong></td>
+            <td class="inv-nombre">
+              <div>{{ item.nombre }}</div>
+              <div *ngIf="item.lineaCompetencia" class="inv-grupo">{{ item.lineaCompetencia }}</div>
+            </td>
+            <td class="inv-grupo">{{ item.grupo }}</td>
+            <td class="inv-col-num">
+              <span [ngClass]="getStockClass(item.stockDisponible)">
+                {{ item.stockDisponible | number:'1.0-0' }}
+              </span>
+            </td>
+            <td class="inv-col-num">
+              {{ item.precioSinIva ? (item.precioSinIva | currency:'USD':'symbol':'1.0-0') : '—' }}
+            </td>
+            <td class="inv-col-num">
+              {{ item.costoPromedio != null ? (item.costoPromedio | currency:'USD':'symbol':'1.2-2') : '—' }}
+            </td>
+            <td class="inv-col-acc">
+              <button class="btn btn--sm btn--danger" title="Registrar daño">+ Daño</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <ng-template #sinArticulos>
+        <div class="estado-vacio">
+          <span>No hay artículos que coincidan con la búsqueda.</span>
+        </div>
+      </ng-template>
+
+      <!-- Paginación del inventario -->
+      <div class="inv-paginacion" *ngIf="totalPaginasInventario > 1">
+        <button class="btn btn--sm btn--ghost"
+                [disabled]="paginaInventario === 1"
+                (click)="paginaInventario = paginaInventario - 1">‹ Anterior</button>
+        <span>Página {{ paginaInventario }} de {{ totalPaginasInventario }}</span>
+        <button class="btn btn--sm btn--ghost"
+                [disabled]="paginaInventario === totalPaginasInventario"
+                (click)="paginaInventario = paginaInventario + 1">Siguiente ›</button>
+      </div>
+    </div>
+  </div><!-- /tab inventario -->
+
+
+  <!-- ════════════════════════════════════════════════════════
+       PESTAÑA 2: REGISTROS DAÑADOS
+       ════════════════════════════════════════════════════════ -->
+  <div *ngIf="tabActiva === 'registros'" class="tab-panel">
+
+    <!-- ── Filtros ──────────────────────────────────────── -->
+    <div class="filtros">
+      <div class="filtro-field">
+        <label>Buscar por código</label>
+        <input type="text" placeholder="Código del artículo..."
+               [(ngModel)]="filtro.busqueda" (keyup.enter)="aplicarFiltros()">
+      </div>
+      <div class="filtro-field">
+        <label>Estado</label>
+        <select [(ngModel)]="filtro.estado" (change)="aplicarFiltros()">
+          <option value="">Todos</option>
+          <option *ngFor="let e of estadosOpciones" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+      <div class="filtro-field">
+        <label>Severidad</label>
+        <select [(ngModel)]="filtro.severidad" (change)="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option *ngFor="let s of severidadOpciones" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="filtro-field">
+        <label>Desde</label>
+        <input type="date" [(ngModel)]="filtro.fechaDesde" (change)="aplicarFiltros()">
+      </div>
+      <div class="filtro-field">
+        <label>Hasta</label>
+        <input type="date" [(ngModel)]="filtro.fechaHasta" (change)="aplicarFiltros()">
+      </div>
+      <div class="filtro-field filtro-field--btn">
+        <button class="btn btn--ghost" (click)="limpiarFiltros()">✕ Limpiar</button>
+      </div>
+    </div>
+
+    <!-- ── Resumen de estados ────────────────────────────── -->
+    <div class="resumen">
+      <span class="chip chip--gris">Total: {{ registrosFiltrados.length }}</span>
+      <span class="chip est-pendiente">Pendiente: {{ contarPorEstado('Pendiente') }}</span>
+      <span class="chip est-revision">En Revisión: {{ contarPorEstado('En Revisión') }}</span>
+      <span class="chip est-garantia">En Garantía: {{ contarPorEstado('En Garantía') }}</span>
+      <span class="chip est-desechado">Desechado: {{ contarPorEstado('Desechado') }}</span>
+      <span class="chip est-reparado">Reparado: {{ contarPorEstado('Reparado') }}</span>
+      <span class="chip est-devuelto">Devuelto: {{ contarPorEstado('Devuelto') }}</span>
+      <span *ngIf="eliminando" class="spinner spinner--sm" title="Eliminando..."></span>
+    </div>
+
+    <!-- ── Loading / vacío ──────────────────────────────── -->
+    <div *ngIf="loading" class="estado-vacio">
+      <div class="spinner"></div><p>Cargando registros…</p>
+    </div>
+
+    <div *ngIf="!loading && registrosFiltrados.length === 0" class="estado-vacio">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="#ccc" viewBox="0 0 16 16">
+        <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2 0v12h12V2z"/>
+      </svg>
+      <p>No tienes registros de daños aún.</p>
+      <p style="font-size:13px;color:#94a3b8">
+        Ve a la pestaña <strong>Inventario</strong> y haz clic en <strong>+ Daño</strong> para registrar uno.
+      </p>
+    </div>
+
+    <!-- ── Tabla de registros dañados ───────────────────── -->
+    <div *ngIf="!loading && registrosFiltrados.length > 0" class="tabla-wrapper">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-codigo">Código</th>
+            <th>Artículo</th>
+            <th class="col-tipo">Tipo de Daño</th>
+            <th class="col-sev">Severidad</th>
+            <th class="col-estado">Estado</th>
+            <th class="col-usuario">Registrado por</th>
+            <th class="col-fecha">Fecha</th>
+            <th class="col-imgs">Imgs</th>
+            <th class="col-acc">Acciones</th>
+          </tr>
+        </thead>
+       
+
+        <tbody>
+          <tr *ngFor="let reg of registrosFiltrados; let i = index"
+              [ngClass]="getFilaClass(reg.severidad)">
+
+            <td class="col-num">{{ i + 1 }}</td>
+
+            <td class="col-codigo"><strong>{{ reg.codigo_articulo }}</strong></td>
+
+            <td>
+              <div class="articulo-nombre">{{ reg.nombre_articulo }}</div>
+              <div class="articulo-desc">{{ reg.descripcion || '—' }}</div>
+            </td>
+
+            <td class="col-tipo">{{ reg.tipo_dano }}</td>
+
+            <td class="col-sev">
+              <span class="chip" [ngClass]="getSevClass(reg.severidad)">
+                {{ reg.severidad }}
+              </span>
+            </td>
+
+            <td class="col-estado">
+                 <span class="chip" [ngClass]="getEstadoClass(reg.estado)">
+                {{ reg.estado }}
+              </span>
+             <!-- <div class="dropdown-wrap">
+                <button class="chip chip--btn" [ngClass]="getEstadoClass(reg.estado)"
+                        (click)="toggleDropdown(reg.id, $event)"
+                        title="Clic para cambiar estado">
+                  {{ reg.estado }} ▾
+                </button>
+                <ul class="dropdown-menu" [class.open]="dropdownAbierto === reg.id">
+                  <li class="dropdown-header">Cambiar a…</li>
+                  <li *ngFor="let est of estadosOpciones">
+                    <button class="dropdown-item"
+                            [class.active]="reg.estado === est"
+                            (click)="cambiarEstado(reg, est, $event)">
+                      <span class="chip chip--sm" [ngClass]="getEstadoClass(est)">{{ est }}</span>
+                    </button>
+                  </li>
+                </ul>
+              </div>-->
+            </td>
+
+            <td class="col-usuario">{{ reg.usuario_registro }}</td>
+
+            <td class="col-fecha">{{ reg.fecha_registro | date:'dd/MM/yyyy' }}</td>
+
+            <td class="col-imgs">
+              <button *ngIf="(reg.total_imagenes ?? 0) > 0"
+                      class="chip chip--btn est-garantia"
+                      (click)="abrirModalImagenes(reg)"
+                      title="Ver imágenes">
+                📷 {{ reg.total_imagenes }}
+              </button>
+              <span *ngIf="(reg.total_imagenes ?? 0) === 0" class="text-muted">—</span>
+            </td>
+
+            <td class="col-acc">
+              <div class="acciones">
+                <button class="icon-btn" title="Ver detalle"  (click)="verDetalle(reg)">👁</button>
+                <button class="icon-btn" title="Editar"       (click)="editarRegistro(reg)">✏️</button>
+                <button class="icon-btn" title="Imágenes"     (click)="abrirModalImagenes(reg)">📷</button>
+                <button class="icon-btn icon-btn--danger" title="Eliminar"
+                        (click)="eliminarRegistro(reg, $event)"
+                        [disabled]="eliminando">🗑</button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab registros -->
+
+</div><!-- /page -->
+
+
+<!-- ============================================================
+     MODAL: Nuevo / Editar Registro  — más amplio y con secciones claras
+     ============================================================ -->
+<div class="overlay" *ngIf="modalRegistroVisible">
+  <div class="modal-panel modal-panel--form" (click)="$event.stopPropagation()">
+
+    <!-- ── Cabecera ────────────────────────────────────── -->
+    <div class="modal-header modal-header--danger">
+      <div class="modal-header__left">
+        <h2>{{ modoEdicion ? 'Editar Registro' : 'Nuevo Repuesto Dañado' }}</h2>
+        <p class="modal-subtitle" *ngIf="articuloSeleccionado">
+          {{ articuloSeleccionado.articulo }} — {{ articuloSeleccionado.nombre }}
+        </p>
+      </div>
+      <button class="close-btn" (click)="cerrarModal('registro')">✕</button>
+    </div>
+
+    <!-- ── Cuerpo ──────────────────────────────────────── -->
+    <div class="modal-body modal-body--form">
+
+      <!-- Banner artículo seleccionado -->
+      <div *ngIf="articuloSeleccionado" class="inv-seleccionado inv-seleccionado--compact">
+        <div class="inv-seleccionado__header">
+          <span>✅ Artículo seleccionado del inventario</span>
+          <button *ngIf="!modoEdicion" class="inv-seleccionado__quitar"
+                  (click)="deseleccionarArticulo()" title="Quitar selección">✕</button>
+        </div>
+        <div class="inv-seleccionado__datos">
+          <span><strong>{{ articuloSeleccionado.articulo }}</strong> — {{ articuloSeleccionado.nombre }}</span>
+          <span [ngClass]="getStockClass(articuloSeleccionado.stockDisponible)">
+            Stock: <strong>{{ articuloSeleccionado.stockDisponible | number:'1.0-0' }}</strong>
+          </span>
+          <span *ngIf="articuloSeleccionado.costoPromedio != null">
+            Costo: <strong>{{ articuloSeleccionado.costoPromedio | currency:'USD':'symbol':'1.2-2' }}</strong>
+          </span>
+        </div>
+      </div>
+
+      <div class="aviso aviso--warn">
+        <strong>Registro individual:</strong> cada formulario corresponde a un único ítem físico.
+        Si el mismo repuesto tiene distintos daños, regístrelos por separado.
+      </div>
+
+      <!-- ─── SECCIÓN 1: Identificación ─────────────────── -->
+      <div class="form-section">
+        <h3 class="section-title section-title--danger">
+          <span class="section-num">1</span> Identificación del Repuesto
+        </h3>
+
+        <div *ngIf="!articuloSeleccionado && !modoEdicion" class="aviso aviso--info">
+          💡 Puedes cerrar este modal y seleccionar un artículo directamente desde el inventario.
+        </div>
+
+        <div class="form-grid form-grid--wide">
+          <div class="field col-6">
+            <label>Código Artículo <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="formRegistro.codigo_articulo"
+                   placeholder="Ej: AAK-110"
+                   [class.input--ok]="!!articuloSeleccionado">
+          </div>
+          <div class="field col-12">
+            <label>Nombre del Artículo <span class="req">*</span></label>
+            <input type="text" [(ngModel)]="formRegistro.nombre_articulo"
+                   placeholder="Nombre completo del repuesto"
+                   [class.input--ok]="!!articuloSeleccionado">
+          </div>
+          <div class="field col-6">
+            <label>Unidad</label>
+            <input type="text" [(ngModel)]="formRegistro.unidad" placeholder="UN / PZA / KIT">
+          </div>
+          <div class="field col-8">
+            <label>N° Serie / ID físico</label>
+            <input type="text" [(ngModel)]="formRegistro.numero_serie"
+                   placeholder="Número de serie o identificador">
+          </div>
+          <div class="field col-12">
+            <label>Descripción general</label>
+            <input type="text" [(ngModel)]="formRegistro.descripcion"
+                   placeholder="Línea, grupo o descripción breve del artículo">
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SECCIÓN 2: Detalle del Daño ───────────────── -->
+      <div class="form-section">
+        <h3 class="section-title section-title--danger">
+          <span class="section-num">2</span> Detalle del Daño
+        </h3>
+        <div class="form-grid form-grid--wide">
+          <div class="field col-6">
+            <label>Tipo de Daño <span class="req">*</span></label>
+            <select [(ngModel)]="formRegistro.tipo_dano">
+              <option value="">-- Seleccione --</option>
+              <option *ngFor="let t of tiposDano" [value]="t.nombre">{{ t.nombre }}</option>
+            </select>
+          </div>
+          <div class="field col-6">
+            <label>Severidad <span class="req">*</span></label>
+            <select [(ngModel)]="formRegistro.severidad">
+              <option value="">-- Seleccione --</option>
+              <option *ngFor="let s of severidadOpciones" [value]="s">{{ s }}</option>
+            </select>
+          </div>
+          <div class="field col-12">
+            <label>Parte afectada</label>
+            <input type="text" [(ngModel)]="formRegistro.ubicacion_dano"
+                   placeholder="Ej: Carcasa, motor, rosca…">
+          </div>
+          <div class="field col-12">
+            <label>Descripción detallada del daño <span class="req">*</span></label>
+            <textarea rows="3" [(ngModel)]="formRegistro.descripcion_dano"
+                      placeholder="Describa con detalle el daño observado…"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SECCIÓN 3: Trazabilidad ────────────────────── -->
+      <div class="form-section">
+        <h3 class="section-title section-title--danger">
+          <span class="section-num">3</span> Trazabilidad y Origen
+        </h3>
+        <div class="form-grid form-grid--wide">
+          <div class="field col-6">
+            <label>Ubicación física</label>
+            <input type="text" [(ngModel)]="formRegistro.ubicacion_fisica"
+                   placeholder="Bodega A / Estante 3">
+          </div>
+        <!--  <div class="field col-6">
+            <label>Orden de Trabajo (OT)</label>
+            <input type="text" [(ngModel)]="formRegistro.orden_trabajo"
+                   placeholder="Ej: OT-0000">
+          </div>-->
+          <div class="field col-6">
+            <label>Clase</label>
+            <input type="text" [(ngModel)]="formRegistro.proveedor"
+                   placeholder="clase" readonly>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SECCIÓN 4: Estado y Costos ─────────────────── -->
+<!--      <div class="form-section">
+        <h3 class="section-title section-title--danger">
+          <span class="section-num">4</span> Estado y Costos
+        </h3>
+        <div class="form-grid form-grid--wide">
+          <div class="field col-6">
+            <label>Estado <span class="req">*</span></label>
+            <select [(ngModel)]="formRegistro.estado">
+              <option *ngFor="let e of estadosOpciones" [value]="e">{{ e }}</option>
+            </select>
+          </div>
+          <div class="field col-5">
+            <label>
+              Costo Promedio (USD)
+              <span *ngIf="articuloSeleccionado?.costoPromedio != null"
+                    class="oracle-badge" title="Valor sugerido desde inventario Oracle">Oracle</span>
+            </label>
+            <input type="number" [(ngModel)]="formRegistro.costo_promedio"
+                   placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div class="field col-5">
+            <label>Costo Reparación (USD)</label>
+            <input type="number" [(ngModel)]="formRegistro.costo_reparacion"
+                   placeholder="0.00" min="0" step="0.01">
+          </div>
+          <div class="field col-12">
+            <label>Acción tomada</label>
+            <textarea rows="2" [(ngModel)]="formRegistro.accion_tomada"
+                      placeholder="Describa la acción que se tomó o tomará…"></textarea>
+          </div>
+          <div class="field col-12">
+            <label>Observaciones adicionales</label>
+            <textarea rows="2" [(ngModel)]="formRegistro.observaciones"
+                      placeholder="Observaciones generales…"></textarea>
+          </div>
+        </div>
+      </div>-->
+
+    </div><!-- /modal-body--form -->
+
+    <!-- ── Footer ──────────────────────────────────────── -->
+    <div class="modal-footer">
+      <button class="btn btn--ghost" (click)="cerrarModal('registro')">Cancelar</button>
+      <button class="btn btn--danger" (click)="guardarRegistro()" [disabled]="guardando">
+        <span *ngIf="guardando" class="spinner spinner--sm spinner--white"></span>
+        {{ guardando ? 'Guardando…' : (modoEdicion ? 'Actualizar Registro' : 'Guardar Registro') }}
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================
+     MODAL: Imágenes
+     ============================================================ -->
+<div class="overlay" *ngIf="modalImagenesVisible" (click)="cerrarPorOverlay('imagenes', $event)">
+  <div class="modal-panel modal-panel--xl" (click)="$event.stopPropagation()">
+    <div class="modal-header modal-header--blue">
+      <div>
+        <h2>Imágenes del Daño</h2>
+        <p class="modal-subtitle">
+          {{ registroActivo?.codigo_articulo }} — {{ registroActivo?.nombre_articulo }}
+          <span *ngIf="registroActivo" class="chip chip--sm" [ngClass]="getSevClass(registroActivo.severidad)">
+            {{ registroActivo.severidad }}
+          </span>
+        </p>
+      </div>
+      <button class="close-btn" (click)="cerrarModal('imagenes')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="upload-zone" (dragover)="onDragOver($event)" (drop)="onDrop($event)" (click)="inputImg.click()">
+        <div class="upload-zone__icon">☁️</div>
+        <p class="upload-zone__title">Arrastra imágenes aquí o haz clic</p>
+        <p class="upload-zone__sub">PNG, JPG, WEBP, GIF — máx. 10 MB por imagen</p>
+        <input #inputImg type="file" multiple accept="image/*" style="display:none"
+               (change)="onArchivosSeleccionados($event)">
+      </div>
+      <div *ngIf="archivosParaSubir.length > 0" class="preview-section">
+        <h4 class="section-subtitle">Listos para subir ({{ archivosParaSubir.length }})</h4>
+        <div class="img-grid">
+          <div *ngFor="let a of archivosParaSubir; let i = index" class="img-card">
+            <img [src]="a.preview" alt="">
+            <input type="text" [(ngModel)]="a.descripcion" placeholder="Descripción…">
+            <button class="img-card__remove" (click)="quitarArchivoPreview(i)">✕</button>
+          </div>
+        </div>
+        <button class="btn btn--primary mt-12" (click)="subirImagenesServidor()" [disabled]="subiendoImagenes">
+          <span *ngIf="subiendoImagenes" class="spinner spinner--sm spinner--white"></span>
+          {{ subiendoImagenes ? 'Subiendo…' : 'Subir ' + archivosParaSubir.length + ' imagen(es)' }}
+        </button>
+      </div>
+      <div *ngIf="imagenesRegistro.length > 0" class="galeria-section">
+        <h4 class="section-subtitle">Guardadas ({{ imagenesRegistro.length }})</h4>
+        <div class="img-grid">
+          <div *ngFor="let img of imagenesRegistro; let i = index" class="img-card img-card--saved">
+            <img [src]="getImagenUrl(img)" [title]="img.descripcion_imagen || ''"
+                 (click)="verImagenAmpliada(img)" style="cursor:zoom-in">
+            <div class="img-card__info">
+              <span class="img-card__desc">{{ img.descripcion_imagen || img.nombre_archivo }}</span>
+              <span class="img-card__meta">{{ img.fecha_subida | date:'dd/MM/yyyy HH:mm' }} · {{ img.usuario_subida }}</span>
+            </div>
+            <button class="img-card__remove" (click)="eliminarImagen(img, i)" title="Eliminar">🗑</button>
+            <button class="img-card__zoom" (click)="verImagenAmpliada(img)" title="Ver completa">⤢</button>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="!imagenesRegistro.length && !archivosParaSubir.length" class="estado-vacio estado-vacio--sm">
+        <p>Este registro no tiene imágenes aún.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn--ghost" (click)="cerrarModal('imagenes')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ============================================================
+     MODAL: Detalle (solo lectura)
+     ============================================================ -->
+<div class="overlay" *ngIf="modalDetalleVisible" (click)="cerrarPorOverlay('detalle', $event)">
+  <div class="modal-panel modal-panel--lg" (click)="$event.stopPropagation()" *ngIf="registroActivo">
+    <div class="modal-header" [ngClass]="'modal-header--' + getSevClass(registroActivo.severidad)">
+      <h2>{{ registroActivo.codigo_articulo }} — {{ registroActivo.nombre_articulo }}</h2>
+      <button class="close-btn" (click)="cerrarModal('detalle')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="detalle-grid">
+        <div class="detalle-item"><span class="detalle-label">Código</span><span class="detalle-valor">{{ registroActivo.codigo_articulo }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">N° Serie / ID</span><span class="detalle-valor">{{ registroActivo.numero_serie || '—' }}</span></div>
+        <div class="detalle-item detalle-item--full"><span class="detalle-label">Nombre del artículo</span><span class="detalle-valor">{{ registroActivo.nombre_articulo }}</span></div>
+        <div class="detalle-item detalle-item--full"><span class="detalle-label">Descripción</span><span class="detalle-valor">{{ registroActivo.descripcion || '—' }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">Tipo de Daño</span><span class="detalle-valor">{{ registroActivo.tipo_dano }}</span></div>
+        <div class="detalle-item">
+          <span class="detalle-label">Severidad</span>
+          <span class="chip" [ngClass]="getSevClass(registroActivo.severidad)">{{ registroActivo.severidad }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Estado</span>
+          <span class="chip" [ngClass]="getSevClass(registroActivo.estado)">{{ registroActivo.estado }}</span>
+         <!-- <div class="dropdown-wrap">
+            <button class="chip chip--btn" [ngClass]="getEstadoClass(registroActivo.estado)"
+                    (click)="toggleDropdown('detalle', $event)">{{ registroActivo.estado }} ▾</button>
+            <ul class="dropdown-menu" [class.open]="dropdownAbierto === 'detalle'">
+              <li class="dropdown-header">Cambiar a…</li>
+              <li *ngFor="let est of estadosOpciones">
+                <button class="dropdown-item" [class.active]="registroActivo.estado === est"
+                        (click)="cambiarEstado(registroActivo, est, $event)">
+                  <span class="chip chip--sm" [ngClass]="getEstadoClass(est)">{{ est }}</span>
+                </button>
+              </li>
+            </ul>
+          </div>-->
+        </div>
+        <div class="detalle-item detalle-item--full detalle-item--highlight"><span class="detalle-label">Descripción del daño</span><span class="detalle-valor">{{ registroActivo.descripcion_dano }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">Parte afectada</span><span class="detalle-valor">{{ registroActivo.ubicacion_dano || '—' }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">Ubicación física</span><span class="detalle-valor">{{ registroActivo.ubicacion_fisica || '—' }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">OT relacionada</span><span class="detalle-valor">{{ registroActivo.orden_trabajo || '—' }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">Clase</span><span class="detalle-valor">{{ registroActivo.proveedor || '—' }}</span></div>
+        <div class="detalle-item">
+          <span class="detalle-label">Costo Promedio</span>
+          <span class="detalle-valor">{{ registroActivo.costo_promedio != null ? (registroActivo.costo_promedio | currency:'USD':'symbol':'1.2-2') : '—' }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Costo Reparación</span>
+          <span class="detalle-valor">{{ registroActivo.costo_reparacion != null ? (registroActivo.costo_reparacion | currency:'USD':'symbol':'1.2-2') : '—' }}</span>
+        </div>
+        <div class="detalle-item detalle-item--full"><span class="detalle-label">Acción tomada</span><span class="detalle-valor">{{ registroActivo.accion_tomada || '—' }}</span></div>
+        <div class="detalle-item detalle-item--full"><span class="detalle-label">Observaciones</span><span class="detalle-valor">{{ registroActivo.observaciones || '—' }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">Registrado por</span><span class="detalle-valor">{{ registroActivo.usuario_registro }}</span></div>
+        <div class="detalle-item"><span class="detalle-label">Fecha de registro</span><span class="detalle-valor">{{ registroActivo.fecha_registro | date:'dd/MM/yyyy HH:mm' }}</span></div>
+        <div *ngIf="registroActivo.imagenes?.length" class="detalle-item detalle-item--full">
+          <span class="detalle-label">Imágenes ({{ registroActivo.imagenes!.length }})</span>
+          <div class="miniatura-grid">
+            <img *ngFor="let img of registroActivo.imagenes"
+                 [src]="getImagenUrl(img)" [title]="img.descripcion_imagen || img.nombre_archivo"
+                 (click)="verImagenAmpliada(img)" style="cursor:zoom-in">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn--ghost" (click)="cerrarModal('detalle')">Cerrar</button>
+      <button class="btn btn--outline" (click)="abrirModalImagenes(registroActivo!); cerrarModal('detalle')">📷 Ver / Subir imágenes</button>
+      <button class="btn btn--warn" (click)="editarRegistro(registroActivo!); cerrarModal('detalle')">✏️ Editar</button>
+    </div>
+  </div>
+</div>

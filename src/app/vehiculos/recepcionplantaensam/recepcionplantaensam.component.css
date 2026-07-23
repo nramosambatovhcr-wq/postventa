@@ -1,0 +1,459 @@
+/* recepcionplantaensam.component.css */
+
+/* ============================================
+   ESTADÍSTICAS
+   ============================================ */
+.stat-card {
+  border: none;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+.stat-card:hover {
+  transform: translateY(-5px);
+}
+
+.stat-icon {
+  opacity: 0.8;
+}
+
+/* ============================================
+   TABLA
+   ============================================ */
+.table {
+  font-size: 0.9rem;
+}
+
+.table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.badge {
+  font-size: 0.85rem;
+  padding: 0.5em 0.8em;
+}
+
+.font-monospace {
+  font-family: 'Courier New', monospace;
+  font-size: 0.9em;
+}
+
+/* ============================================
+   MODALES NATIVOS BOOTSTRAP 5
+   ============================================ */
+.modal {
+  background-color: rgba(0, 0, 0, 0.5);
+  overflow-y: auto;
+}
+
+.modal-dialog {
+  margin: 1.75rem auto;
+  max-width: 90%;
+}
+
+@media (min-width: 576px) {
+  .modal-dialog {
+    max-width: 500px;
+  }
+  
+  .modal-lg {
+    max-width: 800px;
+  }
+  
+  .modal-xl {
+    max-width: 1140px;
+  }
+}
+
+.modal-content {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  border-radius: 12px 12px 0 0;
+  padding: 1.5rem;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 1px solid #dee2e6;
+  background-color: #f8f9fa;
+  border-radius: 0 0 12px 12px;
+}
+
+/* Backdrop personalizado */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1040;
+  width: 100vw;
+  height: 100vh;
+  background-color: #000;
+  opacity: 0.5;
+}
+
+/* Prevenir scroll del body cuando modal está abierto */
+body.modal-open {
+  overflow: hidden;
+  padding-right: 15px; /* Compensar scrollbar */
+}
+
+/* Animación de entrada del modal */
+.modal.fade.show {
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================
+   FORMULARIOS
+   ============================================ */
+.form-label {
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 0.5rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+
+/* Estilo para campos deshabilitados */
+.form-select:disabled {
+  background-color: #e9ecef;
+  opacity: 0.6;
+}
+
+/* ============================================
+   BOTONES
+   ============================================ */
+.btn-group-sm > .btn {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+.btn-lg {
+  padding: 0.75rem 1.5rem;
+  font-size: 1.1rem;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 0.5rem;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+  }
+  
+  .stat-card .card-body {
+    padding: 1rem;
+  }
+  
+  .stat-card h3 {
+    font-size: 1.5rem;
+  }
+  
+  .table-responsive {
+    font-size: 0.8rem;
+  }
+  
+  .btn-group {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  
+  .modal-dialog {
+    margin: 0.5rem;
+    max-width: calc(100% - 1rem);
+  }
+  
+  .modal-body {
+    padding: 1rem;
+    max-height: 60vh;
+  }
+}
+
+/* ============================================
+   UTILIDADES
+   ============================================ */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.text-pre-wrap {
+  white-space: pre-wrap;
+}
+
+/* Alertas personalizadas */
+.alert {
+  border-radius: 8px;
+  border: none;
+}
+
+/* Cards */
+.card {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.card-header {
+  border-radius: 10px 10px 0 0 !important;
+  font-weight: 600;
+}
+
+/* Hover en filas de tabla */
+.table-hover tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Estados especiales en tabla */
+tr.table-active {
+  background-color: rgba(255, 193, 7, 0.1) !important;
+}
+
+/* Input groups */
+.input-group-text {
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+.input-group .form-control {
+  border-left: none;
+}
+
+.input-group .form-control:focus {
+  border-left: 1px solid #86b7fe;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* ============================================
+   MODAL OVERLAY - fondo oscuro que cubre toda la pantalla
+   ============================================ */
+/* ============================================
+   MODAL OVERLAY - fondo oscuro que cubre toda la pantalla
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;                         /* top/right/bottom/left = 0 */
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+/* ============================================
+   MODAL CARD - usado en el modal VER (más ancho, con secciones)
+   ============================================ */
+.modal-card {
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  animation: modalFadeIn 0.2s ease;
+}
+
+/* ============================================
+   MODAL BOX - usado en modales de formulario (crear/editar/eliminar/salida)
+   ============================================ */
+.modal-box {
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  animation: modalFadeIn 0.2s ease;
+}
+
+/* ============================================
+   MODAL HEADER
+   ============================================ */
+.modal-card .modal-header,
+.modal-box .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #dee2e6;
+  background: #f8f9fa;
+  border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.modal-card .modal-title,
+.modal-box .modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modal-card .btn-close,
+.modal-box .btn-close {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #6c757d;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: background 0.15s;
+}
+
+.modal-card .btn-close:hover,
+.modal-box .btn-close:hover {
+  background: #e9ecef;
+  color: #343a40;
+}
+
+/* ============================================
+   MODAL BODY Y FOOTER
+   ============================================ */
+.modal-card .modal-body {
+  padding: 1.25rem;
+  flex: 1;
+}
+
+.modal-card .modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid #dee2e6;
+  background: #f8f9fa;
+  border-radius: 0 0 0.5rem 0.5rem;
+}
+
+/* ============================================
+   SECTION TITLE - títulos de sección dentro del modal
+   ============================================ */
+.section-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ============================================
+   ANIMACIÓN DE ENTRADA
+   ============================================ */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================
+   TARJETAS DE ESTADÍSTICAS
+   ============================================ */
+.card.h-100 .card-body {
+  gap: 0.75rem;
+}
+
+/* ============================================
+   GALERÍA DE FOTOS
+   ============================================ */
+.gallery {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.photo-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 130px;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 0.4rem;
+  padding: 0.5rem;
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.photo-box img {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+.table th {
+  white-space: nowrap;
+}
+
+.table td {
+  vertical-align: middle;
+}
+

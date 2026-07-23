@@ -1,0 +1,422 @@
+<div class="container-fluid p-0 garantias-tecnico-page">
+
+  <!-- ══════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════ -->
+  <div class="page-header px-4 py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold">
+        <i class="bi bi-shield-check me-2 text-primary"></i>Mis Garantías
+      </h4>
+      <small class="text-muted">Órdenes de trabajo tipo GRT asignadas a ti</small>
+    </div>
+    <button class="btn btn-outline-primary btn-sm" (click)="cargarOT()" [disabled]="loading">
+      <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TARJETAS RESUMEN
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pt-3 pb-2">
+    <div class="row g-2">
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-total">
+          <div class="stat-number">{{ otList.length }}</div>
+          <div class="stat-label">Total OT</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-pendiente">
+          <div class="stat-number">{{ contarPorEstado('pendiente_tecnico') }}</div>
+          <div class="stat-label">Pendientes</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-revision">
+          <div class="stat-number">{{ contarPorEstado('en_revision') }}</div>
+          <div class="stat-label">En revisión</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-aprobada">
+          <div class="stat-number">{{ contarPorEstado('aprobada') }}</div>
+          <div class="stat-label">Aprobadas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       BARRA DE FILTROS
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pb-2">
+    <div class="card border-0 bg-light rounded-3 p-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control border-start-0"
+                   placeholder="Buscar por OT, placa, cliente, VIN..."
+                   [(ngModel)]="filtroTexto"
+                   (input)="aplicarFiltros()">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+            <option value="">Todos los estados</option>
+            <option value="pendiente_tecnico">Pendiente técnico</option>
+            <option value="en_revision">En revisión</option>
+            <option value="finalizada_taller">Finalizada en taller</option>
+            <option value="enviada_simscloud">Enviada a Simscloud</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="rechazada">Rechazada</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <button class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()">
+            <i class="bi bi-x-circle me-1"></i>Limpiar
+          </button>
+          <span class="ms-2 text-muted small">{{ otFiltradas.length }} resultado(s)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LAYOUT PRINCIPAL (lista + panel)
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pb-4">
+    <div class="row g-3">
+
+      <!-- LISTA DE OT -->
+      <div [class]="otSeleccionada ? 'col-md-5' : 'col-12'">
+
+        <!-- Spinner -->
+        <div *ngIf="loading" class="text-center py-5">
+          <div class="spinner-border text-primary" role="status"></div>
+          <p class="text-muted mt-2 small">Cargando órdenes de trabajo...</p>
+        </div>
+
+        <!-- Sin resultados -->
+        <div *ngIf="!loading && otFiltradas.length === 0" class="text-center py-5">
+          <i class="bi bi-inbox display-4 text-muted"></i>
+          <p class="text-muted mt-2">No se encontraron órdenes de trabajo.</p>
+        </div>
+
+        <!-- Tarjetas OT -->
+        <div *ngFor="let ot of otFiltradas" class="ot-card mb-2"
+             [class.ot-card-activa]="otSeleccionada?.garantiaId === ot.garantiaId"
+             [class.ot-card-urgente]="ot.esUrgente"
+             (click)="seleccionarOT(ot)">
+
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <span class="ot-numero">{{ ot.numeroOt }}</span>
+              <span *ngIf="ot.esUrgente" class="badge bg-danger ms-2 badge-urgente">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>URGENTE
+              </span>
+            </div>
+            <span class="badge rounded-pill" [ngClass]="'bg-' + getColorEstado(ot.estado, ot.esUrgente)">
+              {{ getLabelEstado(ot.estado) }}
+            </span>
+          </div>
+
+          <div class="row mt-2 g-1">
+            <div class="col-6">
+              <div class="ot-dato"><i class="bi bi-truck me-1"></i>{{ ot.placa }}</div>
+              <div class="ot-dato text-muted small">VIN: {{ ot.numeroVin }}</div>
+            </div>
+            <div class="col-6 text-end">
+              <div class="ot-dato small">{{ ot.cliente }}</div>
+              <div class="ot-dato small text-muted">{{ formatFecha(ot.fechaInicio) }}</div>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between align-items-center mt-2 border-top pt-2">
+            <span class="small text-muted">
+              <i class="bi bi-paperclip me-1"></i>{{ ot.totalArchivos }}/100 archivos
+            </span>
+            <div class="progress ot-progress" [title]="ot.totalArchivos + ' de 100 archivos'">
+              <div class="progress-bar bg-primary" [style.width.%]="(ot.totalArchivos / 100) * 100"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PANEL DE DETALLE -->
+      <div class="col-md-7" *ngIf="otSeleccionada">
+        <div class="panel-detalle">
+
+          <!-- Cabecera del panel -->
+          <div class="panel-header d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-0 fw-bold">{{ otSeleccionada.numeroOt }}</h6>
+              <small class="text-muted">{{ otSeleccionada.placa }} — {{ otSeleccionada.cliente }}</small>
+            </div>
+            <button class="btn btn-sm btn-outline-secondary" (click)="cerrarPanel()">
+              <i class="bi bi-x-lg"></i>
+            </button>
+          </div>
+
+          <!-- Tabs del panel -->
+          <ul class="nav nav-tabs panel-tabs px-3 pt-2">
+            <li class="nav-item">
+              <a class="nav-link" [class.active]="vistaActiva === 'info'" (click)="vistaActiva = 'info'">
+                <i class="bi bi-info-circle me-1"></i>Información
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [class.active]="vistaActiva === 'archivos'" (click)="vistaActiva = 'archivos'">
+                <i class="bi bi-paperclip me-1"></i>Archivos
+                <span class="badge bg-primary ms-1">{{ archivos.length }}</span>
+              </a>
+            </li>
+          </ul>
+
+          <!-- TAB: Información general -->
+          <div class="panel-body" *ngIf="vistaActiva === 'info'">
+            <div *ngIf="loadingDetalle" class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+
+            <div *ngIf="!loadingDetalle && detalleGarantia">
+
+              <!-- Datos del vehículo -->
+              <div class="info-seccion">
+                <div class="info-seccion-titulo"><i class="bi bi-truck me-2"></i>Vehículo</div>
+                <div class="row g-2">
+                  <div class="col-6"><span class="info-label">Placa</span><span class="info-valor">{{ detalleGarantia.placa }}</span></div>
+                  <div class="col-6"><span class="info-label">VIN</span><span class="info-valor">{{ detalleGarantia.numeroVin }}</span></div>
+                  <div class="col-6"><span class="info-label">Modelo</span><span class="info-valor">{{ detalleGarantia.modelo || '—' }}</span></div>
+                  <div class="col-6"><span class="info-label">Año</span><span class="info-valor">{{ detalleGarantia.anio || '—' }}</span></div>
+                  <div class="col-6"><span class="info-label">Kilometraje</span><span class="info-valor">{{ (detalleGarantia.kilometraje | number) || '—' }} km</span></div>
+                </div>
+              </div>
+
+              <!-- Datos del cliente -->
+              <div class="info-seccion">
+                <div class="info-seccion-titulo"><i class="bi bi-person me-2"></i>Cliente</div>
+                <div class="row g-2">
+                  <div class="col-12"><span class="info-label">Razón social</span><span class="info-valor">{{ detalleGarantia.cliente }}</span></div>
+                  <div class="col-6"><span class="info-label">Doc.</span><span class="info-valor">{{ detalleGarantia.numeroDocumentoCliente }}</span></div>
+                  <div class="col-6"><span class="info-label">Teléfono</span><span class="info-valor">{{ detalleGarantia.telefonoCliente || '—' }}</span></div>
+                </div>
+              </div>
+
+              <!-- Estado actual -->
+              <div class="info-seccion">
+                <div class="info-seccion-titulo"><i class="bi bi-activity me-2"></i>Estado actual</div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <span class="badge fs-6" [ngClass]="'bg-' + getColorEstado(detalleGarantia.estado, detalleGarantia.esUrgente)">
+                    {{ getLabelEstado(detalleGarantia.estado) }}
+                  </span>
+                  <span *ngIf="detalleGarantia.jefeTaller" class="small text-muted">
+                    Jefe: {{ detalleGarantia.jefeTaller }}
+                  </span>
+                </div>
+                <div class="row g-2 small text-muted">
+                  <div class="col-6">Inicio: {{ formatFecha(detalleGarantia.fechaInicio) }}</div>
+                  <div class="col-6" *ngIf="detalleGarantia.fechaFinalizacion">
+                    Finalizado: {{ formatFecha(detalleGarantia.fechaFinalizacion) }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observaciones -->
+              <div class="info-seccion">
+                <div class="info-seccion-titulo"><i class="bi bi-chat-text me-2"></i>Mis observaciones</div>
+                <textarea class="form-control form-control-sm mb-2" rows="3"
+                          placeholder="Agrega observaciones sobre esta garantía..."
+                          [(ngModel)]="observacionesTexto">
+                </textarea>
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-success" *ngIf="mensajeObs">{{ mensajeObs }}</small>
+                  <span></span>
+                  <button class="btn btn-primary btn-sm" (click)="guardarObservaciones()"
+                          [disabled]="guardandoObs || !observacionesTexto.trim()">
+                    <span *ngIf="guardandoObs" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!guardandoObs" class="bi bi-save me-1"></i>Guardar
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- TAB: Archivos -->
+          <div class="panel-body" *ngIf="vistaActiva === 'archivos'">
+
+            <!-- Zona de subida -->
+            <div class="upload-zone mb-3">
+              <div class="upload-zona-interior" (click)="fileInput.click()">
+                <i class="bi bi-cloud-upload-fill display-6 text-primary opacity-50"></i>
+                <p class="mb-0 mt-1 small">Haz clic para seleccionar archivos</p>
+                <p class="text-muted small">jpg, png, mp4, pdf — Máx. 100 archivos por garantía</p>
+              </div>
+              <input #fileInput type="file" multiple hidden
+                     accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.avi,.mov,.pdf,.docx"
+                     (change)="onArchivoSeleccionado($event)">
+
+              <!-- Preview de seleccionados -->
+              <div *ngIf="archivosSeleccionados.length > 0" class="mt-2">
+                <div class="d-flex flex-wrap gap-1 mb-2">
+                  <span *ngFor="let f of archivosSeleccionados; let i = index"
+                        class="badge bg-light text-dark border d-flex align-items-center gap-1">
+                    <i class="bi bi-file-earmark"></i>{{ f.name }}
+                    <button class="btn-close btn-close-sm ms-1" style="font-size: 0.5rem"
+                            (click)="quitarArchivoSeleccionado(i)"></button>
+                  </span>
+                </div>
+                <button class="btn btn-primary btn-sm w-100" (click)="subirArchivos()"
+                        [disabled]="subiendoArchivos">
+                  <span *ngIf="subiendoArchivos" class="spinner-border spinner-border-sm me-1"></span>
+                  <i *ngIf="!subiendoArchivos" class="bi bi-cloud-upload me-1"></i>
+                  Subir {{ archivosSeleccionados.length }} archivo(s)
+                </button>
+              </div>
+            </div>
+
+            <!-- Alertas -->
+            <div *ngIf="errorArchivos" class="alert alert-danger alert-sm py-2 small">
+              <i class="bi bi-exclamation-circle me-1"></i>{{ errorArchivos }}
+            </div>
+            <div *ngIf="exitoArchivos" class="alert alert-success alert-sm py-2 small">
+              <i class="bi bi-check-circle me-1"></i>{{ exitoArchivos }}
+            </div>
+
+            <!-- Contador -->
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <small class="text-muted fw-semibold">
+                Archivos subidos ({{ archivos.length }}/100)
+              </small>
+              <div class="progress" style="width: 120px; height: 6px;">
+                <div class="progress-bar bg-primary" [style.width.%]="(archivos.length / 100) * 100"></div>
+              </div>
+            </div>
+
+            <!-- Spinner archivos -->
+            <div *ngIf="loadingArchivos" class="text-center py-3">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+
+            <!-- Lista de archivos -->
+            <div *ngIf="!loadingArchivos && archivos.length === 0" class="text-center py-3 text-muted small">
+              <i class="bi bi-inbox me-1"></i>Aún no hay archivos subidos.
+            </div>
+
+            <div *ngFor="let archivo of archivos" class="archivo-item d-flex align-items-center gap-2 p-2 mb-1 rounded">
+              <i class="fs-5 text-primary" [ngClass]="getIconoTipoArchivo(archivo.tipoArchivo)"></i>
+              <div class="flex-grow-1 overflow-hidden">
+                <div class="text-truncate small fw-semibold">{{ archivo.nombreOriginal }}</div>
+                <div class="text-muted" style="font-size: 0.7rem">
+                  {{ formatBytes(archivo.tamanoBytes) }} · {{ archivo.subidoPor }} · {{ formatFecha(archivo.creadoEn) }}
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline-danger py-0 px-1"
+                      (click)="eliminarArchivo(archivo.id)"
+                      title="Eliminar archivo">
+                <i class="bi bi-trash3"></i>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .garantias-tecnico-page { background: #f5f6fa; min-height: 100vh; }
+
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid #e9ecef;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  /* Tarjetas resumen */
+  .stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 12px 16px;
+    border-left: 4px solid transparent;
+    box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  }
+  .stat-card .stat-number { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .stat-card .stat-label  { font-size: 0.72rem; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
+  .stat-total    { border-left-color: #6c757d; } .stat-total .stat-number    { color: #495057; }
+  .stat-pendiente{ border-left-color: #ffc107; } .stat-pendiente .stat-number{ color: #e0a800; }
+  .stat-revision { border-left-color: #0d6efd; } .stat-revision .stat-number { color: #0d6efd; }
+  .stat-aprobada { border-left-color: #198754; } .stat-aprobada .stat-number { color: #198754; }
+
+  /* Tarjetas OT */
+  .ot-card {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: all .18s ease;
+  }
+  .ot-card:hover         { border-color: #0d6efd; box-shadow: 0 2px 8px rgba(13,110,253,.12); transform: translateY(-1px); }
+  .ot-card-activa        { border-color: #0d6efd !important; background: #f0f6ff !important; }
+  .ot-card-urgente       { border-left: 4px solid #dc3545 !important; }
+  .ot-numero             { font-weight: 700; font-size: 0.95rem; color: #212529; }
+  .ot-dato               { font-size: 0.82rem; }
+  .badge-urgente         { font-size: 0.65rem; animation: pulseRed 1.4s infinite; }
+  .ot-progress           { width: 80px; height: 5px; }
+
+  @keyframes pulseRed {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220,53,69,.5); }
+    50%       { box-shadow: 0 0 0 4px rgba(220,53,69,0); }
+  }
+
+  /* Panel lateral */
+  .panel-detalle {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    overflow: hidden;
+    position: sticky;
+    top: 70px;
+  }
+  .panel-header {
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    padding: 12px 16px;
+  }
+  .panel-tabs .nav-link {
+    font-size: 0.82rem;
+    padding: 6px 12px;
+    color: #6c757d;
+    border: none;
+    cursor: pointer;
+  }
+  .panel-tabs .nav-link.active { color: #0d6efd; font-weight: 600; border-bottom: 2px solid #0d6efd; }
+  .panel-body { padding: 16px; max-height: calc(100vh - 220px); overflow-y: auto; }
+
+  /* Secciones de info */
+  .info-seccion        { margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid #f0f0f0; }
+  .info-seccion:last-child { border-bottom: none; }
+  .info-seccion-titulo { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #6c757d; margin-bottom: 8px; }
+  .info-label          { display: block; font-size: 0.7rem; color: #adb5bd; }
+  .info-valor          { display: block; font-size: 0.85rem; font-weight: 500; color: #212529; }
+
+  /* Upload zone */
+  .upload-zone { border: 2px dashed #dee2e6; border-radius: 8px; overflow: hidden; }
+  .upload-zona-interior {
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .upload-zona-interior:hover { background: #f0f6ff; border-color: #0d6efd; }
+
+  /* Archivos */
+  .archivo-item { background: #f8f9fa; border: 1px solid #e9ecef; transition: background .12s; }
+  .archivo-item:hover { background: #e9ecef; }
+</style>

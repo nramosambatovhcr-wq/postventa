@@ -1,0 +1,672 @@
+<div class="ca-shell">
+
+  <!-- ══════════════════════════════════════════════════════════
+       TOPBAR
+  ══════════════════════════════════════════════════════════ -->
+  <header class="ca-topbar">
+    <div class="ca-topbar__brand">
+      <div class="ca-topbar__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="ca-topbar__title">Conjuntos Armados</h1>
+        <span class="ca-topbar__sub">{{ conjuntos.length }} registros</span>
+      </div>
+    </div>
+
+    <nav class="ca-topbar__nav">
+      <button class="ca-nav-btn" [class.active]="vista=='lista'" (click)="setVista('lista')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+        Inventario
+      </button>
+      <button class="ca-nav-btn" [class.active]="vista=='estadisticas'" (click)="setVista('estadisticas')">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"/></svg>
+        Estadísticas
+      </button>
+      <button class="ca-nav-btn ca-nav-btn--new" (click)="abrirFormNuevo()">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/></svg>
+        Nuevo conjunto
+      </button>
+    </nav>
+  </header>
+
+  <!-- Error global -->
+  <div class="ca-alert" *ngIf="errorMsg">
+    <span>{{ errorMsg }}</span>
+    <button (click)="errorMsg=''">X</button>
+  </div>
+
+  <!-- Loading overlay -->
+  <div class="ca-loader" *ngIf="cargando">
+    <div class="ca-loader__spinner"></div>
+    <span>Cargando...</span>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VISTA: LISTA
+  ══════════════════════════════════════════════════════════ -->
+  <section class="ca-section" *ngIf="vista=='lista' && !cargando">
+
+    <!-- Buscador -->
+    <div class="ca-search-row">
+      <div class="ca-search">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+        </svg>
+        <input type="text" placeholder="Buscar por codigo, serial, VHCR, color..."
+               [(ngModel)]="busquedaTxt" (input)="aplicarFiltro()">
+        <button class="ca-search__clear" *ngIf="busquedaTxt" (click)="busquedaTxt=''; aplicarFiltro()">X</button>
+      </div>
+      <span class="ca-result-count">{{ filtrados.length }} resultado(s)</span>
+    </div>
+
+    <!-- Sin resultados -->
+    <div class="ca-empty" *ngIf="filtrados.length == 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg>
+      <p>No hay conjuntos armados registrados.</p>
+      <button class="ca-btn ca-btn--primary" (click)="abrirFormNuevo()">Registrar el primero</button>
+    </div>
+
+    <!-- Grid de tarjetas -->
+    <div class="ca-grid" *ngIf="filtrados.length > 0">
+      <article class="ca-card" *ngFor="let c of filtrados; trackBy: trackById">
+
+        <!-- Imagen principal -->
+        <div class="ca-card__img-wrap">
+          <img [src]="getImagenPrincipalUrl(c)" [alt]="c.codigo"
+               onerror="this.src='assets/img/no-image.png'">
+          <span class="ca-card__badge" [attr.data-estado]="badgeEstado(c)">
+            {{ badgeEstado(c) == 'completo' ? 'Completo' : badgeEstado(c) == 'parcial' ? 'Parcial' : 'Incompleto' }}
+          </span>
+          <div class="ca-card__color-dot" *ngIf="c.cabinaColor"
+               [style.background]="colorBadge(c.cabinaColor)"
+               [title]="c.cabinaColor"></div>
+        </div>
+
+        <!-- Contenido -->
+        <div class="ca-card__body">
+          <div class="ca-card__header">
+            <span class="ca-card__codigo">{{ c.codigo }}</span>
+            <span class="ca-card__fecha">{{ c.fechaRegistro | date:'dd/MM/yy' }}</span>
+          </div>
+          <p class="ca-card__desc" *ngIf="c.descripcion">{{ c.descripcion }}</p>
+
+          <!-- Componentes compactos -->
+          <div class="ca-card__components">
+            <div class="ca-comp-row" [class.missing]="!c.cajaId">
+              <span class="ca-comp-icon">⚙</span>
+              <div>
+                <span class="ca-comp-label">Caja</span>
+                <span class="ca-comp-val">{{ c.cajaModel || '-' }}</span>
+              </div>
+              <code class="ca-serial">{{ c.cajaSerial || '-' }}</code>
+            </div>
+            <div class="ca-comp-row" [class.missing]="!c.motorId">
+              <span class="ca-comp-icon">🔧</span>
+              <div>
+                <span class="ca-comp-label">Motor</span>
+                <span class="ca-comp-val">{{ c.motorModel || '-' }}</span>
+              </div>
+              <code class="ca-serial">{{ c.motorSerial || '-' }}</code>
+            </div>
+            <div class="ca-comp-row" [class.missing]="!c.frontalId">
+              <span class="ca-comp-icon">🔩</span>
+              <div>
+                <span class="ca-comp-label">Frontal</span>
+                <span class="ca-comp-val">{{ c.frontalType || '-' }}</span>
+              </div>
+              <code class="ca-serial">{{ c.frontalAssy || '-' }}</code>
+            </div>
+            <div class="ca-comp-row" [class.missing]="!c.diferencialId">
+              <span class="ca-comp-icon">⚖</span>
+              <div>
+                <span class="ca-comp-label">Diferencial</span>
+                <span class="ca-comp-val">{{ c.typeFunda || '-' }}</span>
+              </div>
+            </div>
+            <div class="ca-comp-row" [class.missing]="!c.cabinaId">
+              <span class="ca-comp-icon">🚛</span>
+              <div>
+                <span class="ca-comp-label">Cabina</span>
+                <span class="ca-comp-val">{{ c.cabinaDescripcion || '-' }}</span>
+              </div>
+              <span class="ca-color-tag" *ngIf="c.cabinaColor"
+                    [style.border-color]="colorBadge(c.cabinaColor)"
+                    [style.color]="colorBadge(c.cabinaColor)">{{ c.cabinaColor }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="ca-card__actions">
+          <button class="ca-btn ca-btn--ghost" (click)="verDetalle(c)" title="Ver detalle">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10z"/></svg>
+            Ver
+          </button>
+          <button class="ca-btn ca-btn--ghost" (click)="abrirFormEdicion(c)" title="Editar">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zm-2.207 2.207L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/></svg>
+            Editar
+          </button>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VISTA: ESTADÍSTICAS
+  ══════════════════════════════════════════════════════════ -->
+  <section class="ca-section ca-stats" *ngIf="vista=='estadisticas' && stats && !cargando">
+
+    <h2 class="ca-section-title">Panel de estadísticas</h2>
+
+    <!-- KPI cards -->
+    <div class="ca-kpi-grid">
+      <div class="ca-kpi ca-kpi--total">
+        <div class="ca-kpi__num">{{ stats.total }}</div>
+        <div class="ca-kpi__label">Total conjuntos</div>
+      </div>
+      <div class="ca-kpi ca-kpi--ok">
+        <div class="ca-kpi__num">{{ stats.completos }}</div>
+        <div class="ca-kpi__label">Completos</div>
+        <div class="ca-kpi__pct">{{ stats.pctCompletos }}%</div>
+      </div>
+      <div class="ca-kpi ca-kpi--warn">
+        <div class="ca-kpi__num">{{ stats.total - stats.completos }}</div>
+        <div class="ca-kpi__label">Incompletos</div>
+      </div>
+      <div class="ca-kpi ca-kpi--info">
+        <div class="ca-kpi__num">{{ stats.sinMotor }}</div>
+        <div class="ca-kpi__label">Sin motor</div>
+      </div>
+      <div class="ca-kpi ca-kpi--info">
+        <div class="ca-kpi__num">{{ stats.sinCajaCambio }}</div>
+        <div class="ca-kpi__label">Sin caja cambio</div>
+      </div>
+      <div class="ca-kpi ca-kpi--info">
+        <div class="ca-kpi__num">{{ stats.sinCabina }}</div>
+        <div class="ca-kpi__label">Sin cabina</div>
+      </div>
+    </div>
+
+    <!-- Barra de progreso completitud -->
+    <div class="ca-progress-card">
+      <div class="ca-progress-card__header">
+        <span>Completitud del inventario</span>
+        <strong>{{ stats.pctCompletos }}%</strong>
+      </div>
+      <div class="ca-progress-track">
+        <div class="ca-progress-bar" [style.width]="stats.pctCompletos + '%'"></div>
+      </div>
+      <div class="ca-progress-card__legend">
+        <span class="ca-legend-dot ca-legend-dot--ok"></span> {{ stats.completos }} completos &nbsp;
+        <span class="ca-legend-dot ca-legend-dot--warn"></span> {{ stats.total - stats.completos }} incompletos
+      </div>
+    </div>
+
+    <!-- Gráficos de distribución -->
+    <div class="ca-charts-row">
+
+      <!-- Colores de cabina -->
+      <div class="ca-chart-card">
+        <h3 class="ca-chart-title">Colores de cabina</h3>
+        <div class="ca-bar-chart">
+          <div class="ca-bar-row" *ngFor="let item of stats.colores">
+            <div class="ca-bar-label">
+              <span class="ca-dot-color" [style.background]="colorBadge(item.color)"></span>
+              {{ item.color }}
+            </div>
+            <div class="ca-bar-track">
+              <div class="ca-bar-fill ca-bar-fill--color"
+                   [style.width]="barWidth(item.cantidad, stats.colores[0].cantidad)"></div>
+            </div>
+            <span class="ca-bar-val">{{ item.cantidad }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modelos de caja -->
+      <div class="ca-chart-card">
+        <h3 class="ca-chart-title">Modelos de caja de cambio</h3>
+        <div class="ca-bar-chart">
+          <div class="ca-bar-row" *ngFor="let item of stats.modelosCaja">
+            <div class="ca-bar-label">{{ item.modelo }}</div>
+            <div class="ca-bar-track">
+              <div class="ca-bar-fill ca-bar-fill--caja"
+                   [style.width]="barWidth(item.cantidad, stats.modelosCaja[0].cantidad)"></div>
+            </div>
+            <span class="ca-bar-val">{{ item.cantidad }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modelos de motor -->
+      <div class="ca-chart-card">
+        <h3 class="ca-chart-title">Modelos de motor</h3>
+        <div class="ca-bar-chart">
+          <div class="ca-bar-row" *ngFor="let item of stats.modelosMotor">
+            <div class="ca-bar-label">{{ item.modelo }}</div>
+            <div class="ca-bar-track">
+              <div class="ca-bar-fill ca-bar-fill--motor"
+                   [style.width]="barWidth(item.cantidad, stats.modelosMotor[0].cantidad)"></div>
+            </div>
+            <span class="ca-bar-val">{{ item.cantidad }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VISTA: DETALLE
+  ══════════════════════════════════════════════════════════ -->
+  <section class="ca-section ca-detalle" *ngIf="vista=='detalle' && detalle && !cargando">
+
+    <!-- Back + acciones -->
+    <div class="ca-detalle__topbar">
+      <button class="ca-btn ca-btn--ghost ca-btn--back" (click)="setVista('lista')">
+        ← Volver al inventario
+      </button>
+      <div class="ca-detalle__actions">
+        <button class="ca-btn ca-btn--secondary" (click)="editarDesdeDetalle()">Editar</button>
+        <button class="ca-btn ca-btn--danger" (click)="eliminarConjunto(detalle.id)">Eliminar</button>
+      </div>
+    </div>
+
+    <!-- Cabecera del detalle -->
+    <div class="ca-detalle__hero">
+      <div class="ca-detalle__hero-img">
+        <ng-container *ngIf="getImagenesDeComponente('conjunto').length > 0; else noImgHero">
+          <img [src]="getImagenUrl(getImagenesDeComponente('conjunto')[0])" [alt]="detalle.codigo">
+        </ng-container>
+        <ng-template #noImgHero>
+          <div class="ca-no-img-hero">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+        </ng-template>
+      </div>
+      <div class="ca-detalle__hero-info">
+        <span class="ca-detalle__codigo">{{ detalle.codigo }}</span>
+        <h2 class="ca-detalle__nombre">{{ detalle.descripcion  || 'Sin descripcion' }}</h2>
+        <p class="ca-detalle__obs" *ngIf="detalle.observacion">{{ detalle.observacion }}</p>
+        <div class="ca-detalle__meta">
+          <span>Registrado: {{ detalle.fechaRegistro | date:'dd/MM/yyyy' }}</span>
+          <span>Actualizado: {{ detalle.fechaActualizacion | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs componentes -->
+    <div class="ca-tabs">
+      <button class="ca-tab" [class.active]="tabActivo=='conjunto'"   (click)="tabActivo='conjunto'">General</button>
+      <button class="ca-tab" [class.active]="tabActivo=='caja'"       (click)="tabActivo='caja'">
+        <span class="ca-tab-dot" [class.present]="detalle.cajaCambio"></span>Caja cambio
+      </button>
+      <button class="ca-tab" [class.active]="tabActivo=='motor'"      (click)="tabActivo='motor'">
+        <span class="ca-tab-dot" [class.present]="detalle.motor"></span>Motor
+      </button>
+      <button class="ca-tab" [class.active]="tabActivo=='frontal'"    (click)="tabActivo='frontal'">
+        <span class="ca-tab-dot" [class.present]="detalle.frontal"></span>Frontal
+      </button>
+      <button class="ca-tab" [class.active]="tabActivo=='diferencial'" (click)="tabActivo='diferencial'">
+        <span class="ca-tab-dot" [class.present]="detalle.diferencial"></span>Diferencial
+      </button>
+      <button class="ca-tab" [class.active]="tabActivo=='cabina'"     (click)="tabActivo='cabina'">
+        <span class="ca-tab-dot" [class.present]="detalle.cabina"></span>Cabina
+      </button>
+      <button class="ca-tab" [class.active]="tabActivo=='imagenes'"   (click)="tabActivo='imagenes'">
+        📷 Imágenes
+      </button>
+    </div>
+
+    <!-- Tab: Conjunto general -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='conjunto'">
+      <div class="ca-field-grid">
+        <div class="ca-field"><label>Codigo</label><span>{{ detalle.codigo }}</span></div>
+        <div class="ca-field"><label>Descripcion</label><span>{{ detalle.descripcion || '-' }}</span></div>
+        <div class="ca-field ca-field--full"><label>Observacion</label><span>{{ detalle.observacion || '-' }}</span></div>
+      </div>
+      <!-- Resumen estado componentes -->
+      <div class="ca-components-status">
+        <div class="ca-status-item" [class.ok]="detalle.cajaCambio" [class.ko]="!detalle.cajaCambio">
+          <span>⚙</span><div><strong>Caja cambio</strong><small>{{ detalle.cajaCambio?.model  || 'No registrada' }}</small></div>
+        </div>
+        <div class="ca-status-item" [class.ok]="detalle.motor" [class.ko]="!detalle.motor">
+          <span>🔧</span><div><strong>Motor</strong><small>{{ detalle.motor?.model  || 'No registrado' }}</small></div>
+        </div>
+        <div class="ca-status-item" [class.ok]="detalle.frontal" [class.ko]="!detalle.frontal">
+          <span>🔩</span><div><strong>Frontal</strong><small>{{ detalle.frontal?.type  || 'No registrado' }}</small></div>
+        </div>
+        <div class="ca-status-item" [class.ok]="detalle.diferencial" [class.ko]="!detalle.diferencial">
+          <span>⚖</span><div><strong>Diferencial</strong><small>{{ detalle.diferencial?.typeFunda  || 'No registrado' }}</small></div>
+        </div>
+        <div class="ca-status-item" [class.ok]="detalle.cabina" [class.ko]="!detalle.cabina">
+          <span>🚛</span><div><strong>Cabina</strong><small>{{ detalle.cabina?.descripcion  || 'No registrada' }}</small></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Caja de cambio -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='caja'">
+      <div class="ca-no-comp" *ngIf="!detalle.cajaCambio">Sin caja de cambio registrada.</div>
+      <ng-container *ngIf="detalle.cajaCambio as caja">
+        <div class="ca-field-grid">
+          <div class="ca-field"><label>Codigo VHCR</label><code>{{ caja.codigoVhcr || '-' }}</code></div>
+          <div class="ca-field"><label>Modelo</label><span>{{ caja.model || '-' }}</span></div>
+          <div class="ca-field"><label>Serial</label><code>{{ caja.serialNo || '-' }}</code></div>
+          <div class="ca-field"><label>Customer No.</label><code>{{ caja.customerNo || '-' }}</code></div>
+          <div class="ca-field"><label>Torque entrada</label><span>{{ caja.inputTorque || '-' }}</span></div>
+          <div class="ca-field"><label>Capacidad aceite</label><span>{{ caja.oilCapacity || '-' }}</span></div>
+          <div class="ca-field"><label>Retardador P/L No.</label><code>{{ caja.retardadorPartsListNo || '-' }}</code></div>
+          <div class="ca-field"><label>Retardador Serial</label><code>{{ caja.retardadorSerialNo || '-' }}</code></div>
+          <div class="ca-field"><label>Origen</label><span>{{ caja.origen || '-' }}</span></div>
+          <div class="ca-field"><label>Destino</label><span>{{ caja.destino || '-' }}</span></div>
+          <div class="ca-field"><label>Fecha ingreso</label><span>{{ caja.fechaIngreso | date:'dd/MM/yyyy' }}</span></div>
+          <div class="ca-field"><label>Volumen</label><span>{{ caja.medidaVolumen || '-' }}</span></div>
+          <div class="ca-field"><label>Peso</label><span>{{ caja.medidaPeso || '-' }}</span></div>
+          <div class="ca-field ca-field--full"><label>Observacion</label><span>{{ caja.observacion || '-' }}</span></div>
+        </div>
+        <div class="ca-comp-images" *ngIf="getImagenesDeComponente('caja_cambio').length > 0">
+          <h4>Imágenes de la caja</h4>
+          <div class="ca-img-strip">
+            <img *ngFor="let img of getImagenesDeComponente('caja_cambio')"
+                 [src]="getImagenUrl(img)" [alt]="img.nombreOriginal"
+                 [class.principal]="img.esPrincipal">
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Tab: Motor -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='motor'">
+      <div class="ca-no-comp" *ngIf="!detalle.motor">Sin motor registrado.</div>
+      <ng-container *ngIf="detalle.motor as motor">
+        <div class="ca-field-grid">
+          <div class="ca-field"><label>Codigo VHCR</label><code>{{ motor.codigoVhcr || '-' }}</code></div>
+          <div class="ca-field"><label>Modelo</label><span>{{ motor.model || '-' }}</span></div>
+          <div class="ca-field"><label>Serial</label><code>{{ motor.serialNo || '-' }}</code></div>
+          <div class="ca-field ca-field--full"><label>Descripcion</label><span>{{ motor.descripcion || '-' }}</span></div>
+          <div class="ca-field"><label>Origen</label><span>{{ motor.origen || '-' }}</span></div>
+          <div class="ca-field"><label>Destino</label><span>{{ motor.destino || '-' }}</span></div>
+          <div class="ca-field"><label>Fecha ingreso</label><span>{{ motor.fechaIngreso | date:'dd/MM/yyyy' }}</span></div>
+          <div class="ca-field"><label>Volumen</label><span>{{ motor.medidaVolumen || '-' }}</span></div>
+          <div class="ca-field"><label>Peso</label><span>{{ motor.medidaPeso || '-' }}</span></div>
+          <div class="ca-field ca-field--full"><label>Observacion</label><span>{{ motor.observacion || '-' }}</span></div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Tab: Frontal -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='frontal'">
+      <div class="ca-no-comp" *ngIf="!detalle.frontal">Sin frontal registrado.</div>
+      <ng-container *ngIf="detalle.frontal as frontal">
+        <div class="ca-field-grid">
+          <div class="ca-field"><label>Codigo VHCR</label><code>{{ frontal.codigoVhcr || '-' }}</code></div>
+          <div class="ca-field"><label>Tipo</label><span>{{ frontal.type || '-' }}</span></div>
+          <div class="ca-field"><label>Assy No.</label><code>{{ frontal.assyNo || '-' }}</code></div>
+          <div class="ca-field"><label>Jour No.</label><code>{{ frontal.jourNo || '-' }}</code></div>
+          <div class="ca-field"><label>Origen</label><span>{{ frontal.origen || '-' }}</span></div>
+          <div class="ca-field"><label>Fecha ingreso</label><span>{{ frontal.fechaIngreso | date:'dd/MM/yyyy' }}</span></div>
+          <div class="ca-field"><label>Fecha salida</label><span>{{ frontal.fechaSalida | date:'dd/MM/yyyy' }}</span></div>
+          <div class="ca-field ca-field--full"><label>Observacion</label><span>{{ frontal.observacion || '-' }}</span></div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Tab: Diferencial -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='diferencial'">
+      <div class="ca-no-comp" *ngIf="!detalle.diferencial">Sin diferencial registrado.</div>
+      <ng-container *ngIf="detalle.diferencial as dif">
+        <div class="ca-field-grid">
+          <div class="ca-field"><label>Codigo VHCR</label><code>{{ dif.codigoVhcr || '-' }}</code></div>
+          <div class="ca-field ca-field--full"><label>Descripcion</label><span>{{ dif.descripcion || '-' }}</span></div>
+          <div class="ca-field"><label>Funda - Tipo</label><span>{{ dif.typeFunda || '-' }}</span></div>
+          <div class="ca-field"><label>Funda - Assy No.</label><code>{{ dif.assyNoFunda || '-' }}</code></div>
+          <div class="ca-field"><label>Funda - Jour No.</label><code>{{ dif.jourNoFunda || '-' }}</code></div>
+          <div class="ca-field"><label>Huevo - Tipo</label><span>{{ dif.typeHuevo || '-' }}</span></div>
+          <div class="ca-field"><label>Huevo - Assy No.</label><code>{{ dif.assyNoHuevo || '-' }}</code></div>
+          <div class="ca-field"><label>Huevo - Jour No.</label><code>{{ dif.jourNoHuevo || '-' }}</code></div>
+          <div class="ca-field"><label>Origen</label><span>{{ dif.origen || '-' }}</span></div>
+          <div class="ca-field"><label>Fecha ingreso</label><span>{{ dif.fechaIngreso | date:'dd/MM/yyyy' }}</span></div>
+          <div class="ca-field ca-field--full"><label>Observacion</label><span>{{ dif.observacion || '-' }}</span></div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Tab: Cabina -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='cabina'">
+      <div class="ca-no-comp" *ngIf="!detalle.cabina">Sin cabina registrada.</div>
+      <ng-container *ngIf="detalle.cabina as cab">
+        <div class="ca-field-grid">
+          <div class="ca-field"><label>Codigo VHCR</label><code>{{ cab.codigoVhcr || '-' }}</code></div>
+          <div class="ca-field ca-field--full"><label>Descripcion</label><span>{{ cab.descripcion || '-' }}</span></div>
+          <div class="ca-field"><label>No. Producto</label><span>{{ cab.numeroProducto || '-' }}</span></div>
+          <div class="ca-field"><label>No. Serie</label><code>{{ cab.numeroSerie || '-' }}</code></div>
+          <div class="ca-field"><label>Parts List No.</label><code>{{ cab.partsListNo || '-' }}</code></div>
+          <div class="ca-field">
+            <label>Color</label>
+            <span class="ca-color-pill" [style.background]="colorBadge(cab.color || '')">{{ cab.color || '-' }}</span>
+          </div>
+          <div class="ca-field"><label>Depto. Cuerpo</label><span>{{ cab.departamentoCuerpo || '-' }}</span></div>
+          <div class="ca-field"><label>Config. especial</label><span>{{ cab.configuracionEspecial || '-' }}</span></div>
+          <div class="ca-field"><label>Tiempo sin conexion</label><span>{{ cab.tiempoSinConexion || '-' }}</span></div>
+          <div class="ca-field"><label>Origen</label><span>{{ cab.origen || '-' }}</span></div>
+          <div class="ca-field"><label>Fecha ingreso</label><span>{{ cab.fechaIngreso | date:'dd/MM/yyyy' }}</span></div>
+          <div class="ca-field ca-field--full"><label>Observacion</label><span>{{ cab.observacion || '-' }}</span></div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- Tab: Imágenes -->
+    <div class="ca-tab-panel" *ngIf="tabActivo=='imagenes'">
+
+      <!-- Upload -->
+      <div class="ca-upload-box">
+        <div class="ca-upload-controls">
+          <select [(ngModel)]="tipoImagenSeleccionado" class="ca-select">
+            <option value="conjunto">Conjunto general</option>
+            <option value="caja_cambio">Caja de cambio</option>
+            <option value="motor">Motor</option>
+            <option value="frontal">Frontal</option>
+            <option value="diferencial">Diferencial</option>
+            <option value="cabina">Cabina</option>
+          </select>
+          <label class="ca-btn ca-btn--secondary ca-upload-label">
+            <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"/></svg>
+            Seleccionar fotos
+            <input type="file" multiple accept="image/*" #fileInputRef
+                   (change)="onArchivosSeleccionados($event)" style="display:none">
+          </label>
+          <button class="ca-btn ca-btn--primary" [disabled]="!archivosSeleccionados.length || subiendoImg"
+                  (click)="subirImagenes()">
+            {{ labelSubir }}
+          </button>
+        </div>
+        <!-- Previews -->
+        <div class="ca-preview-strip" *ngIf="previewUrls.length > 0">
+          <img *ngFor="let url of previewUrls" [src]="url" alt="preview">
+        </div>
+      </div>
+
+      <!-- Galería por componente -->
+      <div *ngFor="let tipo of tiposComponente">
+        <div class="ca-gallery-section" *ngIf="getImagenesDeComponente(tipo).length > 0">
+          <h4 class="ca-gallery-title">{{ tipo | titlecase }}</h4>
+          <div class="ca-gallery-grid">
+            <div class="ca-gallery-item" *ngFor="let img of getImagenesDeComponente(tipo)"
+                 [class.principal]="img.esPrincipal">
+              <img [src]="getImagenUrl(img)" [alt]="img.nombreOriginal"
+                   onerror="this.style.opacity=0.3">
+              <div class="ca-gallery-overlay">
+                <span class="ca-gallery-name">{{ img.nombreOriginal }}</span>
+                <div class="ca-gallery-btns">
+                  <button *ngIf="!img.esPrincipal" (click)="setPrincipal(img.idImagen)"
+                          class="ca-img-btn ca-img-btn--star" title="Marcar como principal">★</button>
+                  <button (click)="eliminarImagen(img.idImagen)"
+                          class="ca-img-btn ca-img-btn--del" title="Eliminar">X</button>
+                </div>
+                <span class="ca-gallery-badge" *ngIf="img.esPrincipal">Principal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ca-no-comp" *ngIf="!hayImagenes">
+        Sin imágenes registradas. Selecciona fotos para subirlas.
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+       VISTA: FORMULARIO
+  ══════════════════════════════════════════════════════════ -->
+  <section class="ca-section ca-form-section" *ngIf="vista=='formulario' && !cargando">
+
+    <div class="ca-form-header">
+      <h2>{{ modoEdicion ? 'Editar conjunto armado' : 'Registrar nuevo conjunto armado' }}</h2>
+      <button class="ca-btn ca-btn--ghost" (click)="cancelarForm()">X Cancelar</button>
+    </div>
+
+    <!-- Tabs del formulario -->
+    <div class="ca-tabs">
+      <button class="ca-tab" [class.active]="tabActivo=='conjunto'"    (click)="tabActivo='conjunto'">Conjunto</button>
+      <button class="ca-tab" [class.active]="tabActivo=='caja'"        (click)="tabActivo='caja'">Caja cambio</button>
+      <button class="ca-tab" [class.active]="tabActivo=='motor'"       (click)="tabActivo='motor'">Motor</button>
+      <button class="ca-tab" [class.active]="tabActivo=='frontal'"     (click)="tabActivo='frontal'">Frontal</button>
+      <button class="ca-tab" [class.active]="tabActivo=='diferencial'" (click)="tabActivo='diferencial'">Diferencial</button>
+      <button class="ca-tab" [class.active]="tabActivo=='cabina'"      (click)="tabActivo='cabina'">Cabina</button>
+    </div>
+
+    <!-- ── Tab Conjunto ── -->
+    <div class="ca-tab-panel ca-form-panel" *ngIf="tabActivo=='conjunto'">
+      <div class="ca-field-grid">
+        <div class="ca-field ca-field--required">
+          <label>Codigo del conjunto *</label>
+          <input type="text" [(ngModel)]="form.codigo" placeholder="Ej: CA-2025-001" class="ca-input">
+        </div>
+        <div class="ca-field ca-field--full">
+          <label>Descripcion</label>
+          <input type="text" [(ngModel)]="form.descripcion" placeholder="Descripcion general del conjunto" class="ca-input">
+        </div>
+        <div class="ca-field ca-field--full">
+          <label>Observacion</label>
+          <textarea [(ngModel)]="form.observacion" rows="3" placeholder="Notas adicionales..." class="ca-input"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tab Caja de cambio ── -->
+    <div class="ca-tab-panel ca-form-panel" *ngIf="tabActivo=='caja' && form.cajaCambio">
+      <div class="ca-field-grid">
+        <div class="ca-field"><label>Codigo VHCR</label><input type="text" [(ngModel)]="form.cajaCambio.codigoVhcr" class="ca-input" placeholder="HW25716XSTL23B020"></div>
+        <div class="ca-field"><label>Descripcion</label><input type="text" [(ngModel)]="form.cajaCambio.descripcion" class="ca-input"></div>
+        <div class="ca-field"><label>Modelo</label><input type="text" [(ngModel)]="form.cajaCambio.model" class="ca-input" placeholder="HW116"></div>
+        <div class="ca-field"><label>Serial No.</label><input type="text" [(ngModel)]="form.cajaCambio.serialNo" class="ca-input"></div>
+        <div class="ca-field"><label>Customer No.</label><input type="text" [(ngModel)]="form.cajaCambio.customerNo" class="ca-input"></div>
+        <div class="ca-field"><label>Torque entrada</label><input type="text" [(ngModel)]="form.cajaCambio.inputTorque" class="ca-input" placeholder="2500 Nm"></div>
+        <div class="ca-field"><label>Capacidad aceite</label><input type="text" [(ngModel)]="form.cajaCambio.oilCapacity" class="ca-input" placeholder="14 LTS"></div>
+        <div class="ca-field"><label>Retardador - Parts List No.</label><input type="text" [(ngModel)]="form.cajaCambio.retardadorPartsListNo" class="ca-input"></div>
+        <div class="ca-field"><label>Retardador - Serial No.</label><input type="text" [(ngModel)]="form.cajaCambio.retardadorSerialNo" class="ca-input"></div>
+        <div class="ca-field"><label>Origen</label><input type="text" [(ngModel)]="form.cajaCambio.origen" class="ca-input" placeholder="Bodega importacion"></div>
+        <div class="ca-field"><label>Destino</label><input type="text" [(ngModel)]="form.cajaCambio.destino" class="ca-input"></div>
+        <div class="ca-field"><label>Fecha ingreso</label><input type="date" [(ngModel)]="form.cajaCambio.fechaIngreso" class="ca-input"></div>
+        <div class="ca-field"><label>Medida volumen</label><input type="text" [(ngModel)]="form.cajaCambio.medidaVolumen" class="ca-input"></div>
+        <div class="ca-field"><label>Medida peso</label><input type="text" [(ngModel)]="form.cajaCambio.medidaPeso" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Observacion</label><textarea [(ngModel)]="form.cajaCambio.observacion" rows="2" class="ca-input"></textarea></div>
+      </div>
+    </div>
+
+    <!-- ── Tab Motor ── -->
+    <div class="ca-tab-panel ca-form-panel" *ngIf="tabActivo=='motor' && form.motor">
+      <div class="ca-field-grid">
+        <div class="ca-field"><label>Codigo VHCR</label><input type="text" [(ngModel)]="form.motor.codigoVhcr" class="ca-input" placeholder="DH2.3Q0228*01"></div>
+        <div class="ca-field ca-field--full"><label>Descripcion</label><input type="text" [(ngModel)]="form.motor.descripcion" class="ca-input" placeholder="MOTOR ARMADO WEICHAI WP2.3Q110A0"></div>
+        <div class="ca-field"><label>Modelo</label><input type="text" [(ngModel)]="form.motor.model" class="ca-input" placeholder="WP2.3Q110A0"></div>
+        <div class="ca-field"><label>Serial No.</label><input type="text" [(ngModel)]="form.motor.serialNo" class="ca-input"></div>
+        <div class="ca-field"><label>Origen</label><input type="text" [(ngModel)]="form.motor.origen" class="ca-input" placeholder="Bodega importacion"></div>
+        <div class="ca-field"><label>Destino</label><input type="text" [(ngModel)]="form.motor.destino" class="ca-input"></div>
+        <div class="ca-field"><label>Fecha ingreso</label><input type="date" [(ngModel)]="form.motor.fechaIngreso" class="ca-input"></div>
+        <div class="ca-field"><label>Medida volumen</label><input type="text" [(ngModel)]="form.motor.medidaVolumen" class="ca-input"></div>
+        <div class="ca-field"><label>Medida peso</label><input type="text" [(ngModel)]="form.motor.medidaPeso" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Observacion</label><textarea [(ngModel)]="form.motor.observacion" rows="2" class="ca-input"></textarea></div>
+      </div>
+    </div>
+
+    <!-- ── Tab Frontal ── -->
+    <div class="ca-tab-panel ca-form-panel" *ngIf="tabActivo=='frontal' && form.frontal">
+      <div class="ca-field-grid">
+        <div class="ca-field"><label>Codigo VHCR</label><input type="text" [(ngModel)]="form.frontal.codigoVhcr" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Descripcion</label><input type="text" [(ngModel)]="form.frontal.descripcion" class="ca-input"></div>
+        <div class="ca-field"><label>Tipo</label><input type="text" [(ngModel)]="form.frontal.type" class="ca-input" placeholder="HF VGDP5"></div>
+        <div class="ca-field"><label>Assy No.</label><input type="text" [(ngModel)]="form.frontal.assyNo" class="ca-input"></div>
+        <div class="ca-field"><label>Jour No.</label><input type="text" [(ngModel)]="form.frontal.jourNo" class="ca-input"></div>
+        <div class="ca-field"><label>Origen</label><input type="text" [(ngModel)]="form.frontal.origen" class="ca-input" placeholder="Bodega importacion"></div>
+        <div class="ca-field"><label>Destino</label><input type="text" [(ngModel)]="form.frontal.destino" class="ca-input"></div>
+        <div class="ca-field"><label>Fecha ingreso</label><input type="date" [(ngModel)]="form.frontal.fechaIngreso" class="ca-input"></div>
+        <div class="ca-field"><label>Medida volumen</label><input type="text" [(ngModel)]="form.frontal.medidaVolumen" class="ca-input"></div>
+        <div class="ca-field"><label>Medida peso</label><input type="text" [(ngModel)]="form.frontal.medidaPeso" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Observacion</label><textarea [(ngModel)]="form.frontal.observacion" rows="2" class="ca-input"></textarea></div>
+      </div>
+    </div>
+
+    <!-- ── Tab Diferencial ── -->
+    <div class="ca-tab-panel ca-form-panel" *ngIf="tabActivo=='diferencial' && form.diferencial">
+      <div class="ca-field-grid">
+        <div class="ca-field"><label>Codigo VHCR</label><input type="text" [(ngModel)]="form.diferencial.codigoVhcr" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Descripcion</label><input type="text" [(ngModel)]="form.diferencial.descripcion" class="ca-input"></div>
+        <div class="ca-field"><label>Funda - Tipo</label><input type="text" [(ngModel)]="form.diferencial.typeFunda" class="ca-input" placeholder="AC RATIO 4.20 MCP16ZG"></div>
+        <div class="ca-field"><label>Funda - Assy No.</label><input type="text" [(ngModel)]="form.diferencial.assyNoFunda" class="ca-input"></div>
+        <div class="ca-field"><label>Funda - Jour No.</label><input type="text" [(ngModel)]="form.diferencial.jourNoFunda" class="ca-input"></div>
+        <div class="ca-field"><label>Huevo - Tipo</label><input type="text" [(ngModel)]="form.diferencial.typeHuevo" class="ca-input" placeholder="AC RATIO 1.208 P6"></div>
+        <div class="ca-field"><label>Huevo - Assy No.</label><input type="text" [(ngModel)]="form.diferencial.assyNoHuevo" class="ca-input"></div>
+        <div class="ca-field"><label>Huevo - Jour No.</label><input type="text" [(ngModel)]="form.diferencial.jourNoHuevo" class="ca-input"></div>
+        <div class="ca-field"><label>Origen</label><input type="text" [(ngModel)]="form.diferencial.origen" class="ca-input"></div>
+        <div class="ca-field"><label>Fecha ingreso</label><input type="date" [(ngModel)]="form.diferencial.fechaIngreso" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Observacion</label><textarea [(ngModel)]="form.diferencial.observacion" rows="2" class="ca-input"></textarea></div>
+      </div>
+    </div>
+
+    <!-- ── Tab Cabina ── -->
+    <div class="ca-tab-panel ca-form-panel" *ngIf="tabActivo=='cabina' && form.cabina">
+      <div class="ca-field-grid">
+        <div class="ca-field"><label>Codigo VHCR</label><input type="text" [(ngModel)]="form.cabina.codigoVhcr" class="ca-input" placeholder="MFL-02222-1002"></div>
+        <div class="ca-field ca-field--full"><label>Descripcion</label><input type="text" [(ngModel)]="form.cabina.descripcion" class="ca-input" placeholder="Cabina armada alta C7H 540"></div>
+        <div class="ca-field"><label>No. Producto</label><input type="text" [(ngModel)]="form.cabina.numeroProducto" class="ca-input"></div>
+        <div class="ca-field"><label>No. Serie</label><input type="text" [(ngModel)]="form.cabina.numeroSerie" class="ca-input"></div>
+        <div class="ca-field"><label>Parts List No.</label><input type="text" [(ngModel)]="form.cabina.partsListNo" class="ca-input"></div>
+        <div class="ca-field"><label>Color</label><input type="text" [(ngModel)]="form.cabina.color" class="ca-input" placeholder="Tomate"></div>
+        <div class="ca-field"><label>Depto. cuerpo</label><input type="text" [(ngModel)]="form.cabina.departamentoCuerpo" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Configuracion especial</label><input type="text" [(ngModel)]="form.cabina.configuracionEspecial" class="ca-input"></div>
+        <div class="ca-field"><label>Origen</label><input type="text" [(ngModel)]="form.cabina.origen" class="ca-input" placeholder="Bodega importacion"></div>
+        <div class="ca-field"><label>Destino</label><input type="text" [(ngModel)]="form.cabina.destino" class="ca-input"></div>
+        <div class="ca-field"><label>Fecha ingreso</label><input type="date" [(ngModel)]="form.cabina.fechaIngreso" class="ca-input"></div>
+        <div class="ca-field ca-field--full"><label>Observacion</label><textarea [(ngModel)]="form.cabina.observacion" rows="2" class="ca-input"></textarea></div>
+      </div>
+    </div>
+
+    <!-- Barra inferior del formulario -->
+    <div class="ca-form-footer">
+      <div class="ca-form-footer__tabs">
+        <span class="ca-step" [class.active]="tabActivo=='conjunto'"    (click)="tabActivo='conjunto'">1</span>
+        <span class="ca-step" [class.active]="tabActivo=='caja'"        (click)="tabActivo='caja'">2</span>
+        <span class="ca-step" [class.active]="tabActivo=='motor'"       (click)="tabActivo='motor'">3</span>
+        <span class="ca-step" [class.active]="tabActivo=='frontal'"     (click)="tabActivo='frontal'">4</span>
+        <span class="ca-step" [class.active]="tabActivo=='diferencial'" (click)="tabActivo='diferencial'">5</span>
+        <span class="ca-step" [class.active]="tabActivo=='cabina'"      (click)="tabActivo='cabina'">6</span>
+      </div>
+      <div class="ca-form-footer__actions">
+        <span class="ca-error-inline" *ngIf="errorMsg">{{ errorMsg }}</span>
+        <button class="ca-btn ca-btn--ghost" (click)="cancelarForm()">Cancelar</button>
+        <button class="ca-btn ca-btn--primary" (click)="guardar()" [disabled]="guardando">
+          {{ guardando ? 'Guardando...' : (modoEdicion ? 'Guardar cambios' : 'Crear conjunto') }}
+        </button>
+      </div>
+    </div>
+
+  </section>
+
+</div>

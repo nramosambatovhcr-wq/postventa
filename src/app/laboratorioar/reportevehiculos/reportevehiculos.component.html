@@ -1,0 +1,398 @@
+<div class="reporte-wrapper">
+
+  <!-- HEADER -->
+  <div class="reporte-header">
+    <div class="header-left">
+      <div class="header-icon">🚗</div>
+      <div>
+        <h1 class="reporte-titulo">Reporte de Vehículos Asignados</h1>
+        <p class="reporte-subtitulo">Seguimiento de revisiones, repuestos y estado operativo</p>
+      </div>
+    </div>
+    
+    <div class="header-actions">
+      <div class="dropdown-export">
+        <button class="btn-accion btn-exportar" (click)="toggleExportMenu($event)">
+          <span>⬇</span> Exportar ▼
+        </button>
+        <div class="dropdown-menu" [class.show]="showExportMenu">
+          <button class="dropdown-item" (click)="exportarCSV(); $event.stopPropagation()">
+            <span>📄</span> Exportar CSV
+          </button>
+          <button class="dropdown-item" (click)="exportarExcel(); $event.stopPropagation()">
+            <span>📊</span> Exportar Excel
+          </button>
+          <button class="dropdown-item" (click)="exportarExcelConDetalle(); $event.stopPropagation()">
+            <span>📋</span> Excel con Detalle
+          </button>
+        </div>
+      </div>
+      
+      <button class="btn-accion btn-imprimir" (click)="imprimir()">
+        <span>🖨</span> Imprimir
+      </button>
+      <button class="btn-accion btn-volver" (click)="volver()">
+        <span>←</span> Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- TARJETAS RESUMEN -->
+  <div class="resumen-grid">
+    <div class="resumen-card card-total">
+      <div class="card-valor">{{ vehiculos.length }}</div>
+      <div class="card-label">Total Vehículos</div>
+    </div>
+    <div class="resumen-card card-asignados">
+      <div class="card-valor">{{ vehiculosAsignados }}</div>
+      <div class="card-label">Asignados</div>
+    </div>
+    <div class="resumen-card card-en-revision">
+      <div class="card-valor">{{ vehiculosEnRevision }}</div>
+      <div class="card-label">En Revisión</div>
+    </div>
+    <div class="resumen-card card-completados">
+      <div class="card-valor">{{ vehiculosCompletados }}</div>
+      <div class="card-label">Completados</div>
+    </div>
+    <div class="resumen-card card-sin-revision">
+      <div class="card-valor">{{ vehiculosSinRevision }}</div>
+      <div class="card-label">Sin Revisión</div>
+    </div>
+    <div class="resumen-card card-repuestos-total">
+      <div class="card-valor">{{ totalRepuestosGlobal }}</div>
+      <div class="card-label">Repuestos Totales</div>
+    </div>
+    <div class="resumen-card card-repuestos-revisados">
+      <div class="card-valor">{{ totalRevisadosGlobal }}</div>
+      <div class="card-label">Repuestos Revisados</div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros-bar">
+    <div class="filtro-grupo">
+      <label>Buscar</label>
+      <input
+        type="text"
+        class="filtro-input"
+        placeholder="Vehículo, usuario, chasis..."
+        [(ngModel)]="filtroBusqueda"
+        (input)="aplicarFiltros()"
+      />
+    </div>
+    <div class="filtro-grupo">
+      <label>Estado Revisión</label>
+      <select class="filtro-select" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option value="sin_revision">Sin Revisión</option>
+        <option value="en_proceso">En Proceso</option>
+        <option value="completado">Completado</option>
+      </select>
+    </div>
+    <div class="filtro-grupo">
+      <label>Asignación</label>
+      <select class="filtro-select" [(ngModel)]="filtroAsignacion" (change)="aplicarFiltros()">
+        <option value="">Todos</option>
+        <option value="asignado">Asignado</option>
+        <option value="sin_asignar">Sin Asignar</option>
+      </select>
+    </div>
+    <button class="btn-limpiar" (click)="limpiarFiltros()">✕ Limpiar</button>
+  </div>
+
+  <!-- TABLA REPORTE -->
+  <div class="tabla-wrapper">
+    <table class="tabla-reporte">
+      <thead>
+        <tr>
+          <th class="th-num">#</th>
+          <th (click)="ordenarPor('linea')" class="th-sort">
+            Vehículo <span class="sort-icon">{{ getSortIcon('linea') }}</span>
+          </th>
+          <th>Chasis</th>
+          <th (click)="ordenarPor('usuario')" class="th-sort">
+            Asignado a <span class="sort-icon">{{ getSortIcon('usuario') }}</span>
+          </th>
+          <th (click)="ordenarPor('fechaAsignacion')" class="th-sort">
+            F. Asignación <span class="sort-icon">{{ getSortIcon('fechaAsignacion') }}</span>
+          </th>
+          <th (click)="ordenarPor('fechaInicio')" class="th-sort">
+            Inicio Rev. <span class="sort-icon">{{ getSortIcon('fechaInicio') }}</span>
+          </th>
+          <th (click)="ordenarPor('duracion')" class="th-sort">
+            Tiempo Rev. <span class="sort-icon">{{ getSortIcon('duracion') }}</span>
+          </th>
+          <th (click)="ordenarPor('primeraFechaRepuesto')" class="th-sort th-repuestos-fechas">
+            Inicio Rep. <span class="sort-icon">{{ getSortIcon('primeraFechaRepuesto') }}</span>
+          </th>
+          <th (click)="ordenarPor('ultimaFechaRepuesto')" class="th-sort th-repuestos-fechas">
+            Fin Rep. <span class="sort-icon">{{ getSortIcon('ultimaFechaRepuesto') }}</span>
+          </th>
+          <th (click)="ordenarPor('tiempoRevisionRepuestos')" class="th-sort th-repuestos-fechas">
+            Tiempo Rep. <span class="sort-icon">{{ getSortIcon('tiempoRevisionRepuestos') }}</span>
+          </th>
+          <th (click)="ordenarPor('totalRepuestos')" class="th-sort th-repuestos">
+            Repuestos <span class="sort-icon">{{ getSortIcon('totalRepuestos') }}</span>
+          </th>
+          <th (click)="ordenarPor('repuestosRevisados')" class="th-sort th-repuestos">
+            Revisados <span class="sort-icon">{{ getSortIcon('repuestosRevisados') }}</span>
+          </th>
+          <th (click)="ordenarPor('estado')" class="th-sort">
+            Estado <span class="sort-icon">{{ getSortIcon('estado') }}</span>
+          </th>
+          <th class="th-detalle">Detalle</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-container *ngFor="let row of vehiculosFiltrados; let i = index">
+
+          <!-- FILA PRINCIPAL -->
+          <tr class="fila-vehiculo" [class.fila-expandida-activa]="filaExpandida === row.vehiculoId">
+
+            <td class="td-num">{{ i + 1 }}</td>
+
+            <!-- Vehículo -->
+            <td>
+              <div class="vehiculo-info">
+                <span class="vehiculo-linea badge-linea">{{ row.linea }}</span>
+                <span class="vehiculo-modelo">{{ row.modelo }}</span>
+              </div>
+            </td>
+
+            <!-- Chasis -->
+            <td>
+              <span class="chasis-text">{{ row.chasis }}</span>
+            </td>
+
+            <!-- Usuario Asignado -->
+            <td>
+              <div *ngIf="row.asignadoPor; else sinUsuario" class="usuario-chip">
+                <span class="usuario-avatar">{{ getIniciales(row.asignadoPor) }}</span>
+                <span class="usuario-nombre">{{ row.asignadoPor }}</span>
+              </div>
+              <ng-template #sinUsuario>
+                <span class="sin-dato">— Sin asignar</span>
+              </ng-template>
+            </td>
+
+            <!-- Fecha Asignación -->
+            <td>
+              <ng-container *ngIf="row.fechaAsignacion; else sinFechaAsig">
+                <span class="fecha-valor">{{ row.fechaAsignacion | date:'dd/MM/yyyy' }}</span>
+                <span class="fecha-hora">{{ row.fechaAsignacion | date:'HH:mm' }}</span>
+              </ng-container>
+              <ng-template #sinFechaAsig>
+                <span class="sin-dato">—</span>
+              </ng-template>
+            </td>
+
+            <!-- Fecha Inicio Revisión -->
+            <td>
+              <ng-container *ngIf="row.revisionId && row.fechaInicio; else sinFechaRev">
+                <span class="fecha-valor">{{ row.fechaInicio | date:'dd/MM/yyyy' }}</span>
+                <span class="fecha-hora">{{ row.fechaInicio | date:'HH:mm' }}</span>
+              </ng-container>
+              <ng-template #sinFechaRev>
+                <span class="sin-dato">—</span>
+              </ng-template>
+            </td>
+
+            <!-- Tiempo de Revisión del Vehículo -->
+            <td>
+              <ng-container *ngIf="row.revisionId && row.fechaFin; else tiempoEnCurso">
+                <span class="tiempo-valor">
+                  {{ calcularDuracion(row.fechaInicio, row.fechaFin) }}
+                </span>
+              </ng-container>
+              <ng-template #tiempoEnCurso>
+                <span *ngIf="row.revisionId" class="tiempo-en-curso">
+                  ⏱ {{ calcularDuracionHastaHoy(row.fechaInicio) }} (en curso)
+                </span>
+                <span *ngIf="!row.revisionId" class="sin-dato">—</span>
+              </ng-template>
+            </td>
+
+            <!-- Fecha Inicio Repuestos -->
+            <td class="td-repuestos-fechas">
+              <ng-container *ngIf="row.primeraFechaRepuesto; else sinFechaRepuesto">
+                <span class="fecha-valor">{{ row.primeraFechaRepuesto | date:'dd/MM/yyyy' }}</span>
+                <span class="fecha-hora">{{ row.primeraFechaRepuesto | date:'HH:mm' }}</span>
+              </ng-container>
+              <ng-template #sinFechaRepuesto>
+                <span class="sin-dato">—</span>
+              </ng-template>
+            </td>
+
+            <!-- Fecha Fin Repuestos -->
+            <td class="td-repuestos-fechas">
+              <ng-container *ngIf="row.ultimaFechaRepuesto; else sinFechaRepuestoFin">
+                <span class="fecha-valor">{{ row.ultimaFechaRepuesto | date:'dd/MM/yyyy' }}</span>
+                <span class="fecha-hora">{{ row.ultimaFechaRepuesto | date:'HH:mm' }}</span>
+              </ng-container>
+              <ng-template #sinFechaRepuestoFin>
+                <span class="sin-dato">—</span>
+              </ng-template>
+            </td>
+
+            <!-- Tiempo de Revisión de Repuestos -->
+            <td class="td-repuestos-fechas">
+              <ng-container *ngIf="row.tiempoRevisionRepuestos || row.tiempoRevisionRepuestosMinutos; else sinTiempoRepuestos">
+                <span class="tiempo-repuestos-valor" 
+                      [class.tiempo-corto]="(row.tiempoRevisionRepuestosMinutos || 0) < 60" 
+                      [class.tiempo-medio]="(row.tiempoRevisionRepuestosMinutos || 0) >= 60 && (row.tiempoRevisionRepuestosMinutos || 0) < 1440" 
+                      [class.tiempo-largo]="(row.tiempoRevisionRepuestosMinutos || 0) >= 1440">
+                  {{ formatearTiempoRepuestos(row.tiempoRevisionRepuestos, row.tiempoRevisionRepuestosMinutos) }}
+                </span>
+                <span class="tiempo-repuestos-dias" *ngIf="(row.tiempoRevisionRepuestosMinutos || 0) >= 1440">
+                  ({{ ((row.tiempoRevisionRepuestosMinutos || 0) / 1440).toFixed(1) }} días)
+                </span>
+              </ng-container>
+              <ng-template #sinTiempoRepuestos>
+                <span class="sin-dato">—</span>
+              </ng-template>
+            </td>
+
+            <!-- Total Repuestos con barra de progreso -->
+            <td class="td-repuestos">
+              <div class="rep-resumen">
+                <span class="rep-numero">{{ row.totalRepuestos }}</span>
+                <span class="rep-sub">{{ row.cantidadTotalRepuestos }} uds.</span>
+              </div>
+              <div class="barra-contenedor">
+                <div class="barra-progreso"
+                     [ngClass]="getColorBarra(getPorcentaje(row.repuestosRevisados, row.totalRepuestos))"
+                     [style.width.%]="getPorcentaje(row.repuestosRevisados, row.totalRepuestos)">
+                </div>
+              </div>
+            </td>
+
+            <!-- Revisados / Pendientes -->
+            <td class="td-repuestos">
+              <div class="rep-chips">
+                <span class="chip-revisado">✔ {{ row.repuestosRevisados }}</span>
+                <span class="chip-pendiente" *ngIf="row.repuestosPendientes > 0">
+                  ○ {{ row.repuestosPendientes }}
+                </span>
+              </div>
+              <span class="rep-porcentaje">
+                {{ getPorcentaje(row.repuestosRevisados, row.totalRepuestos) }}%
+              </span>
+            </td>
+
+            <!-- Estado -->
+            <td>
+              <span class="badge-estado" [ngClass]="getBadgeClass(row)">
+                {{ getEstadoLabel(row) }}
+              </span>
+            </td>
+
+            <!-- Botón expandir -->
+            <td class="td-detalle">
+              <button class="btn-expandir"
+                      *ngIf="row.totalRepuestos > 0"
+                      (click)="toggleFila(row.vehiculoId)"
+                      [title]="filaExpandida === row.vehiculoId ? 'Cerrar detalle' : 'Ver repuestos'">
+                {{ filaExpandida === row.vehiculoId ? '▲' : '▼' }}
+              </button>
+              <span *ngIf="row.totalRepuestos === 0" class="sin-dato">—</span>
+            </td>
+          </tr>
+
+          <!-- FILA DETALLE DE REPUESTOS (expandible) -->
+          <tr *ngIf="filaExpandida === row.vehiculoId" class="fila-detalle">
+            <td colspan="14">
+              <div class="detalle-wrapper">
+
+                <div class="detalle-header">
+                  <span class="detalle-titulo">
+                    🔧 Repuestos revisados — {{ row.linea }} {{ row.modelo }}
+                    <span class="detalle-subtitle">
+                      Revisado por: <strong>{{ row.asignadoPor || '—' }}</strong>
+                      &nbsp;|&nbsp;
+                      Inicio: <strong>{{ (row.fechaInicio | date:'dd/MM/yyyy HH:mm') || '—' }}</strong>
+                      &nbsp;|&nbsp;
+                      Fin: <strong>{{ (row.fechaFin | date:'dd/MM/yyyy HH:mm') || 'En curso' }}</strong>
+                      &nbsp;|&nbsp;
+                      Duración: <strong>{{ calcularDuracion(row.fechaInicio, row.fechaFin) }}</strong>
+                    </span>
+                  </span>
+                </div>
+
+                <table class="tabla-detalle">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Nombre del repuesto</th>
+                      <th>Código</th>
+                      <th>Cantidad</th>
+                      <th>Revisado por</th>
+                      <th>Fecha revisión</th>
+                      <th>Estado</th>
+                      <th>Observación</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let rep of row.detalleRepuestos; let j = index">
+                      <td class="td-num">{{ j + 1 }}</td>
+                      <td><strong>{{ rep.nombre }}</strong></td>
+                      <td><span class="codigo-chip">{{ rep.codigo }}</span></td>
+                      <td class="td-cantidad">{{ rep.cantidad }}</td>
+                      <td>
+                        <div *ngIf="rep.revisadoPor; else sinRevUser" class="usuario-chip usuario-chip-sm">
+                          <span class="usuario-avatar usuario-avatar-sm">{{ getIniciales(rep.revisadoPor) }}</span>
+                          <span>{{ rep.revisadoPor }}</span>
+                        </div>
+                        <ng-template #sinRevUser>
+                          <span class="sin-dato">—</span>
+                        </ng-template>
+                      </td>
+                      <td>
+                        <ng-container *ngIf="rep.fecha; else sinFechaRep">
+                          <span class="fecha-valor">{{ rep.fecha | date:'dd/MM/yyyy' }}</span>
+                          <span class="fecha-hora">{{ rep.fecha | date:'HH:mm' }}</span>
+                        </ng-container>
+                        <ng-template #sinFechaRep>
+                          <span class="sin-dato">—</span>
+                        </ng-template>
+                      </td>
+                      <td>
+                        <span class="badge-rep"
+                              [ngClass]="rep.revisado === 'true' || rep.revisado === true ? 'badge-rep-ok' : 'badge-rep-pendiente'">
+                          {{ (rep.revisado === 'true' || rep.revisado === true) ? 'Revisado' : 'Pendiente' }}
+                        </span>
+                      </td>
+                      <td class="td-obs">
+                        <span *ngIf="rep.observacion; else sinObs">{{ rep.observacion }}</span>
+                        <ng-template #sinObs><span class="sin-dato">—</span></ng-template>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+              </div>
+            </td>
+          </tr>
+
+        </ng-container>
+
+        <!-- Sin resultados -->
+        <tr *ngIf="vehiculosFiltrados.length === 0">
+          <td colspan="14" class="sin-resultados">
+            <div class="sin-resultados-inner">
+              <span>🔍</span>
+              <p>No se encontraron vehículos con los filtros aplicados.</p>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- FOOTER INFO -->
+  <div class="reporte-footer">
+    <span>Mostrando {{ vehiculosFiltrados.length }} de {{ vehiculos.length }} registros</span>
+    <span>Generado el {{ hoy | date:'dd/MM/yyyy HH:mm' }}</span>
+  </div>
+
+</div>

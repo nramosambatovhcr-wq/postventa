@@ -1,0 +1,446 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Pedidos Bodega</div>
+      <div class="contenedor-busqueda" style="position: relative;">
+        <input 
+          type="text" 
+          class="busqueda" 
+          [class.activa]="searchTerm.length > 0"
+          placeholder="Buscar por código, nombre, descripción, categoría, modelo, chasis u observaciones"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()"
+          (ngModelChange)="searchImports()">
+        
+        <div class="search-results-info" *ngIf="searchTerm.length > 0 && filteredData.length > 0">
+          {{ filteredData.length }} resultado{{ filteredData.length === 1 ? '' : 's' }}
+        </div>
+        
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Revisados de Laboratorio</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de las partes</p>
+      </div>
+      
+  <div class="contenedor-estadisticas">
+  <div class="tarjeta-estadistica" 
+       [class.activa]="estadoActivo === 'pendiente'" 
+       (click)="pendiente()">
+    <div class="icono-estadistica">⏳</div>
+    <div class="titulo-estadistica">Partes Pendientes</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_partes_pendientes }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica" 
+       [class.activa]="estadoActivo === 'revisado'" 
+       (click)="revisado()">
+    <div class="icono-estadistica">✓</div>
+    <div class="titulo-estadistica">Partes Revisadas</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_partes_revisadas }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica" 
+       [class.activa]="estadoActivo === 'vehiculos'" 
+       (click)="vehis()">
+    <div class="icono-estadistica">🚗</div>
+    <div class="titulo-estadistica">Total Vehículos</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_carros }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">📦</div>
+    <div class="titulo-estadistica">Total Partes</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_partes }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">🔢</div>
+    <div class="titulo-estadistica">Total Cantidad</div>
+    <div class="valor-estadistica">{{ stats.enTransito }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">🚙</div>
+    <div class="titulo-estadistica">Modelos</div>
+    <div class="valor-estadistica">{{ stats.pendientesLiquidacion }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">📦</div>
+    <div class="titulo-estadistica">Categorías</div>
+    <div class="valor-estadistica">{{ stats.tiempoPromedio }}</div>
+  </div>
+  
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">🔍</div>
+    <div class="titulo-estadistica">Filtrados</div>
+    <div class="valor-estadistica">{{ totalItems }}</div>
+  </div>
+</div>
+
+<!-- Botón para estadísticas por línea del BACKEND -->
+<div class="stats-toggle-container">
+  <button class="btn-stats-toggle btn-backend" (click)="toggleEstadisticasLinea()">
+    <span *ngIf="!mostrarEstadisticasLinea">📊 Mostrar Estadísticas por Línea (Backend)</span>
+    <span *ngIf="mostrarEstadisticasLinea">❌ Ocultar Estadísticas por Línea</span>
+  </button>
+</div>
+
+<!-- Estadísticas por línea del BACKEND -->
+<div class="backend-stats-container" *ngIf="mostrarEstadisticasLinea">
+  <!-- Selector de Línea -->
+  <div class="filtro-linea" *ngIf="lineas.length > 0">
+    <label for="lineaSelector">Filtrar por Línea:</label>
+    <select 
+      id="lineaSelector" 
+      [(ngModel)]="lineaSeleccionada" 
+      (change)="consultarLineaEspecifica(lineaSeleccionada)">
+      <option [value]="0">Todas las líneas</option>
+      <option *ngFor="let linea of lineas" [value]="linea.id">
+        {{ linea.codigo }} - {{ linea.nombre }}
+      </option>
+    </select>
+  </div>
+
+  <!-- Tabla de estadísticas por línea -->
+  <div class="tabla-lineas" *ngIf="estadisticasPorLinea.length > 0">
+    <h3>📊 Estadísticas por Línea</h3>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Línea</th>
+            <th>Vehículos</th>
+            <th>Revisadas</th>
+            <th>Pendientes</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let est of estadisticasPorLinea; let i = index" 
+              [style.background]="getRowBackground(i)"
+              (mouseenter)="onRowHover(i, true)"
+              (mouseleave)="onRowHover(i, false)">
+            <td>{{ est.linea_codigo }} - {{ est.linea_nombre }}</td>
+            <td class="text-center">
+              <span class="badge badge-blue">{{ est.total_carros }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge badge-green">{{ est.total_partes_revisadas }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge badge-yellow">{{ est.total_partes_pendientes }}</span>
+            </td>
+            <td class="text-center">
+              <strong>{{ est.total_partes }}</strong>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Botones para estadísticas calculadas del FRONTEND -->
+<div class="stats-toggle-container">
+  <button class="btn-stats-toggle" (click)="toggleLineStats()">
+    <span *ngIf="!showLineStats">📊 Estadísticas por Chasis</span>
+    <span *ngIf="showLineStats">❌ Ocultar Chasis</span>
+  </button>
+  
+  <button class="btn-stats-toggle btn-category" (click)="toggleCategoryStats()">
+    <span *ngIf="!showCategoryStats">📦 Estadísticas por Categoría</span>
+    <span *ngIf="showCategoryStats">❌ Ocultar Categoría</span>
+  </button>
+  
+  <button class="btn-stats-toggle btn-model" (click)="toggleModelStats()">
+    <span *ngIf="!showModelStats">🚙 Estadísticas por Modelo</span>
+    <span *ngIf="showModelStats">❌ Ocultar Modelo</span>
+  </button>
+</div>
+      
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Codigos Revisados Recientes</div>
+          <div class="acciones-tabla">
+            <!-- Filtro de fechas -->
+            <div class="filtro-fechas">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate">
+              </div>
+              <button class="boton boton-contorno" (click)="applyDateFilter()">Aplicar Fechas</button>
+              <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+            </div>
+           <!-- 📦 Menú de exportación mejorado -->
+<div class="dropdown">
+  <button class="boton boton-contorno" (click)="toggleExportMenu()">
+    <i class="fa fa-download"></i> Exportar
+  </button>
+
+  <div class="dropdown-content export-menu-enhanced" *ngIf="showExportMenu">
+    
+    <!-- ⚡ EXPORTACIÓN RÁPIDA (RECOMENDADO) -->
+    <div class="export-section">
+      <div class="export-section-title">⚡ Exportación Rápida (Recomendado)</div>
+      
+      <a (click)="downloadExcel()" class="export-option-primary">
+        <i class="fa fa-file-excel-o"></i>
+        <div class="export-option-content">
+          <strong>Excel Simple</strong>
+          <span class="export-option-desc">Sin imágenes • Instantáneo</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithImageLinks()" class="export-option-primary">
+        <i class="fa fa-link"></i>
+        <div class="export-option-content">
+          <strong>Excel con Links</strong>
+          <span class="export-option-desc">URLs clickeables • Instantáneo</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithRealImages(lista.length)" class="export-option-recommended">
+        <i class="fa fa-file-image-o"></i>
+        <div class="export-option-content">
+          <strong>Página Actual con Imágenes REALES</strong>
+          <span class="export-option-desc">{{ lista.length }} registros • Imágenes embedidas</span>
+        </div>
+        <span class="badge-recommended">RECOMENDADO</span>
+      </a>
+    </div>
+
+    <hr style="margin: 10px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+    <!-- 🐌 EXPORTACIÓN COMPLETA (Más lento) -->
+    <div class="export-section">
+      <div class="export-section-title">🐌 Exportación Completa (Más lento)</div>
+      
+      <a (click)="downloadExcelWithRealImages(100)" class="export-option-warning">
+        <i class="fa fa-image"></i>
+        <div class="export-option-content">
+          <strong>Primeras 100 Imágenes</strong>
+          <span class="export-option-desc">~1-2 minutos</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithRealImages(500)" class="export-option-warning">
+        <i class="fa fa-images"></i>
+        <div class="export-option-content">
+          <strong>Primeras 500 Imágenes</strong>
+          <span class="export-option-desc">~5-10 minutos</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithRealImages()" class="export-option-danger">
+        <i class="fa fa-warning"></i>
+        <div class="export-option-content">
+          <strong>Todas las Imágenes</strong>
+          <span class="export-option-desc">⚠️ Puede tardar 30+ minutos</span>
+        </div>
+      </a>
+    </div>
+
+    <hr style="margin: 10px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+    <!-- 📄 OTROS FORMATOS -->
+    <div class="export-section">
+      <a (click)="downloadCSV()" class="export-option-secondary">
+        <i class="fa fa-file-text-o"></i>
+        <div class="export-option-content">
+          <strong>CSV</strong>
+          <span class="export-option-desc">Formato texto simple</span>
+        </div>
+      </a>
+      
+      <a (click)="clearImageCache()" class="export-option-secondary">
+        <i class="fa fa-trash-o"></i>
+        <div class="export-option-content">
+          <strong>Limpiar Cache</strong>
+          <span class="export-option-desc">Liberar memoria</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- 📊 Info total -->
+    <div class="export-info">
+      <i class="fa fa-info-circle"></i>
+      Total: {{ totalItems }} registros
+    </div>
+
+  </div>
+</div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive" *ngIf="!loading; else loadingTemplate">
+          <table>
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Nombre</th>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                 <th>Modelo</th>
+                <th>Chasis</th>
+                 <th>Categoria</th>
+                <th>Observaciones</th>                 
+                <th class="hide-mobile">Fecha</th>
+                <th>Imagen</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Codigo">{{ item.codigo }}</td>
+                <td data-label="Nombre">
+                  {{item.nombre}}
+                </td>
+                <td data-label="Descripcion"> 
+                  {{item.descripcion}}
+                </td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                <td data-label="Modelo">{{ item.modelo.codigo }}</td>
+                <td data-label="Chasis">{{ item.chasis.codigo }}</td>
+                <td data-label="Categoria">{{ item.categoria.codigo }}</td>
+                <td data-label="Observaciones">
+                  {{item.observacion}}
+                </td>
+                <td data-label="Fecha">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</td>
+                <td data-label="Imagen">
+                  <div *ngFor="let imagePath of item.imagenes" class="image-container">
+                    <div *ngIf="imagePath!=null">
+                      <img [src]="getImageUrl(imagePath)" alt="Imagen del pedido" (click)="openImageModal(getImageUrl(imagePath))" class="pedido-image" width="100px" height="100px">
+                    </div>
+                  </div>
+                </td>
+                <td data-label="Estado">
+                    <div *ngIf="item.revisado=='revisado'">REVISADO</div>
+                  
+                </td>
+              </tr>
+              <tr *ngIf="lista.length === 0">
+                <td colspan="8" class="no-results">
+                  No se encontraron resultados para los filtros aplicados
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <ng-template #loadingTemplate>
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Cargando datos...</p>
+          </div>
+        </ng-template>
+        
+        <div class="pie-tabla" *ngIf="lista.length > 0">
+          <div class="items-count">Mostrando {{ lista.length }} de {{ totalItems }} Partes</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="page !== -1 ? changePage(page) : null">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Modal para visualizar imágenes -->
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+      <div class="image-modal-content" (click)="$event.stopPropagation()">
+        <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+        <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+      </div>
+    </div>
+  </main>
+  
+  <!-- Estilos para la modal de imágenes -->
+  <style>
+    .image-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+  
+    .image-modal-content {
+      position: relative;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 90%;
+      max-height: 90%;
+    }
+  
+    .image-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #333;
+    }
+  
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 80vh;
+      display: block;
+    }
+    
+    .loading-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 15px;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .no-results {
+      text-align: center;
+      padding: 30px;
+      font-style: italic;
+      color: #666;
+    }
+  </style>

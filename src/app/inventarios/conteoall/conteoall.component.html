@@ -1,0 +1,260 @@
+<div class="container-fluid p-4">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="mb-0">Conteos de Inventario por Fecha</h3>
+      <div class="btn-group">
+        <button class="btn btn-success" (click)="exportarExcel()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel Detallado
+        </button>
+        <button class="btn btn-primary" (click)="exportarExcel1()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel por Fechas
+        </button>
+        <button class="btn btn-info" (click)="exportarExcelAgrupado()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel Agrupado
+        </button>
+        <button class="btn btn-secondary" (click)="exportarExcelDiario3()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel Diario **API Mejorada** 👈
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && articulosDiarios.length > 0" class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">
+            <i class="bi bi-calendar-check text-primary me-2"></i>
+            Vista Día a Día - Conteos por Fecha
+          </h5>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Esta tabla muestra:</strong> Todos los conteos realizados día a día (sin agrupaciones).
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-primary sticky-top">
+              <tr>
+                <th rowspan="2" class="align-middle text-center">Item</th>
+                <th rowspan="2" class="align-middle">Código</th>
+                <th rowspan="2" class="align-middle">Artículo</th>
+                <th rowspan="2" class="align-middle">Descripción</th>
+                <th rowspan="2" class="align-middle text-end">Stock Disp. Sistema</th>
+                <th rowspan="2" class="align-middle text-center">Unidad</th>
+                <th rowspan="2" class="align-middle text-end">Costo Promedio</th>
+                
+                <th [attr.colspan]="fechasUnicas.length" class="text-center bg-primary text-white">
+                  Conteos por Día
+                </th>
+              </tr>
+              <tr>
+                <th *ngFor="let fecha of fechasUnicas" class="text-center bg-info text-white fecha-header-diaria">
+                  {{ formatearFechaCorta(fecha) }}
+                  <span class="small d-block">(Día {{ fecha.split('-')[2] }})</span>
+                </th>
+              </tr>
+              </thead>
+            <tbody>
+              <tr *ngFor="let articulo of articulosDiarios; let i = index">
+                <ng-container *ngIf="articulo.stock_disponible as stockDisponible">
+                  
+                  <td class="text-center align-top">
+                    <span class="badge bg-primary">{{ i + 1 }}</span>
+                  </td>
+                  <td class="align-top"><strong>{{ articulo.codigo_articulo }}</strong></td>
+                  <td class="align-top">{{ articulo.nombre_articulo }}</td>
+                  <td class="small align-top">{{ articulo.descripcion }}</td>
+                  <td class="text-end fw-bold text-primary align-top">
+                    {{ stockDisponible | number:'1.2-2' }}
+                  </td>
+                  <td class="text-center align-top">{{ articulo.unidad }}</td>
+                  <td class="text-end align-top">{{ articulo.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</td>
+
+                  <td *ngFor="let fecha of fechasUnicas" class="conteo-diario-cell">
+                    <div *ngFor="let conteo of getConteosDiariosPorFecha(articulo, fecha); let idx = index" 
+                         class="conteo-diario-item mb-2"
+                         [ngClass]="{
+                           'bg-success-subtle': conteo.diferencia === 0,
+                           'bg-danger-subtle': conteo.diferencia < 0,
+                           'bg-warning-subtle': conteo.diferencia > 0
+                         }">
+                      <div class="d-flex justify-content-between align-items-start mb-1">
+                        <span class="badge bg-secondary small">Conteo {{ idx + 1 }}</span>
+                        <i class="bi bi-clock text-muted"></i>
+                      </div>
+                      
+                      <div class="small mb-1">
+                        <i class="bi bi-calendar3"></i>
+                        <strong>{{ formatearFechaHora(conteo.fechaHora) }}</strong>
+                      </div>
+                      
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small text-muted">Cantidad:</span>
+                        <span class="fw-bold text-dark">{{ conteo.cantidad_contada | number:'1.2-2' }}</span>
+                      </div>
+                      
+                      <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="small text-muted">Diferencia:</span>
+                        <span class="fw-bold"
+                              [ngClass]="{
+                                'text-success': conteo.diferencia === 0,
+                                'text-danger': conteo.diferencia < 0,
+                                'text-warning': conteo.diferencia > 0
+                              }">
+                          {{ conteo.diferencia | number:'1.2-2' }}
+                        </span>
+                      </div>
+                      
+                      <div class="border-top pt-1 mt-1">
+                        <div class="small text-info mb-1">
+                          <i class="bi bi-chat-left-text"></i>
+                          <strong>Obs:</strong> {{ conteo.observaciones }}
+                        </div>
+                        
+                        <div class="small text-muted">
+                          <i class="bi bi-person"></i>
+                        <strong>Us:</strong>   {{ conteo.usuario_contador }}
+                        </div>
+                        <div class="small text-muted">
+                          <i class="bi bi-geo-alt"></i>
+                        <strong>Ubi:</strong>  {{ conteo.ubicacionconteo }}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div *ngIf="getConteosDiariosPorFecha(articulo, fecha).length === 0" class="text-muted text-center py-2">
+                       <i class="bi bi-dash-circle"></i> Sin conteos
+                    </div>
+                  </td>
+                </ng-container>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+          <h3 class="mb-0"> <i class="bi bi-exclamation-triangle-fill me-2"></i> Artículos Fuera de Inventario </h3>
+          <div class="btn-group">
+            <button class="btn btn-light" (click)="cargarConteosFueraInventario()" [disabled]="loadingFueraInventario">
+              <i class="bi bi-arrow-clockwise"></i> Actualizar
+            </button>
+            <button class="btn btn-success" (click)="exportarExcelFueraInventarioPorDiaHorizontal()" [disabled]="loadingFueraInventario || conteosFueraInventario.length === 0">
+              <i class="bi bi-file-earmark-excel"></i> Excel Detallado
+            </button>
+            <button class="btn btn-info" (click)="exportarExcelFueraInventarioResumen()" [disabled]="loadingFueraInventario || conteosFueraInventario.length === 0">
+              <i class="bi bi-file-earmark-excel"></i> Excel Resumen
+            </button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div *ngIf="loadingFueraInventario" class="text-center py-5">
+            <div class="spinner-border text-danger" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando artículos fuera de inventario...</p>
+          </div>
+          <div *ngIf="!loadingFueraInventario && conteosFueraInventario.length > 0">
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Se mantuvo el CSS original */
+  .conteo-diario-cell {
+    min-width: 250px;
+    max-width: 300px;
+    vertical-align: top;
+    padding: 5px;
+    background-color: #f8f9fa; /* Fondo ligero para la celda diaria */
+  }
+
+  .conteo-diario-item {
+    border: 1px solid #ced4da;
+    border-radius: 5px;
+    padding: 8px;
+  }
+
+  .conteo-diario-item:not(:last-child) {
+    margin-bottom: 10px;
+  }
+
+  .bg-danger-subtle {
+    border-left: 3px solid #dc3545;
+  }
+
+  .bg-success-subtle {
+    border-left: 3px solid #198754;
+  }
+
+  .bg-warning-subtle {
+    border-left: 3px solid #ffc107;
+  }
+
+  .fecha-header {
+    background-color: #e9ecef;
+    font-weight: 600;
+  }
+
+  .fecha-header-diaria {
+    background-color: #0dcaf0 !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .item-number {
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .bg-success-subtle {
+    background-color: #d1e7dd !important;
+  }
+
+  .bg-danger-subtle {
+    background-color: #f8d7da !important;
+  }
+
+  .bg-info-subtle {
+    background-color: #cfe2ff !important;
+  }
+  
+  .bg-primary-subtle {
+    background-color: #e7f1ff !important;
+  }
+  
+  .bg-secondary-subtle {
+    background-color: #e2e3e5 !important;
+  }
+
+  .bg-warning-subtle {
+    background-color: #fff3cd !important;
+  }
+
+  .observaciones-row {
+    border-top: 1px dashed #dee2e6;
+  }
+
+  .observaciones-row td {
+    padding: 8px !important;
+    font-size: 0.85rem;
+    background-color: #f0f8ff;
+  }
+</style>

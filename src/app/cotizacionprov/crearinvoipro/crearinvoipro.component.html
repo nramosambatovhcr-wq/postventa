@@ -1,0 +1,181 @@
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">💼 Asignar Invoice a Cotización</h1>
+      <p class="panel-subtitulo">Selecciona una cotización y asigna un código/nombre de invoice de manera eficiente.</p>
+    </div>
+
+    <div class="panel-contenido">
+      <!-- Sección de búsqueda -->
+      <div class="form-group">
+        <label for="cotizacionSearch">
+          <span class="label-icon">🔍</span>
+          Buscar Cotización:
+        </label>
+        <input
+          type="text"
+          id="cotizacionSearch"
+          class="form-control search-input"
+          placeholder="Buscar por código o ID... (ej: ORDEN-2025)"
+          (input)="onSearchInput($event)"
+          [value]="searchTermCotizacion"
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Selector de cotización -->
+      <div class="form-group">
+        <label for="cotizacionSelect">
+          <span class="label-icon">📋</span>
+          Seleccionar Cotización:
+        </label>
+        <select
+          id="cotizacionSelect"
+          class="form-control"
+          [(ngModel)]="selectedCotizacionId"
+          (change)="onCotizacionSelect(selectedCotizacionId)"
+          [disabled]="isLoadingCotizaciones"
+        >
+        <option >
+            SELECCIONAR
+          </option>
+          <option [ngValue]="null" disabled>
+            {{ isLoadingCotizaciones ? 'Cargando cotizaciones...' : '-- Selecciona una cotización --' }}
+          </option>
+          <option *ngFor="let cot of filteredCotizaciones" [ngValue]="cot.cotizacionId">
+            ID: {{ cot.cotizacionId }} - Código: {{ cot.codigoCot }}
+          </option>
+        </select>
+        
+        <!-- Estado de carga -->
+        <div *ngIf="isLoadingCotizaciones" class="loading-indicator">
+          <div class="spinner"></div>
+          <span>Cargando cotizaciones...</span>
+        </div>
+        
+        <!-- Mensaje cuando no hay resultados -->
+        <div *ngIf="filteredCotizaciones.length === 0 && !isLoadingCotizaciones && searchTermCotizacion" 
+             class="no-results">
+          <span class="no-results-icon">🔍</span>
+          <p>No se encontraron cotizaciones que coincidan con "<strong>{{ searchTermCotizacion }}</strong>"</p>
+          <small>Intenta con otro término de búsqueda</small>
+        </div>
+        
+        <div *ngIf="filteredCotizaciones.length === 0 && !isLoadingCotizaciones && !searchTermCotizacion" 
+             class="no-results">
+          <span class="no-results-icon">📭</span>
+          <p>No hay cotizaciones disponibles</p>
+          <small>Contacta con el administrador si crees que esto es un error</small>
+        </div>
+      </div>
+
+      <!-- Formulario de detalles de factura -->
+      <div *ngIf="selectedCotizacionId" class="invoice-details-form">
+        <div class="form-header">
+          <h2>
+            <span class="header-icon">🧾</span>
+            Detalles de la Invoice
+          </h2>
+          <div class="cotizacion-info">
+            
+           <span class="info-badge">
+            Cotización: {{ selectedCotizacion?.codigoCot }} (ID: {{ selectedCotizacionId }})
+            </span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="invoiceCode">
+              <span class="label-icon">🏷️</span>
+              Código de Factura: <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="invoiceCode"
+              class="form-control"
+              [(ngModel)]="invoiceCode"
+              placeholder="Ej: ALV250504, FACT-2025-001"
+              maxlength="50"
+              [class.error]="invoiceCode.length === 0 && showValidationErrors"
+            />
+            <div class="field-hint">
+              <small>Ingrese un código único para identificar la factura</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="invoiceName">
+              <span class="label-icon">📝</span>
+              Nombre/Descripción de Factura:
+              <span class="optional">(Opcional)</span>
+            </label>
+            <input
+              type="text"
+              id="invoiceName"
+              class="form-control"
+              [(ngModel)]="invoiceName"
+              placeholder="Ej: Factura por servicios de consultoría"
+              maxlength="100"
+            />
+            <div class="field-hint">
+              <small>Descripción adicional para facilitar la identificación</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones del formulario -->
+        <div class="form-actions">
+          <button 
+            class="boton-primario" 
+            (click)="saveInvoice()" 
+            [disabled]="isSavingInvoice || !invoiceCode.trim()"
+            [attr.aria-label]="isSavingInvoice ? 'Guardando factura' : 'Guardar factura'"
+          >
+            <span *ngIf="!isSavingInvoice" class="button-content">
+              <span class="button-icon">💾</span>
+              Guardar Factura
+            </span>
+            <span *ngIf="isSavingInvoice" class="button-content loading">
+              <span class="button-spinner"></span>
+              Guardando...
+            </span>
+          </button>
+          
+          <button 
+            class="boton-secundario" 
+            (click)="resetForm()" 
+            [disabled]="isSavingInvoice"
+            [attr.aria-label]="'Limpiar formulario'"
+          >
+            <span class="button-content">
+              <span class="button-icon">🗑️</span>
+              Limpiar
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notificaciones -->
+      <div *ngIf="showSuccessMessage" class="notification success" role="alert">
+        <div class="notification-content">
+          <span class="notification-icon">✅</span>
+          <div>
+            <strong>¡Éxito!</strong>
+            <p>Factura guardada exitosamente.</p>
+          </div>
+        </div>
+      </div>
+      
+      <div *ngIf="showErrorMessage" class="notification error" role="alert">
+        <div class="notification-content">
+          <span class="notification-icon">❌</span>
+          <div>
+            <strong>Error</strong>
+            <p>{{ errorMessage }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

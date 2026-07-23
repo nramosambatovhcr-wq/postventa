@@ -1,0 +1,119 @@
+<!-- pedidopdicreate.component.html -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Pedidos PDI</div>
+        <div class="acciones">
+          <button class="boton boton-primario" (click)="cancelar()">Volver al Dashboard</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Nuevo Pedido PDI</h1>
+        <p class="panel-subtitulo">Ingrese los detalles del pedido PDI</p>
+      </div>
+
+      <div class="formulario-container">
+        <form [formGroup]="pedidoForm" (ngSubmit)="onSubmit()">
+          <div class="row">
+            <div class="columna">
+                 <div class="campo-formulario">
+                <label for="chasis">Chasis *</label>
+                <input type="text" id="ot" formControlName="chasis">
+              </div>
+              <div class="campo-formulario">
+                <label for="codigo">Código </label>
+                <input type="text" id="codigo" formControlName="codigo"
+                  [ngClass]="{ 'invalido': submitted && f['codigo'].errors }">
+                <div *ngIf="submitted && f['codigo'].errors" class="mensaje-error">
+                  <div *ngIf="f['codigo'].errors['required']">El código es obligatorio</div>
+                </div>
+              </div>
+
+              <div class="campo-formulario">
+                <label for="descripcion">Descripción *</label>
+                <textarea id="descripcion" formControlName="descripcion" rows="3"
+                  [ngClass]="{ 'invalido': submitted && f['descripcion'].errors }"></textarea>
+                <div *ngIf="submitted && f['descripcion'].errors" class="mensaje-error">
+                  <div *ngIf="f['descripcion'].errors['required']">La descripción es obligatoria</div>
+                </div>
+              </div>
+
+              <div class="campo-formulario">
+                <label for="cantidad">Cantidad *</label>
+                <input type="number" id="cantidad" formControlName="cantidad" min="1"
+                  [ngClass]="{ 'invalido': submitted && f['cantidad'].errors }">
+                <div *ngIf="submitted && f['cantidad'].errors" class="mensaje-error">
+                  <div *ngIf="f['cantidad'].errors['required']">La cantidad es obligatoria</div>
+                  <div *ngIf="f['cantidad'].errors['min']">La cantidad debe ser mayor que 0</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="columna">
+              <div class="campo-formulario">
+                <label for="modelo">Modelo*</label>
+                <select id="modelo" formControlName="modelo"
+                  [ngClass]="{ 'invalido': submitted && f['modelo'].errors }">
+                  <option value="">Seleccione un modelo</option>
+                  <option value="sp">Sinotruk Camiones</option>
+                  <option value="sl">Sinotruk Livianos - Keyton</option>
+                  <option value="lc">Lynk&Co</option>
+                  <option value="sw">Sunward - Case</option>
+                </select>
+                <div *ngIf="submitted && f['modelo'].errors" class="mensaje-error">
+                  <div *ngIf="f['modelo'].errors['required']">El modelo es obligatorio</div>
+                </div>
+              </div>
+
+              <div class="campo-formulario">
+                <label for="cliente">Cliente</label>
+                <input type="text" id="cliente" formControlName="cliente" readonly>
+              </div>
+               
+              <div class="campo-formulario">
+                <label for="ot">Orden de Trabajo *</label>
+                <input type="text" id="ot" formControlName="ot">
+              </div>
+              <div class="campo-formulario">
+                <label for="tipo">Tipo</label>
+                <input type="text" id="tipo" formControlName="tipo" value="pdi" readonly>
+              </div>
+            </div>
+          </div>
+
+          <div class="campo-formulario">
+            <label for="images">Imágenes*</label>
+            <input type="file" id="images" (change)="onFileSelect($event)" multiple accept="image/*">
+
+            <div class="previsualizacion-imagenes" *ngIf="previewImages.length > 0">
+              <div class="imagen-preview" *ngFor="let preview of previewImages; let i = index">
+                <img [src]="preview" alt="Vista previa">
+                <button type="button" class="boton-eliminar" (click)="removeFile(i)">×</button>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="errorMessage" class="alerta alerta-error">
+            {{ errorMessage }}
+          </div>
+
+          <div *ngIf="submitSuccess" class="alerta alerta-exito">
+            Pedido PDI creado exitosamente
+          </div>
+
+          <div class="botones-accion">
+            <button type="button" class="boton boton-secundario" (click)="cancelar()">Cancelar</button>
+            <button type="submit" class="boton boton-primario" [disabled]="loading">
+              <span *ngIf="loading" class="spinner"></span>
+              <span *ngIf="!loading">Guardar Pedido PDI</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>

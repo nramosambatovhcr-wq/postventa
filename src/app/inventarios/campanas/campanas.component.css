@@ -1,0 +1,234 @@
+.campanas-container {
+  padding: 24px;
+}
+
+.campanas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.campanas-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #1f2937;
+}
+
+.subtitulo {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.btn {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-primary:hover { background: #1d4ed8; }
+.btn-primary:disabled { background: #93c5fd; cursor: not-allowed; }
+
+.btn-secundario {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.btn-secundario:hover { background: #d1d5db; }
+
+.alerta {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.alerta-error {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.cargando, .vacio {
+  padding: 40px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.tabla-campanas {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.tabla-campanas th {
+  background: #f9fafb;
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tabla-campanas td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 14px;
+  color: #1f2937;
+  vertical-align: middle;
+}
+
+.tabla-campanas tr.fila-activa {
+  background: #eff6ff;
+}
+
+.descripcion-mini {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.col-acciones {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.btn-icono {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+}
+
+.btn-icono:hover { background: #f3f4f6; }
+.btn-icono:disabled { opacity: 0.35; cursor: not-allowed; }
+.btn-peligro:hover { background: #fee2e2; }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.badge-activa   { background: #d1fae5; color: #059669; }
+.badge-cerrada  { background: #e5e7eb; color: #4b5563; }
+.badge-inactiva { background: #fef3c7; color: #b45309; }
+.badge-nd       { background: #f3f4f6; color: #6b7280; }
+
+.sin-activa { color: #d1d5db; }
+
+/* ── Modal ─────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-form {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  width: 520px;
+  max-width: 92vw;
+  max-height: 88vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-form h3 {
+  margin: 0 0 18px;
+  color: #1f2937;
+}
+
+.campo {
+  margin-bottom: 14px;
+}
+
+.campo-fila {
+  display: flex;
+  gap: 12px;
+}
+
+.campo-fila .campo {
+  flex: 1;
+}
+
+.campo label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 4px;
+}
+
+.campo input[type="text"],
+.campo input[type="date"],
+.campo select,
+.campo textarea {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.campo textarea {
+  resize: vertical;
+}
+
+.agencias-multiselect {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 10px;
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.agencia-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 400;
+  color: #374151;
+}
+
+.sin-datos {
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.modal-acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}

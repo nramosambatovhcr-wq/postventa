@@ -1,0 +1,166 @@
+/* ════════════════════════════════════════════════════════════
+   TRÁNSITO (BDC) — Agregar al FINAL de dashboardvehi.component.css
+   No modifica nada de lo existente; solo añade lo nuevo.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Variable cyan (acento del tránsito) ─────────────────────*/
+:host {
+  --cyan:     #06b6d4;
+  --cyan-dim: rgba(6, 182, 212, 0.15);
+}
+
+/* ── KPI row: ahora son 5 tarjetas ───────────────────────────*/
+.kpi-row {
+  grid-template-columns: repeat(5, 1fr);
+}
+
+@media (max-width: 1200px) {
+  .kpi-row { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 1000px) {
+  .kpi-row { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 580px) {
+  .kpi-row { grid-template-columns: 1fr; }
+}
+
+/* ── KPI cyan variant ────────────────────────────────────────*/
+.kpi-cyan {
+  border-left: 3px solid var(--cyan);
+}
+.kpi-cyan .kpi-card__value {
+  color: var(--cyan);
+}
+.kpi-cyan .kpi-card__accent {
+  background: var(--cyan);
+}
+
+/* ── Title dot cyan ──────────────────────────────────────────*/
+.title-dot--cyan {
+  background: var(--cyan);
+  box-shadow: 0 0 5px var(--cyan);
+}
+
+/* ── Badge cyan (feed de actividad) ──────────────────────────*/
+.badge-cyan {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+}
+
+/* ── Card En Tránsito: número global en el header ────────────*/
+.transito-global {
+  text-align: right;
+}
+
+.transito-global__num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--cyan);
+}
+
+.transito-global__label {
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+}
+
+/* ── Lista de órdenes en tránsito ────────────────────────────*/
+.transito-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.transito-list::-webkit-scrollbar { width: 4px; }
+.transito-list::-webkit-scrollbar-track { background: transparent; }
+.transito-list::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+
+.transito-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  background: var(--bg-card-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.2s;
+}
+
+.transito-item:hover {
+  border-color: var(--cyan);
+}
+
+.transito-item__left {
+  flex: 1;
+  min-width: 0;
+}
+
+.transito-item__orden {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cyan);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transito-item__detail {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* Mini-barra: participación de la orden sobre el total en tránsito */
+.transito-mini-bar {
+  height: 4px;
+  background: var(--border-light);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+.transito-mini-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--cyan), var(--blue));
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.transito-item__right {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.transito-item__units {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.transito-item__eta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+/* Punto cyan pulsante para arribos dentro de 30 días */
+.eta-flag {
+  color: var(--cyan);
+  font-size: 8px;
+  animation: pulse-dot 2s infinite;
+}

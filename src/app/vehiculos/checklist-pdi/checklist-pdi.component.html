@@ -1,0 +1,823 @@
+<!-- Componente PDI -->
+<div class="pdi-container" (keydown)="onKeydown($event)" tabindex="0">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">
+        <i class="icon-shield"></i>
+        Pre-Delivery Inspection
+      </h1>
+      <div class="header-meta">
+        <span class="header-subtitle">Recepción · Mecánica · Latonería</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-success" (click)="exportarExcelPdi()" *ngIf="filteredPdiItems.length > 0">
+          <i class="icon-download"></i> Exportar
+        </button>
+        <button class="btn btn-info" (click)="loadAllData()">
+          <i class="icon-refresh"></i> Actualizar
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== ALERTAS ==================== -->
+  <div class="alerts-container">
+    <div *ngIf="successMessage" class="alert alert-success" (click)="successMessage = ''">
+      {{ successMessage }} <span class="close-btn">&times;</span>
+    </div>
+    <div *ngIf="errorMessage" class="alert alert-danger" (click)="errorMessage = ''">
+      {{ errorMessage }} <span class="close-btn">&times;</span>
+    </div>
+  </div>
+
+  <!-- ==================== TARJETAS RESUMEN ==================== -->
+  <section class="stats-cards">
+    <div class="stat-card stat-card--total" (click)="pdiFilterStatus = 'all'; applyPdiFilters()">
+      <div class="stat-icon"><i class="icon-truck"></i></div>
+      <div class="stat-body">
+        <span class="stat-value">{{ allPdiItems.length }}</span>
+        <span class="stat-label">Listos para PDI</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--pending" (click)="pdiFilterStatus = 'sin-pdi'; applyPdiFilters()">
+      <div class="stat-icon"><i class="icon-inbox"></i></div>
+      <div class="stat-body">
+        <span class="stat-value">{{ totalSinPdi }}</span>
+        <span class="stat-label">Sin PDI</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--progress" (click)="pdiFilterStatus = 'en-progreso'; applyPdiFilters()">
+      <div class="stat-icon"><i class="icon-tool"></i></div>
+      <div class="stat-body">
+        <span class="stat-value">{{ totalPdiEnProgreso }}</span>
+        <span class="stat-label">PDI en progreso</span>
+      </div>
+    </div>
+    <div class="stat-card stat-card--done" (click)="pdiFilterStatus = 'aprobado'; applyPdiFilters()">
+      <div class="stat-icon"><i class="icon-check-circle"></i></div>
+      <div class="stat-body">
+        <span class="stat-value">{{ totalPdiAprobados }}</span>
+        <span class="stat-label">PDI aprobados</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== FILTROS ==================== -->
+  <section class="filters-section">
+    <div class="filters-grid">
+      <div class="filter-group">
+        <label class="filter-label">Buscar chasis</label>
+        <div class="input-group">
+          <i class="icon-search"></i>
+          <input type="text" class="form-control" placeholder="Chasis, B/L, modelo..."
+            [(ngModel)]="pdiSearch" (input)="applyPdiFilters()">
+        </div>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">B/L</label>
+        <input type="text" class="form-control" placeholder="Filtrar por B/L"
+          [(ngModel)]="pdiFilterBl" (input)="applyPdiFilters()">
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Estado PDI</label>
+        <select class="form-control" [(ngModel)]="pdiFilterStatus" (change)="applyPdiFilters()">
+          <option value="all">Todos</option>
+          <option value="sin-pdi">Sin PDI</option>
+          <option value="en-progreso">En progreso</option>
+          <option value="aprobado">Aprobados</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-secondary" (click)="clearPdiFilters()">
+          <i class="icon-refresh"></i> Limpiar
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== TABLA ==================== -->
+  <section class="table-section">
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Nº Chasis (VIN)</th>
+            <th>Modelo</th>
+            <th>Contenedor / B/L</th>
+            <th>Recepción</th>
+            <th>Estado PDI</th>
+            <th>Mecánica</th>
+            <th>Latonería</th>
+            <th class="actions-column">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr *ngIf="loadingPdi">
+            <td colspan="9" class="loading-cell">
+              <div class="spinner"></div>
+              <span>Cargando vehículos...</span>
+            </td>
+          </tr>
+
+          <tr *ngIf="pdiError && !loadingPdi">
+            <td colspan="9" class="empty-cell">
+              <i class="icon-alert-triangle"></i>
+              <p>{{ pdiError }}</p>
+              <button class="btn btn-sm btn-primary" (click)="loadAllData()">Reintentar</button>
+            </td>
+          </tr>
+
+          <tr *ngIf="!loadingPdi && !pdiError && filteredPdiItems.length === 0">
+            <td colspan="9" class="empty-cell">
+              <i class="icon-inbox"></i>
+              <p>No hay vehículos disponibles para PDI</p>
+              <small class="text-muted">Solo se muestran chasis con ensamblaje al 100%</small>
+            </td>
+          </tr>
+
+          <tr *ngFor="let item of filteredPdiItems; let i = index"
+            class="table-row"
+            [class.row-sin-pdi]="!item.pdi"
+            [class.row-en-progreso]="item.pdi && item.pdi.porcentajeAvance < 100"
+            [class.row-aprobado]="item.pdi?.porcentajeAvance === 100">
+
+            <td data-label="#">{{ i + 1 }}</td>
+            <td data-label="Chasis"><span class="vin-cell">{{ item.chassisNumber }}</span></td>
+            <td data-label="Modelo">
+              <span *ngIf="item.ensamblaje?.modelo">{{ item.ensamblaje!.modelo }}</span>
+              <span *ngIf="!item.ensamblaje?.modelo" class="text-muted">—</span>
+            </td>
+            <td data-label="Contenedor">
+              <div class="contenedor-cell">
+                <span>{{ item.containerNumber }}</span>
+                <small class="text-muted">{{ item.blNumber }}</small>
+              </div>
+            </td>
+
+            <!-- Recepción -->
+            <td data-label="Recepción">
+              <ng-container *ngIf="item.recepcion; else sinRecepcion">
+                <div class="recepcion-cell">
+                  <span class="badge {{ getRecepcionBadgeClass(item) }}">{{ item.recepcion.estadoGeneral }}</span>
+                  <button class="btn btn-icon btn-xs btn-secondary" (click)="verRecepcion(item)" title="Ver recepción">
+                    <i class="icon-eye"></i>
+                  </button>
+                </div>
+              </ng-container>
+              <ng-template #sinRecepcion>
+                <span class="badge badge-secondary">Sin registrar</span>
+              </ng-template>
+            </td>
+
+            <!-- Estado PDI -->
+            <td data-label="Estado PDI">
+              <span class="badge {{ getPdiStatusClass(item) }}">{{ getPdiStatusLabel(item) }}</span>
+            </td>
+
+            <!-- Mecánica -->
+            <td data-label="Mecánica">
+              <ng-container *ngIf="item.pdi; else sinAreaPdi">
+                <div class="progress-mini-container">
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar {{ getProgressClass(item.pdi.porcentajeMecanica) }}"
+                      [style.width.%]="item.pdi.porcentajeMecanica"></div>
+                  </div>
+                  <span class="progress-mini-text">{{ getPorcentajeFormateado(item.pdi.porcentajeMecanica) }}</span>
+                </div>
+              </ng-container>
+              <ng-template #sinAreaPdi><span class="text-muted">—</span></ng-template>
+            </td>
+
+            <!-- Latonería -->
+            <td data-label="Latonería">
+              <ng-container *ngIf="item.pdi">
+                <div class="progress-mini-container">
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar {{ getProgressClass(item.pdi.porcentajeLatoneria) }}"
+                      [style.width.%]="item.pdi.porcentajeLatoneria"></div>
+                  </div>
+                  <span class="progress-mini-text">{{ getPorcentajeFormateado(item.pdi.porcentajeLatoneria) }}</span>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="!item.pdi"><span class="text-muted">—</span></ng-container>
+            </td>
+
+            <!-- Acciones -->
+            <td data-label="Acción" class="actions-cell">
+              <ng-container *ngIf="item.pdi">
+                <div class="action-buttons">
+                  <button class="btn btn-primary" (click)="accionPdi(item)">
+                    <i class="icon-tasks"></i>
+                    {{ item.pdi.porcentajeAvance === 100 ? 'Ver PDI' : 'Continuar PDI' }}
+                  </button>
+                  <button class="btn btn-icon btn-info"    (click)="openModalDetallePdi(item.pdi)" title="Ver detalle"><i class="icon-eye"></i></button>
+                  <button class="btn btn-icon btn-success" (click)="openModalReportePdi(item.pdi)" title="Reporte">   <i class="icon-file-text"></i></button>
+                </div>
+              </ng-container>
+              <ng-container *ngIf="!item.pdi">
+                <button class="btn btn-warning" (click)="accionPdi(item)">
+                  <i class="icon-shield"></i>
+                  {{ !item.recepcion ? 'Registrar Recepción' : 'Iniciar PDI' }}
+                </button>
+              </ng-container>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="table-footer">
+      <span class="results-count">Mostrando {{ filteredPdiItems.length }} de {{ allPdiItems.length }} vehículos</span>
+    </div>
+  </section>
+
+</div><!-- /pdi-container -->
+
+
+<!-- ==================== MODAL RECEPCIÓN PDI ==================== -->
+<div #modalRecepcion class="modal modal-lg" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-secondary">
+        <h5 class="modal-title">
+          <i class="icon-package"></i> Recepción PDI
+          <span *ngIf="nuevaRecepcion.numeroVin" class="vin-badge ms-2">{{ nuevaRecepcion.numeroVin }}</span>
+        </h5>
+        <button type="button" class="close" (click)="closeModal(modalRecepcion)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Verificaciones rápidas -->
+        <div class="recepcion-checks-grid">
+          <div class="check-card" [class.check-ok]="nuevaRecepcion.chasisOk">
+            <div class="check-icon"><i class="icon-hash"></i></div>
+            <div class="check-body">
+              <strong>Número de Chasis</strong>
+              <small>Verificar VIN físico en carrocería</small>
+            </div>
+            <div class="check-toggle">
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="nuevaRecepcion.chasisOk">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="check-label">{{ nuevaRecepcion.chasisOk ? 'OK' : 'Pendiente' }}</span>
+            </div>
+          </div>
+          <div class="check-card" [class.check-ok]="nuevaRecepcion.modeloCoincide">
+            <div class="check-icon"><i class="icon-tag"></i></div>
+            <div class="check-body">
+              <strong>Modelo</strong>
+              <small>Coincide con la documentación</small>
+            </div>
+            <div class="check-toggle">
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="nuevaRecepcion.modeloCoincide">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="check-label">{{ nuevaRecepcion.modeloCoincide ? 'OK' : 'Pendiente' }}</span>
+            </div>
+          </div>
+          <div class="check-card" [class.check-ok]="nuevaRecepcion.documentosOk">
+            <div class="check-icon"><i class="icon-file-text"></i></div>
+            <div class="check-body">
+              <strong>Documentación</strong>
+              <small>Manual, garantía y llaves</small>
+            </div>
+            <div class="check-toggle">
+              <label class="toggle-switch">
+                <input type="checkbox" [(ngModel)]="nuevaRecepcion.documentosOk">
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="check-label">{{ nuevaRecepcion.documentosOk ? 'OK' : 'Pendiente' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Datos del vehículo -->
+        <div class="form-section-title"><i class="icon-truck"></i> Datos del vehículo</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Fecha de recepción <span class="required">*</span></label>
+            <input type="date" class="form-control" [(ngModel)]="nuevaRecepcion.fecha" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Estado general <span class="required">*</span></label>
+            <select class="form-control" [(ngModel)]="nuevaRecepcion.estadoGeneral">
+              <option value="Bueno">Bueno — Sin daños aparentes</option>
+              <option value="Regular">Regular — Daños menores</option>
+              <option value="Con Daños">Con Daños — Requiere atención</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Número de VIN</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevaRecepcion.numeroVin" readonly>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Modelo</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevaRecepcion.modelo">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Color</label>
+            <input type="text" class="form-control" placeholder="Color del vehículo" [(ngModel)]="nuevaRecepcion.color">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kilometraje</label>
+            <input type="number" class="form-control" placeholder="km al recibir" [(ngModel)]="nuevaRecepcion.kilometraje">
+          </div>
+        </div>
+
+        <!-- Responsables -->
+        <div class="form-section-title"><i class="icon-users"></i> Responsables</div>
+        <div class="form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Recibido por (PDI)</label>
+            <input type="text" class="form-control" placeholder="Nombre del receptor" [(ngModel)]="nuevaRecepcion.recibidoPor">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Entregado por (Planta)</label>
+            <input type="text" class="form-control" placeholder="Nombre del entregador" [(ngModel)]="nuevaRecepcion.entregadoPor">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" rows="3"
+            placeholder="Notas sobre el estado del vehículo al recibir..."
+            [(ngModel)]="nuevaRecepcion.observaciones"></textarea>
+        </div>
+
+        <div *ngIf="nuevaRecepcion.estadoGeneral === 'Con Daños'" class="alert alert-warning mt-2">
+          <i class="icon-alert-triangle"></i>
+          <strong>Atención:</strong> El vehículo presenta daños. Documentar en Observaciones antes de continuar.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalRecepcion)">Cancelar</button>
+        <button type="button" class="btn btn-primary"
+          (click)="guardarRecepcion()"
+          [disabled]="loading || !nuevaRecepcion.fecha || !nuevaRecepcion.numeroVin">
+          <span *ngIf="!loading"><i class="icon-save"></i> Guardar Recepción</span>
+          <span *ngIf="loading"><div class="spinner-sm"></div> Guardando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== MODAL NUEVO PDI ==================== -->
+<div #modalNuevoPdi class="modal modal-lg" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">
+          <i class="icon-shield"></i> Iniciar Inspección PDI
+          <span *ngIf="selectedPdiItem" class="vin-badge ms-2">{{ selectedPdiItem.chassisNumber }}</span>
+        </h5>
+        <button type="button" class="close" (click)="closeModal(modalNuevoPdi)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="nuevo-pdi-info" *ngIf="selectedPdiItem">
+          <div class="info-chasis">
+            <div class="info-item">
+              <span class="info-label"><i class="icon-truck"></i> Chasis</span>
+              <span class="info-value vin-highlight">{{ selectedPdiItem.chassisNumber }}</span>
+            </div>
+            <div class="info-item" *ngIf="selectedPdiItem.ensamblaje?.modelo">
+              <span class="info-label"><i class="icon-tag"></i> Modelo</span>
+              <span class="info-value">{{ selectedPdiItem.ensamblaje!.modelo }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label"><i class="icon-package"></i> B/L</span>
+              <span class="info-value">{{ selectedPdiItem.blNumber }}</span>
+            </div>
+          </div>
+          <div class="ensamblaje-summary" *ngIf="selectedPdiItem.recepcion">
+            <div class="summary-badge summary-badge--success">
+              <i class="icon-check-circle"></i>
+              <div>
+                <strong>Recepción OK</strong>
+                <small>Estado: {{ selectedPdiItem.recepcion.estadoGeneral }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="nuevo-pdi-form">
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="form-label">Fecha de Inspección <span class="required">*</span></label>
+              <input type="date" class="form-control" [(ngModel)]="nuevoPdi.fecha" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Inspector Responsable</label>
+              <input type="text" class="form-control" placeholder="Nombre del inspector" [(ngModel)]="nuevoPdi.inspector">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Concesionario destino</label>
+              <input type="text" class="form-control" placeholder="Nombre del concesionario" [(ngModel)]="nuevoPdi.concesionario">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kilometraje</label>
+              <input type="number" class="form-control" placeholder="km" [(ngModel)]="nuevoPdi.kilometraje">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Observaciones iniciales</label>
+            <textarea class="form-control" rows="2" placeholder="Observaciones previas..." [(ngModel)]="nuevoPdi.observaciones"></textarea>
+          </div>
+
+          <div class="catalogo-info" *ngIf="catalogoPdiTareas.length > 0">
+            <div class="catalogo-summary">
+              <i class="icon-clipboard"></i>
+              <span>Se crearán <strong>{{ getTotalTareasCatalogo() }} puntos de inspección</strong> en 2 áreas:</span>
+            </div>
+            <div class="catalogo-areas">
+              <div class="area-chip area-chip--mecanica">
+                <i class="icon-tool"></i>
+                <strong>Mecánica</strong>
+                <span>{{ getTotalTareasCatalogoArea('mecanica') }} puntos · {{ getGruposCatalogo('mecanica').length }} grupos</span>
+              </div>
+              <div class="area-chip area-chip--latoneria">
+                <i class="icon-layers"></i>
+                <strong>Latonería</strong>
+                <span>{{ getTotalTareasCatalogoArea('latoneria') }} puntos · {{ getGruposCatalogo('latoneria').length }} grupos</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalNuevoPdi)">Cancelar</button>
+        <button type="button" class="btn btn-warning" (click)="iniciarPdi()" [disabled]="loading || !nuevoPdi.fecha">
+          <span *ngIf="!loading"><i class="icon-shield"></i> Iniciar PDI</span>
+          <span *ngIf="loading"><div class="spinner-sm"></div> Iniciando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== MODAL DETALLE PDI ==================== -->
+<div #modalDetallePdi class="modal modal-lg" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-info">
+        <h5 class="modal-title"><i class="icon-eye"></i> Detalle PDI</h5>
+        <button type="button" class="close" (click)="closeModal(modalDetallePdi)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="loadingDetail" class="loading-overlay"><div class="spinner"></div></div>
+        <div *ngIf="selectedPdiChecklist && !loadingDetail" class="detalle-content">
+          <div class="detalle-header">
+            <div class="detalle-info-grid">
+              <div class="detalle-info-item">
+                <span class="detalle-label">VIN</span>
+                <span class="detalle-value vin-highlight">{{ selectedPdiChecklist.numeroVin }}</span>
+              </div>
+              <div class="detalle-info-item">
+                <span class="detalle-label">Modelo</span>
+                <span class="detalle-value">{{ selectedPdiChecklist.modelo }}</span>
+              </div>
+              <div class="detalle-info-item">
+                <span class="detalle-label">Fecha PDI</span>
+                <span class="detalle-value">{{ formatDate(selectedPdiChecklist.fecha) }}</span>
+              </div>
+              <div class="detalle-info-item">
+                <span class="detalle-label">Avance global</span>
+                <span class="detalle-value">{{ getPorcentajeFormateado(selectedPdiChecklist.porcentajeAvance) }}</span>
+              </div>
+            </div>
+            <div class="detalle-progress">
+              <div class="progress-bar-wrapper progress-bar-wrapper--lg">
+                <div class="progress-bar {{ getProgressClass(selectedPdiChecklist.porcentajeAvance) }}"
+                  [style.width.%]="selectedPdiChecklist.porcentajeAvance"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarjetas por área -->
+          <div class="areas-resumen">
+            <div class="area-resumen-card area-card--mecanica">
+              <div class="area-card-header">
+                <i class="icon-tool"></i>
+                <h6>Mecánica</h6>
+                <span class="area-pct">{{ getPorcentajeFormateado(selectedPdiChecklist.porcentajeMecanica) }}</span>
+              </div>
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar {{ getProgressClass(selectedPdiChecklist.porcentajeMecanica) }}"
+                  [style.width.%]="selectedPdiChecklist.porcentajeMecanica"></div>
+              </div>
+              <div class="area-grupos-list">
+                <div *ngFor="let grupo of agruparRegistros(getRegistrosArea('mecanica'))" class="grupo-resumen">
+                  <span class="grupo-nombre">{{ grupo[0] }}</span>
+                  <span class="grupo-stats-badge">{{ calcularEstadisticasGrupo(grupo[1]).completadas }}/{{ calcularEstadisticasGrupo(grupo[1]).total }}</span>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar {{ getProgressClass(calcularEstadisticasGrupo(grupo[1]).porcentaje) }}"
+                      [style.width.%]="calcularEstadisticasGrupo(grupo[1]).porcentaje"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="area-resumen-card area-card--latoneria">
+              <div class="area-card-header">
+                <i class="icon-layers"></i>
+                <h6>Latonería</h6>
+                <span class="area-pct">{{ getPorcentajeFormateado(selectedPdiChecklist.porcentajeLatoneria) }}</span>
+              </div>
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar {{ getProgressClass(selectedPdiChecklist.porcentajeLatoneria) }}"
+                  [style.width.%]="selectedPdiChecklist.porcentajeLatoneria"></div>
+              </div>
+              <div class="area-grupos-list">
+                <div *ngFor="let grupo of agruparRegistros(getRegistrosArea('latoneria'))" class="grupo-resumen">
+                  <span class="grupo-nombre">{{ grupo[0] }}</span>
+                  <span class="grupo-stats-badge">{{ calcularEstadisticasGrupo(grupo[1]).completadas }}/{{ calcularEstadisticasGrupo(grupo[1]).total }}</span>
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar {{ getProgressClass(calcularEstadisticasGrupo(grupo[1]).porcentaje) }}"
+                      [style.width.%]="calcularEstadisticasGrupo(grupo[1]).porcentaje"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="observaciones-section" *ngIf="selectedPdiChecklist.observaciones">
+            <h6>Observaciones</h6>
+            <p class="observaciones-text">{{ selectedPdiChecklist.observaciones }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalDetallePdi)">Cerrar</button>
+        <button type="button" class="btn btn-primary"
+          (click)="closeModal(modalDetallePdi); openModalTareasPdi(selectedPdiChecklist!)">
+          Ver Tareas PDI
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== MODAL TAREAS PDI ==================== -->
+<div #modalTareasPdi class="modal modal-xl" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary">
+        <h5 class="modal-title"><i class="icon-tasks"></i> Gestión de Tareas PDI</h5>
+        <button type="button" class="close" (click)="closeModal(modalTareasPdi)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="loadingDetail" class="loading-overlay"><div class="spinner"></div></div>
+
+        <div *ngIf="selectedPdiChecklist && !loadingDetail" class="tareas-content">
+
+          <!-- Header -->
+          <div class="tareas-header">
+            <div class="vin-badge">{{ selectedPdiChecklist.numeroVin }}</div>
+            <div class="modelo-badge">{{ selectedPdiChecklist.modelo }}</div>
+            <div class="tareas-actions">
+              <button class="btn btn-sm btn-secondary" (click)="expandirTodos()"><i class="icon-maximize"></i> Expandir</button>
+              <button class="btn btn-sm btn-secondary" (click)="colapsarTodos()"><i class="icon-minimize"></i> Colapsar</button>
+            </div>
+            <div class="progress-badge">{{ getPorcentajeFormateado(selectedPdiChecklist.porcentajeAvance) }}</div>
+          </div>
+
+          <!-- Barras por área -->
+          <div class="areas-progress-row">
+            <div class="area-progress-item">
+              <span class="area-progress-label"><i class="icon-tool"></i> Mecánica</span>
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar {{ getProgressClass(selectedPdiChecklist.porcentajeMecanica) }}"
+                  [style.width.%]="selectedPdiChecklist.porcentajeMecanica"></div>
+              </div>
+              <span class="area-progress-pct">{{ getPorcentajeFormateado(selectedPdiChecklist.porcentajeMecanica) }}</span>
+            </div>
+            <div class="area-progress-item">
+              <span class="area-progress-label"><i class="icon-layers"></i> Latonería</span>
+              <div class="progress-bar-wrapper">
+                <div class="progress-bar {{ getProgressClass(selectedPdiChecklist.porcentajeLatoneria) }}"
+                  [style.width.%]="selectedPdiChecklist.porcentajeLatoneria"></div>
+              </div>
+              <span class="area-progress-pct">{{ getPorcentajeFormateado(selectedPdiChecklist.porcentajeLatoneria) }}</span>
+            </div>
+          </div>
+
+          <!-- TABS -->
+          <div class="area-tabs">
+            <button class="area-tab" [class.active]="areaActiva === 'mecanica'" (click)="setAreaActiva('mecanica')">
+              <i class="icon-tool"></i> Mecánica
+              <span class="tab-badge">{{ calcularEstadisticasArea('mecanica').completadas }}/{{ calcularEstadisticasArea('mecanica').total }}</span>
+            </button>
+            <button class="area-tab" [class.active]="areaActiva === 'latoneria'" (click)="setAreaActiva('latoneria')">
+              <i class="icon-layers"></i> Latonería
+              <span class="tab-badge">{{ calcularEstadisticasArea('latoneria').completadas }}/{{ calcularEstadisticasArea('latoneria').total }}</span>
+            </button>
+          </div>
+
+          <!-- Acordeón grupos -->
+          <div class="tareas-accordion">
+            <div *ngFor="let grupo of agruparRegistros(getRegistrosArea(areaActiva)); let i = index" class="grupo-section">
+              <div class="grupo-header-bar" (click)="toggleGrupo(i)">
+                <div class="grupo-title">
+                  <i class="icon-chevron-down" [class.rotated]="isGrupoExpanded(i)"></i>
+                  {{ grupo[0] }}
+                </div>
+                <div class="grupo-progress">
+                  <span class="grupo-stats">{{ calcularEstadisticasGrupo(grupo[1]).completadas }}/{{ calcularEstadisticasGrupo(grupo[1]).total }}</span>
+                  <div class="progress-bar-mini">
+                    <div class="progress-bar {{ getProgressClass(calcularEstadisticasGrupo(grupo[1]).porcentaje) }}"
+                      [style.width.%]="calcularEstadisticasGrupo(grupo[1]).porcentaje"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="grupo-content" [class.expanded]="isGrupoExpanded(i)">
+                <div class="tareas-list">
+                  <div *ngFor="let registro of grupo[1]" class="tarea-item" [class.completada]="registro.completado">
+                    <div class="tarea-checkbox">
+                      <input type="checkbox" [checked]="registro.completado"
+                        (change)="toggleTareaPdi(registro)" [id]="'pdi-tarea-' + registro.id">
+                      <label [for]="'pdi-tarea-' + registro.id"></label>
+                    </div>
+                    <div class="tarea-info">
+                      <span class="tarea-numero">{{ registro.ordenTarea }}</span>
+                      <span class="tarea-descripcion">{{ registro.descripcionTarea }}</span>
+                    </div>
+                    <div class="tarea-meta" *ngIf="registro.completado">
+                      <span class="tarea-realizador" *ngIf="registro.realizadoPor"><i class="icon-user"></i> {{ registro.realizadoPor }}</span>
+                      <span class="tarea-fecha" *ngIf="registro.fechaRealizacion"><i class="icon-calendar"></i> {{ formatDate(registro.fechaRealizacion) }}</span>
+                    </div>
+                    <div class="tarea-observacion" *ngIf="registro.observaciones">
+                      <small><i class="icon-message-square"></i> {{ registro.observaciones }}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalTareasPdi)">Cerrar</button>
+        <button type="button" class="btn btn-success" (click)="exportarExcelPdiSingle()" *ngIf="selectedPdiChecklist">
+          <i class="icon-download"></i> Exportar CSV
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== MODAL REPORTE PDI ==================== -->
+<div #modalReportePdi class="modal modal-lg" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success">
+        <h5 class="modal-title"><i class="icon-file-text"></i> Reporte PDI</h5>
+        <button type="button" class="close" (click)="closeModal(modalReportePdi)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="!reportePdiData" class="loading-overlay"><div class="spinner"></div></div>
+        <div *ngIf="reportePdiData" class="reporte-content" id="reporte-pdi-print">
+
+          <div class="reporte-header">
+            <div class="reporte-logo">
+              <h2>CHECKLIST PDI</h2>
+              <span class="reporte-subtitulo">Pre-Delivery Inspection</span>
+            </div>
+            <div class="reporte-info-principal">
+              <div class="info-row"><span class="info-label">VIN:</span>          <span class="info-value highlight">{{ reportePdiData.numeroVin }}</span></div>
+              <div class="info-row"><span class="info-label">Modelo:</span>       <span class="info-value">{{ reportePdiData.modelo }}</span></div>
+              <div class="info-row"><span class="info-label">Color:</span>        <span class="info-value">{{ reportePdiData.color || '—' }}</span></div>
+              <div class="info-row"><span class="info-label">Concesionario:</span><span class="info-value">{{ reportePdiData.concesionario || '—' }}</span></div>
+              <div class="info-row"><span class="info-label">Fecha PDI:</span>    <span class="info-value">{{ formatDate(reportePdiData.fecha) }}</span></div>
+            </div>
+          </div>
+
+          <div class="reporte-resumen">
+            <div class="resumen-box">
+              <span class="resumen-valor">{{ getPorcentajeFormateado(reportePdiData.porcentajeAvance) }}</span>
+              <span class="resumen-label">Global</span>
+            </div>
+            <div class="resumen-box resumen-box--mecanica">
+              <span class="resumen-valor">{{ getPorcentajeFormateado(reportePdiData.porcentajeMecanica) }}</span>
+              <span class="resumen-label">Mecánica</span>
+            </div>
+            <div class="resumen-box resumen-box--latoneria">
+              <span class="resumen-valor">{{ getPorcentajeFormateado(reportePdiData.porcentajeLatoneria) }}</span>
+              <span class="resumen-label">Latonería</span>
+            </div>
+            <div class="resumen-box">
+              <span class="resumen-valor">{{ reportePdiData.tareasCompletadas }}</span>
+              <span class="resumen-label">Puntos OK</span>
+            </div>
+            <div class="resumen-box resumen-box--pending">
+              <span class="resumen-valor">{{ reportePdiData.totalTareas - reportePdiData.tareasCompletadas }}</span>
+              <span class="resumen-label">Pendientes</span>
+            </div>
+          </div>
+
+          <!-- Área Mecánica -->
+          <div class="reporte-area-seccion">
+            <div class="reporte-area-titulo">
+              <i class="icon-tool"></i>
+              <h4>Área Mecánica</h4>
+              <span class="area-pct-badge">{{ getPorcentajeFormateado(reportePdiData.porcentajeMecanica) }}</span>
+            </div>
+            <div *ngFor="let grupo of agruparRegistros(getRegistrosAreaReporte('mecanica'))" class="reporte-grupo">
+              <div class="reporte-grupo-header">
+                <h5>{{ grupo[0] }}</h5>
+                <span class="grupo-estadistica">{{ calcularEstadisticasGrupo(grupo[1]).completadas }}/{{ calcularEstadisticasGrupo(grupo[1]).total }}</span>
+              </div>
+              <table class="reporte-tabla">
+                <thead>
+                  <tr>
+                    <th style="width:50px">Estado</th>
+                    <th>Punto de Inspección</th>
+                    <th style="width:150px">Inspector</th>
+                    <th style="width:100px">Fecha</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let registro of grupo[1]" [class.fila-completada]="registro.completado">
+                    <td class="text-center">
+                      <span class="estado-icon" [class.completado]="registro.completado">{{ registro.completado ? '✓' : '○' }}</span>
+                    </td>
+                    <td>{{ registro.descripcionTarea }}</td>
+                    <td>{{ registro.realizadoPor || '-' }}</td>
+                    <td>{{ registro.fechaRealizacion ? formatDate(registro.fechaRealizacion) : '-' }}</td>
+                    <td>{{ registro.observaciones || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Área Latonería -->
+          <div class="reporte-area-seccion">
+            <div class="reporte-area-titulo">
+              <i class="icon-layers"></i>
+              <h4>Área Latonería</h4>
+              <span class="area-pct-badge">{{ getPorcentajeFormateado(reportePdiData.porcentajeLatoneria) }}</span>
+            </div>
+            <div *ngFor="let grupo of agruparRegistros(getRegistrosAreaReporte('latoneria'))" class="reporte-grupo">
+              <div class="reporte-grupo-header">
+                <h5>{{ grupo[0] }}</h5>
+                <span class="grupo-estadistica">{{ calcularEstadisticasGrupo(grupo[1]).completadas }}/{{ calcularEstadisticasGrupo(grupo[1]).total }}</span>
+              </div>
+              <table class="reporte-tabla">
+                <thead>
+                  <tr>
+                    <th style="width:50px">Estado</th>
+                    <th>Punto de Inspección</th>
+                    <th style="width:150px">Inspector</th>
+                    <th style="width:100px">Fecha</th>
+                    <th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let registro of grupo[1]" [class.fila-completada]="registro.completado">
+                    <td class="text-center">
+                      <span class="estado-icon" [class.completado]="registro.completado">{{ registro.completado ? '✓' : '○' }}</span>
+                    </td>
+                    <td>{{ registro.descripcionTarea }}</td>
+                    <td>{{ registro.realizadoPor || '-' }}</td>
+                    <td>{{ registro.fechaRealizacion ? formatDate(registro.fechaRealizacion) : '-' }}</td>
+                    <td>{{ registro.observaciones || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="reporte-observaciones" *ngIf="reportePdiData.observaciones">
+            <h4>Observaciones Generales</h4>
+            <p>{{ reportePdiData.observaciones }}</p>
+          </div>
+
+          <div class="reporte-firmas">
+            <div class="firma-box"><div class="firma-linea"></div><span>Inspector Mecánica</span></div>
+            <div class="firma-box"><div class="firma-linea"></div><span>Inspector Latonería</span></div>
+            <div class="firma-box"><div class="firma-linea"></div><span>Supervisor Calidad</span></div>
+            <div class="firma-box"><div class="firma-linea"></div><span>Aprobación Entrega</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalReportePdi)">Cerrar</button>
+        <button type="button" class="btn btn-info"    (click)="imprimirReportePdi()"><i class="icon-printer"></i> Imprimir</button>
+        <button type="button" class="btn btn-success" (click)="exportarExcelPdiSingle()"><i class="icon-download"></i> CSV</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop -->
+<div class="modal-backdrop" *ngIf="activeModal" (click)="closeAllModals()"></div>

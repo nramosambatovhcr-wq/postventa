@@ -1,0 +1,251 @@
+
+<div class="ranking-container">
+  <!-- Header con selección de agencia -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="title">
+        <i class="fas fa-trophy"></i>
+        Ranking de Conteos - Agencia {{ nombreAgencia }}
+      </h1>
+      <div class="actions">
+        <select class="form-select" [(ngModel)]="agenciaSeleccionada" (change)="cargarDatos()">
+            <option 
+                *ngFor="let agencia of agencias" 
+                [value]="agencia.idSerial"
+            >
+                {{ agencia.nombre }}
+            </option>
+        </select>
+       <!-- <select class="form-select" [(ngModel)]="agenciaSeleccionada" (change)="cargarDatos()">
+          <option [value]="1">Agencia 1</option>
+          <option [value]="2">Agencia 2</option>
+          <option [value]="3">Agencia 3</option>
+          <option [value]="5">Agencia 5</option>
+        </select>-->
+        <button class="btn btn-primary" (click)="cargarDatos()" [disabled]="cargando">
+          <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
+          Actualizar
+        </button>
+        <button class="btn btn-success" (click)="exportarCSV()">
+          <i class="fas fa-file-csv"></i>
+          Exportar CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loader -->
+  <div *ngIf="cargando" class="loader-container">
+    <div class="spinner"></div>
+    <p>Cargando datos...</p>
+  </div>
+
+  <!-- Contenido principal -->
+  <div *ngIf="!cargando" class="main-content">
+    
+    <!-- Cards de resumen -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon blue">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Usuarios Activos</p>
+          <h2 class="stat-value">{{ usuariosActivos }}</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon green">
+          <i class="fas fa-box"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Items Contados</p>
+          <h2 class="stat-value">{{ formatearNumero(totalItemsContados) }}</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon orange">
+          <i class="fas fa-layer-group"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Cantidad Total</p>
+          <h2 class="stat-value">{{ formatearNumero(totalCantidadContada) }}</h2>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon purple">
+          <i class="fas fa-chart-line"></i>
+        </div>
+        <div class="stat-content">
+          <p class="stat-label">Promedio por Usuario</p>
+          <h2 class="stat-value">{{ usuariosActivos > 0 ? formatearNumero(Math.round(totalItemsContados / usuariosActivos)) : 0 }}</h2>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ranking de Usuarios -->
+    <div class="section-card" *ngIf="rankingUsuarios.length > 0">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fas fa-medal"></i>
+          Ranking de Usuarios por Items Contados
+        </h2>
+      </div>
+      <div class="ranking-list">
+        <div class="ranking-item" *ngFor="let usuario of rankingUsuarios; let i = index" 
+             [class.rank-gold]="i === 0"
+             [class.rank-silver]="i === 1"
+             [class.rank-bronze]="i === 2">
+          <div class="rank-badge">
+            <i class="fas fa-trophy" *ngIf="i === 0"></i>
+            <i class="fas fa-medal" *ngIf="i === 1"></i>
+            <i class="fas fa-award" *ngIf="i === 2"></i>
+            <span *ngIf="i > 2">{{ i + 1 }}</span>
+          </div>
+          <div class="user-info">
+            <h3 class="user-name">{{ usuario.nombre }}</h3>
+            <div class="user-stats">
+              <span class="badge badge-info">{{ formatearNumero(usuario.items) }} items</span>
+              <span class="badge badge-secondary">{{ formatearNumero(usuario.cantidad) }} unidades</span>
+            </div>
+          </div>
+          <div class="progress-section">
+            <div class="progress-bar-container">
+              <div class="progress-bar" 
+                   [style.width.%]="usuario.porcentaje"
+                   [style.background-color]="getColorProgreso(usuario.porcentaje)">
+              </div>
+            </div>
+            <span class="progress-label">{{ usuario.porcentaje.toFixed(1) }}%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top 10 Artículos Más Contados -->
+    <div class="section-card" *ngIf="topArticulosContados.length > 0">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fas fa-star"></i>
+          Top 10 Artículos Más Contados
+        </h2>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Código</th>
+              <th>Artículo</th>
+              <th>Cantidad Contada</th>
+              <th>Stock Sistema</th>
+              <th>Diferencia</th>
+              <th>Usuarios</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let articulo of topArticulosContados; let i = index">
+              <td>{{ i + 1 }}</td>
+              <td><strong>{{ articulo.codigo }}</strong></td>
+              <td>{{ articulo.nombre }}</td>
+              <td class="text-center">{{ formatearNumero(articulo.cantidad_contada) }}</td>
+              <td class="text-center">{{ formatearNumero(articulo.stock_sistema) }}</td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="getBadgeDiferencia(articulo.diferencia)">
+                  {{ articulo.diferencia > 0 ? '+' : '' }}{{ articulo.diferencia }}
+                </span>
+              </td>
+              <td class="text-sm">{{ articulo.usuarios }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tabla de Conteos Detallados -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">
+          <i class="fas fa-list"></i>
+          Detalle de Conteos
+        </h2>
+        <div class="filters">
+          <input 
+            type="text" 
+            class="form-control search-input" 
+            placeholder="Buscar por código o nombre..." 
+            [(ngModel)]="terminoBusqueda">
+          
+          <div class="btn-group">
+            <button 
+              class="btn btn-sm" 
+              [class.btn-primary]="filtroActivo === 'todos'"
+              [class.btn-outline-primary]="filtroActivo !== 'todos'"
+              (click)="filtroActivo = 'todos'">
+              Todos
+            </button>
+            <button 
+              class="btn btn-sm" 
+              [class.btn-warning]="filtroActivo === 'diferencias'"
+              [class.btn-outline-warning]="filtroActivo !== 'diferencias'"
+              (click)="filtroActivo = 'diferencias'">
+              Con Diferencias
+            </button>
+            <button 
+              class="btn btn-sm" 
+              [class.btn-success]="filtroActivo === 'completados'"
+              [class.btn-outline-success]="filtroActivo !== 'completados'"
+              (click)="filtroActivo = 'completados'">
+              Completados
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="table-info">
+        <p>Mostrando {{ conteosFiltrados.length }} de {{ conteosUnificados.length }} registros</p>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Artículo</th>
+              <th>Cantidad</th>
+              <th>Stock</th>
+              <th>Diferencia</th>
+              <th>Usuarios</th>
+              <th>Fecha Conteo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let conteo of conteosFiltrados">
+              <td><strong>{{ conteo.codigo_interno_agencia }}</strong></td>
+              <td>{{ conteo.nombre_articulo || 'Sin nombre' }}</td>
+              <td class="text-center">{{ formatearNumero(conteo.cantidad_total) }}</td>
+              <td class="text-center">{{ formatearNumero(conteo.stock_disponible) }}</td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="getBadgeDiferencia(conteo.diferencia_stock)">
+                  {{ conteo.diferencia_stock > 0 ? '+' : '' }}{{ conteo.diferencia_stock }}
+                </span>
+              </td>
+              <td class="text-sm">{{ conteo.usuariosnombre || conteo.usuarios }}</td>
+              <td class="text-sm">{{ conteo.ultima_fecha_conteo | date:'dd/MM/yyyy HH:mm' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="conteosFiltrados.length === 0" class="no-data">
+        <i class="fas fa-inbox"></i>
+        <p>No se encontraron registros con los filtros aplicados</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+

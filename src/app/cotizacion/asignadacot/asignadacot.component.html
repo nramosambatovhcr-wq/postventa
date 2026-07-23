@@ -1,0 +1,325 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Pedidos Bodega</div>
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          placeholder="Buscar por código, proveedor o estado..."
+          [(ngModel)]="searchTerm"
+          (input)="searchImports()">
+        <span class="icono-busqueda" *ngIf="searchTerm">
+          <button class="btn-limpiar" (click)="clearSearch()">✕</button>
+        </span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Cotizaciones</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de las solicitudes de cotización</p>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="coti()">
+        <div class="valor-estadistica">COTIZACIONES</div>
+      </div>
+      
+    
+      <!--
+      <div class="tarjeta-estadistica" (click)="error()">
+        <div class="valor-estadistica">SUBIR DETALLE</div>          
+      </div>-->
+       
+      
+      <div class="tarjeta-estadistica" (click)="revi()">
+        <div class="valor-estadistica">ASIGNADAS</div>          
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="aprobada()">
+        <div class="valor-estadistica">APROBADAS</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="rechazada()"> 
+        <div class="valor-estadistica">ANULADAS</div>
+      </div>
+
+       <div class="tarjeta-estadistica" (click)="crearm()">
+        <div class="valor-estadistica">CREAR MULTIPLE</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="excelm()">
+        <div class="valor-estadistica">SUBIR DETALLE MULTIPLE</div>          
+      </div>
+    </div>
+    
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">
+          Cotizaciones Recientes
+          <span class="badge-resultados" *ngIf="isFiltering()">
+            {{ filteredData.length }} resultados
+          </span>
+        </div>
+        <div class="acciones-tabla">
+          <button class="boton boton-filtro" (click)="toggleFilterPanel()">
+            <span class="icono-filtro">🔍</span> 
+            Filtros
+            <span class="badge-filtros-activos" *ngIf="getActiveFiltersCount() > 0">
+              {{ getActiveFiltersCount() }}
+            </span>
+          </button>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">
+              <span class="icono-exportar">📥</span> Exportar
+            </button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">📊 Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">📄 CSV (.csv)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Panel de filtros expandible -->
+      <div class="panel-filtros" *ngIf="showFilterPanel">
+        <div class="filtros-grid">
+          <!-- Filtro de fechas -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Rango de Fechas</label>
+            <div class="filtro-fechas-inline">
+              <input 
+                type="date" 
+                class="input-filtro" 
+                [(ngModel)]="startDate" 
+                (change)="applyFilters()"
+                placeholder="Desde">
+              <span class="separador-fecha">-</span>
+              <input 
+                type="date" 
+                class="input-filtro" 
+                [(ngModel)]="endDate" 
+                (change)="applyFilters()"
+                placeholder="Hasta">
+            </div>
+          </div>
+
+          <!-- Filtro por proveedor -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Proveedor</label>
+            <select class="input-filtro" [(ngModel)]="selectedProveedor" (change)="applyFilters()">
+              <option value="">Todos los proveedores</option>
+              <option *ngFor="let prov of uniqueProveedores" [value]="prov">{{ prov }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro por estado -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Estado</label>
+            <select class="input-filtro" [(ngModel)]="selectedEstado" (change)="applyFilters()">
+              <option value="">Todos los estados</option>
+              <option *ngFor="let estado of uniqueEstados" [value]="estado">{{ estado }}</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Cotización General -->
+          <div class="grupo-filtro">
+            <label class="label-filtro">Cotización General</label>
+            <select class="input-filtro" [(ngModel)]="selectedCotiGeneral" (change)="applyFilters()">
+              <option value="">Todas</option>
+              <option *ngFor="let coti of uniqueCotiGenerales" [value]="coti">{{ coti }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="acciones-filtros">
+          <button class="boton boton-limpiar" (click)="clearAllFilters()">
+            <span class="icono">🔄</span> Limpiar Filtros
+          </button>
+          <button class="boton boton-aplicar" (click)="applyFilters()">
+            <span class="icono">✓</span> Aplicar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Chips de filtros activos -->
+      <div class="filtros-activos" *ngIf="getActiveFiltersCount() > 0">
+        <div class="chip-filtro" *ngIf="startDate || endDate">
+          <span class="chip-texto">
+            📅 {{ startDate | date:'dd/MM/yyyy' }} - {{ endDate | date:'dd/MM/yyyy' }}
+          </span>
+          <button class="chip-cerrar" (click)="clearDateFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="selectedProveedor">
+          <span class="chip-texto">👤 {{ selectedProveedor }}</span>
+          <button class="chip-cerrar" (click)="clearProveedorFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="selectedEstado">
+          <span class="chip-texto">📋 {{ selectedEstado }}</span>
+          <button class="chip-cerrar" (click)="clearEstadoFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="selectedCotiGeneral">
+          <span class="chip-texto">📑 {{ selectedCotiGeneral }}</span>
+          <button class="chip-cerrar" (click)="clearCotiGeneralFilter()">✕</button>
+        </div>
+        <div class="chip-filtro" *ngIf="searchTerm">
+          <span class="chip-texto">🔍 "{{ searchTerm }}"</span>
+          <button class="chip-cerrar" (click)="clearSearch()">✕</button>
+        </div>
+      </div>
+      
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th class="hide-mobile">Coti. General</th>
+              <th>Código Coti.</th> 
+              <th>Proveedor</th>
+              <th>Fecha Solicitud</th>
+              <th>Estado</th>
+               <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista" class="fila-datos">
+              <td data-label="Coti. General" class="hide-mobile">{{ item.cotigeneral  }}</td>
+              <td data-label="Código Coti.">{{ item.codigoCot || item.cotizacionId }}</td> 
+              <td data-label="Proveedor">{{ item.nombreProveedor || 'N/A' }}</td>
+              <td data-label="Fecha" class="hide-mobile">{{ item.fechaSolicitud | date:'dd/MM/yyyy'  }}</td>
+              
+              <td data-label="Estado">
+                <span class="badge-estado" [ngClass]="{
+                  'estado-pendiente': item.estadoCotizacion === 'Pendiente',
+                  'estado-aprobado': item.estadoCotizacion === 'Aprobado',
+                  'estado-rechazado': item.estadoCotizacion === 'Rechazado',
+                  'estado-revision': item.estadoCotizacion === 'Revision'
+                }">
+                  {{item.estadoCotizacion || 'Pendiente'}}
+                </span>
+              </td>
+              <td data-label="Acciones" class="td-acciones">
+                  <button class="btn-detalle" title="Ver detalle" (click)="verDetalle(item.cotizacionId)">
+                    🔍
+                  </button>
+
+                  <!-- Regresar a Solicitada -->
+                  <button
+                    (click)="regresarASolicitada(item)"
+                    class="btn-accion btn-solicitada"
+                    title="Regresar a estado Solicitada"
+                    [disabled]="item._procesando">
+                    ↩️
+                  </button>
+
+                  <!-- Rechazar (cambiar a Rechazada) -->
+                  <button
+                    (click)="rechazarCotizacion(item)"
+                    class="btn-accion btn-rechazar"
+                    title="Rechazar cotización"
+                    [disabled]="item._procesando">
+                    ✕
+                  </button>
+
+                  <!-- Eliminar -->
+                  <button
+                    (click)="eliminarCotizacion(item)"
+                    class="btn-accion btn-eliminar"
+                    title="Eliminar cotización y sus detalles"
+                    [disabled]="item._procesando">
+                    🗑️
+                  </button>
+                </td>
+               
+            </tr>
+            <tr *ngIf="lista.length === 0">
+              <td colspan="6" class="sin-resultados">
+                <div class="mensaje-vacio">
+                  <span class="icono-vacio">📭</span>
+                  <p>No se encontraron cotizaciones</p>
+                  <small *ngIf="searchTerm">Intenta con otros términos de búsqueda</small>
+                  <button class="boton boton-secundario" (click)="clearAllFilters()">Limpiar filtros</button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pie-tabla">
+        <div class="items-count">
+          Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} cotizaciones
+          <span *ngIf="filteredData?.length !== allData?.length" class="filtrado-info">
+            ({{ allData?.length }} en total)
+          </span>
+        </div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pagina" 
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+</main>
+
+ 
+<style>
+  .td-acciones {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-accion {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.2s, transform 0.15s;
+    line-height: 1;
+  }
+
+  .btn-accion:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-solicitada:hover:not(:disabled) {
+    background: #e3f2fd;
+    transform: scale(1.15);
+  }
+
+  .btn-rechazar {
+    color: #f57c00;
+    font-weight: bold;
+    font-size: 14px;
+  }
+  .btn-rechazar:hover:not(:disabled) {
+    background: #fff3e0;
+    transform: scale(1.15);
+  }
+
+  .btn-eliminar:hover:not(:disabled) {
+    background: #ffebee;
+    transform: scale(1.15);
+  }
+</style>

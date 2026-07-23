@@ -1,0 +1,177 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Administración de Solicitudes de Permiso</div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Gestión de Solicitudes de Permiso</h1>
+      <p class="panel-subtitulo">Revise y apruebe o rechace las solicitudes de pedido de artículos bloqueados.</p>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-container">
+      <div class="filtro-grupo">
+        <label for="filtroEstado">Estado:</label>
+        <select id="filtroEstado" [(ngModel)]="filtroEstado" (change)="onFiltroChange()">
+          <option value="todas">Todas</option>
+          <option value="pendiente">Pendientes</option>
+          <option value="aprobada">Aprobadas</option>
+          <option value="rechazada">Rechazadas</option>
+        </select>
+      </div>
+
+      <div class="filtro-grupo">
+        <label for="busqueda">Buscar:</label>
+        <input 
+          type="text" 
+          id="busqueda" 
+          [(ngModel)]="terminoBusqueda" 
+          (keyup)="onFiltroChange()"
+          placeholder="Código, descripción o usuario...">
+      </div>
+
+      <div class="filtro-grupo">
+        <button class="boton boton-primario" (click)="cargarSolicitudes()">
+          <i class="fa fa-refresh"></i> Actualizar
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabla de Solicitudes -->
+    <div class="contenedor-tabla" *ngIf="!loading">
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Solicitante</th>
+              <th>Motivo</th>
+              <th>Estado</th>
+              <th>Fecha Solicitud</th>
+              <th>Fecha Respuesta</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let solicitud of solicitudesFiltradas">
+              <td><strong>{{ solicitud.codigoArticulo }}</strong></td>
+              <td>{{ solicitud.descripcionArticulo }}</td>
+              <td>{{ solicitud.nombreUsuarioSolicitante || 'Usuario ' + solicitud.idUsuarioSolicitante }}</td>
+              <td>
+                <div class="motivo-cell" [title]="solicitud.motivo">
+                  {{ solicitud.motivo.length > 50 ? solicitud.motivo.substring(0, 50) + '...' : solicitud.motivo }}
+                </div>
+              </td>
+              <td>
+                <span class="badge-estado" [ngClass]="getEstadoClass(solicitud.estado)">
+                  {{ getEstadoLabel(solicitud.estado) }}
+                </span>
+              </td>
+              <td>{{ formatFecha(solicitud.fechaSolicitud) }}</td>
+              <td>{{ solicitud.fechaRespuesta ? formatFecha(solicitud.fechaRespuesta) : '-' }}</td>
+              <td>
+                <div class="acciones-cell" *ngIf="solicitud.estado === 'pendiente'">
+                  <button 
+                    class="boton-accion boton-aprobar" 
+                    (click)="abrirModal(solicitud, 'aprobar')"
+                    title="Aprobar solicitud">
+                    <i class="fa fa-check"></i>
+                  </button>
+                  <button 
+                    class="boton-accion boton-rechazar" 
+                    (click)="abrirModal(solicitud, 'rechazar')"
+                    title="Rechazar solicitud">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+                <div *ngIf="solicitud.estado !== 'pendiente'" class="observaciones-cell">
+                  <small *ngIf="solicitud.observaciones" [title]="solicitud.observaciones">
+                    <i class="fa fa-comment"></i> 
+                    {{ solicitud.observaciones.length > 30 ? solicitud.observaciones.substring(0, 30) + '...' : solicitud.observaciones }}
+                  </small>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div *ngIf="solicitudesFiltradas.length === 0" class="no-results-message">
+        No se encontraron solicitudes con los filtros seleccionados.
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="loading-message">
+      <div class="spinner-large"></div>
+      Cargando solicitudes...
+    </div>
+
+    <div *ngIf="error" class="alerta alerta-error">
+      {{ error }}
+    </div>
+  </section>
+</main>
+
+<!-- Modal de Confirmación -->
+<div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        {{ accionModal === 'aprobar' ? 'Aprobar' : 'Rechazar' }} Solicitud
+      </h2>
+      <button type="button" class="boton-cerrar-modal" (click)="cerrarModal()">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="info-solicitud">
+        <h3>Detalles de la Solicitud</h3>
+        <p><strong>Código:</strong> {{ solicitudSeleccionada?.codigoArticulo }}</p>
+        <p><strong>Descripción:</strong> {{ solicitudSeleccionada?.descripcionArticulo }}</p>
+        <p><strong>Solicitante:</strong> {{ solicitudSeleccionada?.nombreUsuarioSolicitante }}</p>
+        <p><strong>Fecha:</strong> {{ formatFecha(solicitudSeleccionada?.fechaSolicitud || '') }}</p>
+        <div class="motivo-completo">
+          <strong>Motivo de la solicitud:</strong>
+          <p>{{ solicitudSeleccionada?.motivo }}</p>
+        </div>
+      </div>
+
+      <div class="campo-formulario">
+        <label for="observacionesModal">
+          {{ accionModal === 'aprobar' ? 'Observaciones (opcional)' : 'Razón del rechazo *' }}
+        </label>
+        <textarea 
+          id="observacionesModal" 
+          [(ngModel)]="observacionesModal"
+          rows="4"
+          [placeholder]="accionModal === 'aprobar' ? 'Agregue observaciones si lo considera necesario...' : 'Explique la razón del rechazo...'"
+          maxlength="500"></textarea>
+        <small class="contador-caracteres">{{ observacionesModal.length }}/500 caracteres</small>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button type="button" class="boton boton-secundario" (click)="cerrarModal()">
+        Cancelar
+      </button>
+      <button 
+        type="button" 
+        [class]="accionModal === 'aprobar' ? 'boton boton-success' : 'boton boton-danger'"
+        (click)="confirmarAccion()"
+        [disabled]="loading || (accionModal === 'rechazar' && !observacionesModal.trim())">
+        <span *ngIf="loading" class="spinner"></span>
+        <span *ngIf="!loading">
+          <i [class]="accionModal === 'aprobar' ? 'fa fa-check' : 'fa fa-times'"></i>
+          {{ accionModal === 'aprobar' ? 'Aprobar' : 'Rechazar' }}
+        </span>
+      </button>
+    </div>
+  </div>
+</div>

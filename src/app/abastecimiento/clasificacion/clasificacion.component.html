@@ -1,0 +1,420 @@
+<!-- ═══════════════════════════════════════════════════════
+     CLASIFICACIÓN ABC — SNCA / MULT / LUBR
+     ═══════════════════════════════════════════════════════ -->
+
+<!-- ── CARGANDO ───────────────────────────────────────────── -->
+<div class="abc-loading" *ngIf="cargando">
+  <div class="abc-spinner"></div>
+  <p class="abc-loading-text">Calculando clasificación ABC…</p>
+</div>
+
+<!-- ── ERROR ──────────────────────────────────────────────── -->
+<div class="abc-error" *ngIf="!cargando && error">
+  <span class="abc-error-icon">⚠</span>
+  <p>{{ error }}</p>
+  <button class="abc-btn abc-btn-primary" (click)="cargarDatos()">Reintentar</button>
+</div>
+
+<!-- ── CONTENIDO PRINCIPAL ────────────────────────────────── -->
+<div class="abc-root" *ngIf="!cargando && !error">
+
+  <!-- HEADER ================================================ -->
+  <header class="abc-header">
+    <div class="abc-header-left">
+      <span class="abc-header-tag">INVENTARIO</span>
+      <h1 class="abc-header-title">Clasificación ABC</h1>
+      <p class="abc-header-sub">SNCA · MULT · LUBR — Clasificado por clase · Pesos: Precio 40 % · MU 40 % · Qty 20 %</p>
+    </div>
+    <div class="abc-header-right">
+      <div class="abc-meta-pill">
+        <span class="abc-meta-num">{{ totalRegistros | number }}</span>
+        <span class="abc-meta-label">artículos</span>
+      </div>
+      <div class="abc-meta-pill">
+        <span class="abc-meta-num">{{ tiempoCarga | number:'1.1-1' }}s</span>
+        <span class="abc-meta-label">carga</span>
+      </div>
+      <button class="abc-btn abc-btn-ghost" (click)="cargarDatos()" title="Recargar">
+        ⟳ Recargar
+      </button>
+      <button
+        class="abc-btn abc-btn-excel"
+        (click)="descargarExcel()"
+        [disabled]="descargandoExcel || articulosFiltrados.length === 0"
+        title="Descargar Excel con los datos actuales">
+        <span *ngIf="!descargandoExcel">⬇ Excel</span>
+        <span *ngIf="descargandoExcel">Generando…</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI CARDS ============================================= -->
+  <section class="abc-kpis">
+    <div class="abc-kpi-card">
+      <span class="abc-kpi-label">Precio Total Vendido</span>
+      <span class="abc-kpi-value">{{ formatearMoneda(totalPrecioGlobal) }}</span>
+    </div>
+    <div class="abc-kpi-card">
+      <span class="abc-kpi-label">Margen Utilidad Total</span>
+      <span class="abc-kpi-value">{{ formatearMoneda(totalMUGlobal) }}</span>
+    </div>
+    <div class="abc-kpi-card">
+      <span class="abc-kpi-label">Unidades Vendidas</span>
+      <span class="abc-kpi-value">{{ formatearNumero(totalQtyGlobal) }}</span>
+    </div>
+    <div class="abc-kpi-card">
+      <span class="abc-kpi-label">Valor Inventario</span>
+      <span class="abc-kpi-value">{{ formatearMoneda(totalInvGlobal) }}</span>
+    </div>
+  </section>
+<!-- KPI CARDS SELECCIÓN (aparecen solo cuando hay filtro activo) -->
+<section class="abc-kpis abc-kpis-sel" *ngIf="hayFiltroActivo">
+
+  <div class="abc-kpis-sel-header">
+    <span class="abc-kpis-sel-icon">◈</span>
+    <span class="abc-kpis-sel-label">Selección: {{ etiquetaFiltroActivo }}</span>
+    <span class="abc-kpis-sel-count">{{ articulosFiltrados.length | number }} artículos</span>
+  </div>
+
+  <div class="abc-kpi-card abc-kpi-card-sel">
+    <span class="abc-kpi-label">Precio Total Vendido</span>
+    <span class="abc-kpi-value">{{ formatearMoneda(totalPrecioFiltrado) }}</span>
+    <span class="abc-kpi-pct">{{ pctPrecioFiltrado | percent:'1.1-1' }} del total</span>
+  </div>
+
+  <div class="abc-kpi-card abc-kpi-card-sel">
+    <span class="abc-kpi-label">Margen Utilidad</span>
+    <span class="abc-kpi-value">{{ formatearMoneda(totalMUFiltrado) }}</span>
+    <span class="abc-kpi-pct">{{ pctMUFiltrado | percent:'1.1-1' }} del total</span>
+  </div>
+
+  <div class="abc-kpi-card abc-kpi-card-sel">
+    <span class="abc-kpi-label">Unidades Vendidas</span>
+    <span class="abc-kpi-value">{{ formatearNumero(totalQtyFiltrado) }}</span>
+    <span class="abc-kpi-pct">{{ pctQtyFiltrado | percent:'1.1-1' }} del total</span>
+  </div>
+
+  <div class="abc-kpi-card abc-kpi-card-sel">
+    <span class="abc-kpi-label">Valor Inventario</span>
+    <span class="abc-kpi-value">{{ formatearMoneda(totalInvFiltrado) }}</span>
+    <span class="abc-kpi-pct">{{ pctInvFiltrado | percent:'1.1-1' }} del total</span>
+  </div>
+
+</section>
+  <!-- RESUMEN POR CLASIFICACIÓN ============================= -->
+  <section class="abc-resumen">
+    <h2 class="abc-section-title">
+      Distribución ABC
+      <span *ngIf="filtros.clase || filtros.grupo" class="abc-resumen-contexto" style="font-size:0.75rem;font-weight:400;opacity:0.65;margin-left:6px;">
+        — {{ filtros.clase }}{{ filtros.clase && filtros.grupo ? ' · ' : '' }}{{ filtros.grupo }}
+      </span>
+    </h2>
+    <div class="abc-resumen-cards">
+      <div
+        class="abc-res-card"
+        *ngFor="let r of resumen"
+        [class.active]="filtros.clasificacion === r.clasificacion"
+        (click)="filtros.clasificacion = filtros.clasificacion === r.clasificacion ? '' : r.clasificacion; aplicarFiltros()">
+
+        <div class="abc-res-header">
+          <span class="abc-badge" [ngClass]="badgeColor(r.clasificacion)">{{ r.clasificacion }}</span>
+          <span class="abc-res-count">{{ r.cantidad | number }}</span>
+        </div>
+
+        <div class="abc-res-bars">
+          <div class="abc-bar-row">
+            <span class="abc-bar-label">Precio</span>
+            <div class="abc-bar-track">
+              <div class="abc-bar-fill abc-fill-price" [style.width.%]="r.pctPrecio * 100"></div>
+            </div>
+            <span class="abc-bar-pct">{{ r.pctPrecio | percent:'1.0-1' }}</span>
+          </div>
+          <div class="abc-bar-row">
+            <span class="abc-bar-label">MU</span>
+            <div class="abc-bar-track">
+              <div class="abc-bar-fill abc-fill-mu" [style.width.%]="r.pctMU * 100"></div>
+            </div>
+            <span class="abc-bar-pct">{{ r.pctMU | percent:'1.0-1' }}</span>
+          </div>
+          <div class="abc-bar-row">
+            <span class="abc-bar-label">Qty</span>
+            <div class="abc-bar-track">
+              <div class="abc-bar-fill abc-fill-qty" [style.width.%]="r.pctQty * 100"></div>
+            </div>
+            <span class="abc-bar-pct">{{ r.pctQty | percent:'1.0-1' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FILTROS =============================================== -->
+  <section class="abc-filtros">
+    <div class="abc-filtro-group">
+      <input
+        class="abc-input abc-input-search"
+        type="text"
+        placeholder="Buscar código o descripción…"
+        [(ngModel)]="filtros.busqueda"
+        (input)="aplicarFiltros()" />
+    </div>
+
+    <div class="abc-filtro-group">
+      <select class="abc-select" [(ngModel)]="filtros.clase" (change)="aplicarFiltros()">
+        <option value="">Todas las clases</option>
+        <option *ngFor="let c of clasesDisponibles" [value]="c">{{ c }}</option>
+      </select>
+    </div>
+
+    <div class="abc-filtro-group">
+      <select class="abc-select" [(ngModel)]="filtros.grupo" (change)="aplicarFiltros()">
+        <option value="">Todos los grupos</option>
+        <option *ngFor="let g of gruposDisponibles" [value]="g">{{ g }}</option>
+      </select>
+    </div>
+
+    <button class="abc-btn abc-btn-ghost abc-btn-sm" (click)="limpiarFiltros()" *ngIf="filtros.busqueda || filtros.clase || filtros.grupo || filtros.clasificacion">
+      ✕ Limpiar
+    </button>
+
+    <span class="abc-filtros-count">
+      {{ articulosFiltrados.length | number }} resultado(s)
+    </span>
+
+    <button
+      class="abc-btn abc-btn-excel abc-btn-sm"
+      (click)="descargarExcel()"
+      [disabled]="descargandoExcel || articulosFiltrados.length === 0"
+      title="Descargar resultados en Excel">
+      <span *ngIf="!descargandoExcel">⬇ Descargar Excel ({{ articulosFiltrados.length | number }})</span>
+      <span *ngIf="descargandoExcel">Generando…</span>
+    </button>
+  </section>
+
+  <!-- TABLA ================================================= -->
+  <section class="abc-tabla-wrapper">
+    <table class="abc-tabla">
+      <thead>
+        <tr>
+          <th class="abc-th-sticky abc-col-codigo" (click)="ordenarPor('codigoArticulo')">
+            Código {{ iconoOrden('codigoArticulo') }}
+          </th>
+          <th class="abc-th-sticky abc-col-desc" (click)="ordenarPor('descripcion')">
+            Descripción {{ iconoOrden('descripcion') }}
+          </th>
+          <th (click)="ordenarPor('clase')">Clase {{ iconoOrden('clase') }}</th>
+          <th (click)="ordenarPor('grupo')">Grupo {{ iconoOrden('grupo') }}</th>
+
+          <th class="abc-th-num" (click)="ordenarPor('precioTotalVendido')">
+            Precio Venta {{ iconoOrden('precioTotalVendido') }}
+          </th>
+          <th class="abc-th-num" (click)="ordenarPor('margenUtilidad')">
+            Margen Util. {{ iconoOrden('margenUtilidad') }}
+          </th>
+          <th class="abc-th-num" (click)="ordenarPor('undVendidasTotal')">
+            Qty Vendida {{ iconoOrden('undVendidasTotal') }}
+          </th>
+          <th class="abc-th-num" (click)="ordenarPor('valorInventarioTotal')">
+            Valor Inv. {{ iconoOrden('valorInventarioTotal') }}
+          </th>
+          <th class="abc-th-num" (click)="ordenarPor('stockDisponibleTotal')">
+            Stock Disp. {{ iconoOrden('stockDisponibleTotal') }}
+          </th>
+
+          <!-- Clasificaciones por dimensión -->
+          <th class="abc-th-ctr" (click)="ordenarPor('clasificacionPorPrecio')">
+            Cls. Precio {{ iconoOrden('clasificacionPorPrecio') }}
+          </th>
+          <th class="abc-th-ctr" (click)="ordenarPor('clasificacionPorMU')">
+            Cls. MU {{ iconoOrden('clasificacionPorMU') }}
+          </th>
+          <th class="abc-th-ctr" (click)="ordenarPor('clasificacionPorQty')">
+            Cls. Qty {{ iconoOrden('clasificacionPorQty') }}
+          </th>
+          <th class="abc-th-num" (click)="ordenarPor('resultadoFinal')">
+            Resultado {{ iconoOrden('resultadoFinal') }}
+          </th>
+          <th class="abc-th-ctr" (click)="ordenarPor('clasificacionFinal')">
+            ABC Final {{ iconoOrden('clasificacionFinal') }}
+          </th>
+          <th class="abc-th-ctr">Detalle</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr
+          *ngFor="let art of articulosPagina"
+          class="abc-row"
+          [ngClass]="'row-cls-' + art.clasificacionFinal">
+
+          <td class="abc-td-sticky abc-col-codigo abc-td-mono">{{ art.codigoArticulo }}</td>
+          <td class="abc-td-sticky abc-col-desc abc-td-desc" [title]="art.descripcion">{{ art.descripcion }}</td>
+          <td class="abc-td-sm">{{ art.clase }}</td>
+          <td class="abc-td-sm">{{ art.grupo }}</td>
+
+          <td class="abc-td-num">{{ formatearMoneda(art.precioTotalVendido) }}</td>
+          <td class="abc-td-num">{{ formatearMoneda(art.margenUtilidad) }}</td>
+          <td class="abc-td-num">{{ formatearNumero(art.undVendidasTotal) }}</td>
+          <td class="abc-td-num">{{ formatearMoneda(art.valorInventarioTotal) }}</td>
+          <td class="abc-td-num">{{ formatearNumero(art.stockDisponibleTotal) }}</td>
+
+          <td class="abc-td-ctr">
+            <span class="abc-dim-badge dim-{{ art.clasificacionPorPrecio }}">{{ art.clasificacionPorPrecio }}</span>
+          </td>
+          <td class="abc-td-ctr">
+            <span class="abc-dim-badge dim-{{ art.clasificacionPorMU }}">{{ art.clasificacionPorMU }}</span>
+          </td>
+          <td class="abc-td-ctr">
+            <span class="abc-dim-badge dim-{{ art.clasificacionPorQty }}">{{ art.clasificacionPorQty }}</span>
+          </td>
+          <td class="abc-td-num abc-td-resultado">{{ art.resultadoFinal | number:'1.2-2' }}</td>
+          <td class="abc-td-ctr">
+            <span class="abc-badge" [ngClass]="badgeColor(art.clasificacionFinal)">
+              {{ art.clasificacionFinal }}
+            </span>
+          </td>
+          <td class="abc-td-ctr">
+            <button class="abc-btn-icon" (click)="abrirDetalle(art)" title="Ver detalle">⊕</button>
+          </td>
+        </tr>
+
+        <!-- Sin resultados -->
+        <tr *ngIf="articulosFiltrados.length === 0">
+          <td colspan="16" class="abc-empty">No se encontraron artículos con los filtros actuales.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PAGINACIÓN ============================================ -->
+  <nav class="abc-paginacion" *ngIf="totalPaginas > 1">
+    <button class="abc-page-btn" [disabled]="paginaActual === 1" (click)="irAPagina(1)">«</button>
+    <button class="abc-page-btn" [disabled]="paginaActual === 1" (click)="irAPagina(paginaActual - 1)">‹</button>
+
+    <button
+      class="abc-page-btn"
+      *ngFor="let p of paginas"
+      [class.active]="p === paginaActual"
+      (click)="irAPagina(p)">{{ p }}</button>
+
+    <button class="abc-page-btn" [disabled]="paginaActual === totalPaginas" (click)="irAPagina(paginaActual + 1)">›</button>
+    <button class="abc-page-btn" [disabled]="paginaActual === totalPaginas" (click)="irAPagina(totalPaginas)">»</button>
+
+    <span class="abc-page-info">
+      Pág. {{ paginaActual }} / {{ totalPaginas }} —
+      Mostrando {{ (paginaActual-1)*itemsPorPagina + 1 }}–{{ min(paginaActual * itemsPorPagina, articulosFiltrados.length) }}de {{ articulosFiltrados.length | number }}
+    </span>
+  </nav>
+
+</div>
+
+<!-- ── MODAL DETALLE ──────────────────────────────────────── -->
+<div class="abc-modal-overlay" *ngIf="articuloSeleccionado" (click)="cerrarDetalle()">
+  <div class="abc-modal" (click)="$event.stopPropagation()">
+    <div class="abc-modal-header">
+      <div>
+        <span class="abc-badge abc-badge-lg" [ngClass]="badgeColor(articuloSeleccionado.clasificacionFinal)">
+          {{ articuloSeleccionado.clasificacionFinal }}
+        </span>
+        <h3 class="abc-modal-title">{{ articuloSeleccionado.codigoArticulo }}</h3>
+        <p class="abc-modal-sub">{{ articuloSeleccionado.descripcion }}</p>
+      </div>
+      <button class="abc-modal-close" (click)="cerrarDetalle()">✕</button>
+    </div>
+
+    <div class="abc-modal-body">
+
+      <!-- Dimensiones ABC -->
+      <div class="abc-modal-section">
+        <h4 class="abc-modal-section-title">Desglose Clasificación</h4>
+        <div class="abc-modal-dims">
+          <div class="abc-modal-dim">
+            <span class="abc-modal-dim-label">Por Precio</span>
+            <span class="abc-dim-badge dim-{{ articuloSeleccionado.clasificacionPorPrecio }} abc-dim-lg">
+              {{ articuloSeleccionado.clasificacionPorPrecio }}
+            </span>
+            <span class="abc-modal-dim-peso">Peso {{ articuloSeleccionado.pesoPorPrecio | number:'1.1-1' }} × 0.4</span>
+            <span class="abc-modal-dim-acum">Acum. {{ articuloSeleccionado.pctAcumPrecio | percent:'1.1-1' }}</span>
+          </div>
+          <div class="abc-modal-dim">
+            <span class="abc-modal-dim-label">Por Margen</span>
+            <span class="abc-dim-badge dim-{{ articuloSeleccionado.clasificacionPorMU }} abc-dim-lg">
+              {{ articuloSeleccionado.clasificacionPorMU }}
+            </span>
+            <span class="abc-modal-dim-peso">Peso {{ articuloSeleccionado.pesoPorMU | number:'1.1-1' }} × 0.4</span>
+            <span class="abc-modal-dim-acum">Acum. {{ articuloSeleccionado.pctAcumMU | percent:'1.1-1' }}</span>
+          </div>
+          <div class="abc-modal-dim">
+            <span class="abc-modal-dim-label">Por Cantidad</span>
+            <span class="abc-dim-badge dim-{{ articuloSeleccionado.clasificacionPorQty }} abc-dim-lg">
+              {{ articuloSeleccionado.clasificacionPorQty }}
+            </span>
+            <span class="abc-modal-dim-peso">Peso {{ articuloSeleccionado.pesoPorQty | number:'1.1-1' }} × 0.2</span>
+            <span class="abc-modal-dim-acum">Acum. {{ articuloSeleccionado.pctAcumQty | percent:'1.1-1' }}</span>
+          </div>
+          <div class="abc-modal-dim abc-modal-dim-resultado">
+            <span class="abc-modal-dim-label">Resultado Final</span>
+            <span class="abc-modal-resultado-num">{{ articuloSeleccionado.resultadoFinal | number:'1.2-2' }}</span>
+            <span class="abc-modal-formula">= {{ articuloSeleccionado.pesoPorPrecio }}×0.4 + {{ articuloSeleccionado.pesoPorMU }}×0.4 + {{ articuloSeleccionado.pesoPorQty }}×0.2</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Indicadores financieros -->
+      <div class="abc-modal-section">
+        <h4 class="abc-modal-section-title">Indicadores Financieros</h4>
+        <div class="abc-modal-grid">
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Precio Vendido</span>
+            <span class="abc-modal-stat-val">{{ formatearMoneda(articuloSeleccionado.precioTotalVendido) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Costo Vendido</span>
+            <span class="abc-modal-stat-val">{{ formatearMoneda(articuloSeleccionado.costoTotalVendido) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Margen Utilidad</span>
+            <span class="abc-modal-stat-val abc-text-green">{{ formatearMoneda(articuloSeleccionado.margenUtilidad) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Unidades Vendidas</span>
+            <span class="abc-modal-stat-val">{{ formatearNumero(articuloSeleccionado.undVendidasTotal) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Vendido Último Mes</span>
+            <span class="abc-modal-stat-val">{{ formatearNumero(articuloSeleccionado.vendidoUltimoMes) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Stock Disponible</span>
+            <span class="abc-modal-stat-val">{{ formatearNumero(articuloSeleccionado.stockDisponibleTotal) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Costo Promedio</span>
+            <span class="abc-modal-stat-val">{{ formatearMoneda(articuloSeleccionado.costoPromedio) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Valor Inventario</span>
+            <span class="abc-modal-stat-val">{{ formatearMoneda(articuloSeleccionado.valorInventarioTotal) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Precio Sin IVA</span>
+            <span class="abc-modal-stat-val">{{ formatearMoneda(articuloSeleccionado.precioSinIva) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">FOB</span>
+            <span class="abc-modal-stat-val">{{ formatearMoneda(articuloSeleccionado.fob) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Última Compra</span>
+            <span class="abc-modal-stat-val">{{ formatearFecha(articuloSeleccionado.ultimaCompra) }}</span>
+          </div>
+          <div class="abc-modal-stat">
+            <span class="abc-modal-stat-label">Última Venta</span>
+            <span class="abc-modal-stat-val">{{ formatearFecha(articuloSeleccionado.ultimaVenta) }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

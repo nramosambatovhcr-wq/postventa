@@ -1,0 +1,132 @@
+<div class="maestropartes-container">
+
+  <div class="encabezado">
+    <h2>Maestro de Partes</h2>
+    <div class="acciones-encabezado">
+      <button
+        type="button"
+        class="btn-accion btn-actualizar"
+        [disabled]="cargando || exportando"
+        (click)="actualizarVista()"
+      >
+        ⟳ Actualizar
+      </button>
+      <button
+        type="button"
+        class="btn-accion btn-excel"
+        [disabled]="exportando || cargando"
+        (click)="exportarExcel()"
+      >
+        <span *ngIf="!exportando">⬇ Descargar Excel</span>
+        <span *ngIf="exportando">Generando... {{ progresoExportacion }}%</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Barra de búsqueda ──────────────────────────────────────── -->
+  <div class="barra-busqueda">
+    <input
+      type="text"
+      class="input-busqueda"
+      placeholder="Buscar por código o nombre del artículo..."
+      [value]="textoBusqueda"
+      (input)="onTextoBusquedaChange($any($event.target).value)"
+    />
+    <button
+      *ngIf="textoBusqueda"
+      type="button"
+      class="btn-limpiar"
+      (click)="limpiarBusqueda()"
+    >
+      ✕ Limpiar
+    </button>
+  </div>
+
+  <!-- ── Mensaje de error ───────────────────────────────────────── -->
+  <div *ngIf="error" class="mensaje-error">
+    {{ error }}
+  </div>
+
+  <!-- ── Indicador de carga ─────────────────────────────────────── -->
+  <div *ngIf="cargando" class="mensaje-cargando">
+    Cargando...
+  </div>
+
+  <!-- ── Resumen de resultados ──────────────────────────────────── -->
+  <div *ngIf="!cargando" class="resumen-resultados">
+    <span *ngIf="enModoBusqueda">
+      {{ totalResultadosBusqueda }} resultado(s) para "{{ textoBusqueda }}"
+    </span>
+    <span *ngIf="!enModoBusqueda">
+      {{ totalRegistros }} artículo(s) en total
+    </span>
+  </div>
+
+  <!-- ── Tabla de resultados ────────────────────────────────────── -->
+  <div class="tabla-wrapper" *ngIf="!cargando && datos.length > 0">
+    <table class="tabla-maestro">
+      <thead>
+        <tr>
+          <th>Artículo</th>
+          <th>Nombre</th>
+          <th>Clase</th>
+          <th>Grupo</th>
+          <th>Línea Competencia</th>
+          <th class="col-numero">FOB</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of datos">
+          <td class="col-codigo">{{ item.articulo }}</td>
+          <td>{{ item.nombre }}</td>
+          <td>{{ item.clase || '-' }}</td>
+          <td>{{ item.grupo || '-' }}</td>
+          <td>{{ item.lineaCompetencia || '-' }}</td>
+          <td class="col-numero">{{ formatearFob(item.fob) }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Sin resultados ─────────────────────────────────────────── -->
+  <div *ngIf="!cargando && datos.length === 0 && !error" class="sin-resultados">
+    <span *ngIf="enModoBusqueda">No se encontraron artículos para tu búsqueda.</span>
+    <span *ngIf="!enModoBusqueda">No hay artículos para mostrar.</span>
+  </div>
+
+  <!-- ── Paginación (solo en modo listado) ──────────────────────── -->
+  <div class="paginacion" *ngIf="!enModoBusqueda && !cargando && totalPaginas > 1">
+    <button
+      type="button"
+      class="btn-pagina"
+      [disabled]="pagina <= 1"
+      (click)="irAPaginaAnterior()"
+    >
+      ← Anterior
+    </button>
+
+    <span class="info-pagina">
+      Página {{ pagina }} de {{ totalPaginas }}
+    </span>
+
+    <button
+      type="button"
+      class="btn-pagina"
+      [disabled]="pagina >= totalPaginas"
+      (click)="irAPaginaSiguiente()"
+    >
+      Siguiente →
+    </button>
+
+    <select
+      class="select-tamano"
+      [value]="tamanoPagina"
+      (change)="cambiarTamanoPagina($any($event.target).value)"
+    >
+      <option value="25">25 por página</option>
+      <option value="50">50 por página</option>
+      <option value="100">100 por página</option>
+    </select>
+  </div>
+
+</div>

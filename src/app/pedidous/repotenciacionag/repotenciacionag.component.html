@@ -1,0 +1,932 @@
+<!-- repotenciacionag.component.html -->
+<div class="solicitud-container">
+
+  <!-- ══════════════════════════════════════════════════
+       HEADER (siempre visible)
+  ══════════════════════════════════════════════════ -->
+  <div class="solicitud-header">
+    <div class="header-icon">
+      <i class="fas fa-tools"></i>
+    </div>
+    <div class="header-text">
+      <h2 *ngIf="vistaActual === 'listado'">Mis Repotenciaciones</h2>
+      <h2 *ngIf="vistaActual === 'formulario'">Nueva Solicitud de Repotenciación</h2>
+      <!-- ── NUEVO: título para la vista detalle ─────────────────────────── -->
+      <h2 *ngIf="vistaActual === 'detalle'">
+        Detalle de Solicitud
+        <span *ngIf="repotenciacionDetalle" class="text-muted fs-5 fw-normal">
+          &nbsp;#{{ repotenciacionDetalle.id }}
+        </span>
+      </h2>
+      <p class="text-muted mb-0">
+        <i class="fas fa-building me-1"></i>{{ usuario1?.agencia || 'Sin agencia asignada' }}
+        &nbsp;|&nbsp;
+        <i class="fas fa-user me-1"></i>{{ usuario1?.nombreUsuario || 'Usuario' }}
+      </p>
+    </div>
+  </div>
+
+  <!-- ALERTAS ─────────────────────────────────────── -->
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+    <button type="button" class="btn-close" (click)="error = ''"></button>
+  </div>
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle me-2"></i>{{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''"></button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════
+       VISTA 1: LISTADO DE REPOTENCIACIONES
+  ══════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'listado'" class="listado-container">
+
+    <!-- Estadísticas Rápidas -->
+    <div class="stats-row" *ngIf="estadisticas">
+      <div class="stat-card">
+        <div class="stat-icon total"><i class="fas fa-layer-group"></i></div>
+        <div class="stat-value">{{ estadisticas.total || 0 }}</div>
+        <div class="stat-label">Total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pendiente"><i class="fas fa-clock"></i></div>
+        <div class="stat-value">{{ estadisticas.pendientes || 0 }}</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon proceso"><i class="fas fa-cog fa-spin"></i></div>
+        <div class="stat-value">{{ estadisticas.enProceso || 0 }}</div>
+        <div class="stat-label">En Proceso</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon completado"><i class="fas fa-check-circle"></i></div>
+        <div class="stat-value">{{ estadisticas.completados || 0 }}</div>
+        <div class="stat-label">Completados</div>
+      </div>
+      <!-- ── NUEVO: tarjeta de entregados ──────────────────────────────── -->
+      <div class="stat-card">
+        <div class="stat-icon entregado"><i class="fas fa-box-open"></i></div>
+        <div class="stat-value">{{ estadisticas.entregados || 0 }}</div>
+        <div class="stat-label">Entregados</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="listado-toolbar">
+      <!-- Búsqueda libre — consulta al servidor al presionar Enter o limpiar -->
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" class="form-control"
+               placeholder="Buscar por modelo, serie, cliente..."
+               [(ngModel)]="filtroBusqueda"
+               (input)="aplicarFiltros()"
+               (keyup.enter)="buscarEnServidor()">
+      </div>
+
+      <!-- Selector de estado — dispara búsqueda en servidor al cambiar -->
+      <select class="form-select filtro-estado"
+              [(ngModel)]="filtroEstado"
+              (change)="buscarEnServidor()">
+        <option value="">Todos los estados</option>
+        <option *ngFor="let est of estadosDisponibles" [value]="est">{{ est }}</option>
+      </select>
+
+      <!-- Botón limpiar filtros -->
+      <button class="btn btn-outline-secondary"
+              *ngIf="filtroBusqueda || filtroEstado"
+              (click)="limpiarFiltros()"
+              title="Limpiar filtros">
+        <i class="fas fa-times me-1"></i>Limpiar
+      </button>
+
+      <button class="btn btn-primary btn-lg" (click)="irANuevaSolicitud()">
+        <i class="fas fa-plus me-2"></i>Nueva Repotenciación
+      </button>
+    </div>
+
+    <!-- Tabla de Repotenciaciones -->
+    <div class="tabla-repotenciaciones" *ngIf="!cargandoListado">
+
+      <!-- Header -->
+      <div class="tabla-header" *ngIf="repotenciacionesFiltradas.length > 0">
+        <div>ID</div>
+        <div>Componente</div>
+        <div>Cliente</div>
+        <div>Estado</div>
+        <div>Fecha</div>
+        <div>Acciones</div>
+      </div>
+
+      <!-- Rows -->
+      <div class="tabla-row" *ngFor="let rep of repotenciacionesFiltradas">
+        <div>
+          <span class="badge bg-secondary">#{{ rep.id }}</span>
+        </div>
+        <div>
+          <div class="d-flex align-items-center gap-2">
+            <i class="fas fa-cog text-primary"></i>
+            <div>
+              <div class="fw-semibold">{{ rep.modelo }}</div>
+              <small class="text-muted">{{ rep.serie }}</small>
+            </div>
+            <span class="tipo-indicador doble" *ngIf="rep.modeloDif" title="Incluye diferencial">
+              <i class="fas fa-plus-circle"></i>
+            </span>
+          </div>
+        </div>
+        <div>{{ rep.cliente }}</div>
+        <div>
+          <span class="estado-badge" [ngClass]="getEstadoClase(rep.estado)">
+            <i class="fas" [ngClass]="getEstadoIcono(rep.estado)"></i>
+            {{ rep.estado }}
+          </span>
+        </div>
+        <div>
+          <small class="text-muted">{{ rep.fechaCreacion | date:'dd/MM/yyyy' }}</small>
+        </div>
+        <div>
+          <!-- ── CAMBIO: ahora llama a verDetalle real ──────────────────── -->
+          <button class="btn btn-sm btn-outline-primary"
+                  (click)="verDetalle(rep.id)"
+                  title="Ver detalle">
+            <i class="fas fa-eye"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="repotenciacionesFiltradas.length === 0">
+        <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+        <h5 class="text-muted">No hay repotenciaciones</h5>
+        <p class="text-muted mb-3">
+          {{ repotenciaciones.length === 0
+             ? 'Aún no has creado ninguna solicitud de repotenciación.'
+             : 'No se encontraron resultados para tu búsqueda.' }}
+        </p>
+        <button class="btn btn-primary" (click)="irANuevaSolicitud()"
+                *ngIf="repotenciaciones.length === 0">
+          <i class="fas fa-plus me-2"></i>Crear primera solicitud
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Loading -->
+    <div class="text-center py-5" *ngIf="cargandoListado">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="text-muted mt-2">Cargando repotenciaciones...</p>
+    </div>
+
+  </div><!-- /listado-container -->
+
+
+  <!-- ══════════════════════════════════════════════════
+       VISTA 2: DETALLE DE REPOTENCIACIÓN  ── NUEVO ──
+  ══════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'detalle'" class="detalle-container">
+
+    <!-- Botón volver -->
+    <div class="mb-3">
+      <button class="btn btn-outline-secondary" (click)="volverAlListado()">
+        <i class="fas fa-arrow-left me-2"></i>Volver al listado
+      </button>
+    </div>
+
+    <!-- Spinner carga -->
+    <div class="text-center py-5" *ngIf="cargandoDetalle">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="text-muted mt-2">Cargando detalle...</p>
+    </div>
+
+    <!-- Contenido -->
+    <ng-container *ngIf="!cargandoDetalle && repotenciacionDetalle as rep">
+
+      <!-- ── TARJETA: Estado actual ──────────────────────────────────── -->
+      <div class="card shadow-sm mb-3 border-0">
+        <div class="card-body">
+
+          <!-- Info usuario creador -->
+          <div class="d-flex align-items-center gap-2 mb-3 text-muted small">
+            <i class="fas fa-user-circle"></i>
+            <span>
+              Enviado por <strong>{{ rep.usuariocreaNombre || usuario1?.nombreUsuario }}</strong>
+              &nbsp;·&nbsp;
+              {{ rep.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}
+            </span>
+          </div>
+
+          <!-- Badge tipo -->
+          <span class="badge fs-6 mb-3"
+                [ngClass]="rep.modeloDif ? 'bg-info' : 'bg-primary'">
+            <i class="fas me-1" [ngClass]="rep.modeloDif ? 'fa-wrench' : 'fa-cog'"></i>
+            {{ rep.modeloDif ? 'CAJA DE CAMBIO + DIFERENCIAL' : 'SOLO CAJA DE CAMBIO' }}
+          </span>
+
+          <!-- Estado grande -->
+          <div class="estado-detalle-block mb-3">
+            <span class="estado-badge estado-badge-lg" [ngClass]="getEstadoClase(rep.estado)">
+              <i class="fas fa-2x" [ngClass]="getEstadoIcono(rep.estado)"></i>
+              <span class="ms-2 fs-5 fw-bold">{{ rep.estado }}</span>
+            </span>
+            <p class="text-muted small mt-2 mb-0">
+              <i class="fas fa-info-circle me-1"></i>
+              {{ getEstadoDescripcion(rep.estado) }}
+            </p>
+          </div>
+
+          <!-- Barra de progreso -->
+          <div class="progress" style="height:10px; border-radius:999px;">
+            <div class="progress-bar progress-bar-striped"
+                 [ngClass]="getProgresoBsClase(rep.estado)"
+                 role="progressbar"
+                 [style.width.%]="getEstadoPorcentaje(rep.estado)"
+                 [attr.aria-valuenow]="getEstadoPorcentaje(rep.estado)"
+                 aria-valuemin="0" aria-valuemax="100">
+            </div>
+          </div>
+          <div class="d-flex justify-content-between text-muted" style="font-size:0.72rem; margin-top:4px;">
+            <span>Pendiente</span>
+            <span>En Proceso</span>
+            <span>Completado</span>
+            <span>Entregado</span>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ── TARJETA: Caja de Cambio ────────────────────────────────── -->
+      <div class="card shadow-sm mb-3 border-0">
+        <div class="card-header bg-transparent">
+          <h6 class="mb-0">
+            <i class="fas fa-cog me-2 text-primary"></i>Caja de Cambio
+          </h6>
+        </div>
+        <div class="card-body">
+          <dl class="row small mb-0 resumen-dl">
+            <dt class="col-sm-4">Agencia</dt>
+            <dd class="col-sm-8">{{ rep.agencia }}</dd>
+            <dt class="col-sm-4">Modelo</dt>
+            <dd class="col-sm-8">{{ rep.modelo }}</dd>
+            <dt class="col-sm-4">Serie Caja</dt>
+            <dd class="col-sm-8">{{ rep.serie }}</dd>
+            <dt class="col-sm-4">Cliente</dt>
+            <dd class="col-sm-8">{{ rep.cliente }}</dd>
+            <dt class="col-sm-4">Orden de Trabajo</dt>
+            <dd class="col-sm-8 fw-semibold text-primary">{{ rep.ordenTrabajo }}</dd>
+            <dt class="col-sm-4">Guía de Remisión</dt>
+            <dd class="col-sm-8">{{ rep.guiaRemision }}</dd>
+            <dt class="col-sm-4">Fecha Ingreso</dt>
+            <dd class="col-sm-8">{{ rep.fechaIngreso | date:'dd/MM/yyyy HH:mm' }}</dd>
+            <ng-container *ngIf="rep.fechaEntrega">
+              <dt class="col-sm-4">Fecha Entrega</dt>
+              <dd class="col-sm-8">{{ rep.fechaEntrega | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </ng-container>
+          </dl>
+        </div>
+      </div>
+
+      <!-- ── TARJETA: Diferencial (condicional) ────────────────────── -->
+      <div class="card shadow-sm mb-3 border-0" *ngIf="rep.modeloDif">
+        <div class="card-header bg-transparent">
+          <h6 class="mb-0">
+            <i class="fas fa-wrench me-2 text-info"></i>Diferencial / Transferencia
+          </h6>
+        </div>
+        <div class="card-body">
+          <dl class="row small mb-0 resumen-dl">
+            <dt class="col-sm-4">Agencia</dt>
+            <dd class="col-sm-8">{{ rep.agenciaDif }}</dd>
+            <dt class="col-sm-4">Modelo</dt>
+            <dd class="col-sm-8">{{ rep.modeloDif }}</dd>
+            <dt class="col-sm-4">Serie</dt>
+            <dd class="col-sm-8">{{ rep.serieDif }}</dd>
+            <dt class="col-sm-4">Cliente</dt>
+            <dd class="col-sm-8">{{ rep.clienteDif }}</dd>
+            <dt class="col-sm-4">Orden de Trabajo</dt>
+            <dd class="col-sm-8 fw-semibold text-info">{{ rep.ordenTrabajoDif }}</dd>
+            <dt class="col-sm-4">Guía de Remisión</dt>
+            <dd class="col-sm-8">{{ rep.guiaRemisionDif }}</dd>
+          </dl>
+        </div>
+      </div>
+
+      <!-- ── TARJETA: Observaciones & Tutorial ─────────────────────── -->
+      <div class="card shadow-sm mb-3 border-0"
+           *ngIf="rep.observaciones || rep.tutorialUrl">
+        <div class="card-header bg-transparent">
+          <h6 class="mb-0">
+            <i class="fas fa-comment-alt me-2 text-secondary"></i>Notas adicionales
+          </h6>
+        </div>
+        <div class="card-body">
+          <div *ngIf="rep.observaciones" class="mb-2">
+            <strong class="small text-muted d-block mb-1">Observaciones</strong>
+            <p class="mb-0 small">{{ rep.observaciones }}</p>
+          </div>
+          <div *ngIf="rep.tutorialUrl">
+            <strong class="small text-muted d-block mb-1">Tutorial</strong>
+            <a [href]="rep.tutorialUrl" target="_blank" class="small">
+              <i class="fas fa-external-link-alt me-1"></i>{{ rep.tutorialUrl }}
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── TARJETA: Imágenes ──────────────────────────────────────── -->
+      <div class="card shadow-sm mb-3 border-0"
+           *ngIf="rep.imagenPlaca || rep.fotografias?.length">
+        <div class="card-header bg-transparent">
+          <h6 class="mb-0">
+            <i class="fas fa-camera me-2 text-secondary"></i>Imágenes adjuntas
+            <small class="text-muted ms-2">(clic para ampliar)</small>
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="detalle-imgs-grid">
+
+            <!-- Placa -->
+            <div class="detalle-img-item" *ngIf="rep.imagenPlaca">
+              <button class="img-btn" (click)="abrirModalImagen(rep.imagenPlaca.url, 'Placa', rep)">
+                <img [src]="rep.imagenPlaca.url"
+                     alt="Placa"
+                     class="detalle-thumb">
+                <span class="img-btn-overlay"><i class="fas fa-search-plus"></i></span>
+              </button>
+              <small class="d-block text-center text-muted mt-1">
+                <i class="fas fa-id-card me-1 text-warning"></i>Placa
+              </small>
+            </div>
+
+            <!-- Fotografías -->
+            <div class="detalle-img-item"
+                 *ngFor="let foto of rep.fotografias; let i = index">
+              <button class="img-btn" (click)="abrirModalImagen(foto.url, 'Vista ' + (i+1), rep)">
+                <img [src]="foto.url"
+                     [alt]="'Vista ' + (i+1)"
+                     class="detalle-thumb">
+                <span class="img-btn-overlay"><i class="fas fa-search-plus"></i></span>
+              </button>
+              <small class="d-block text-center text-muted mt-1">
+                Vista {{ i + 1 }}
+              </small>
+            </div>
+
+          </div>
+
+          <!-- Sin imágenes -->
+          <p class="text-muted small mb-0"
+             *ngIf="!rep.imagenPlaca && !rep.fotografias?.length">
+            <i class="fas fa-image me-1"></i>No se adjuntaron imágenes.
+          </p>
+        </div>
+      </div>
+
+      <!-- Acción inferior -->
+      <div class="text-end mt-3">
+        <button class="btn btn-outline-secondary" (click)="volverAlListado()">
+          <i class="fas fa-arrow-left me-2"></i>Volver al listado
+        </button>
+      </div>
+
+    </ng-container>
+  </div><!-- /detalle-container -->
+
+
+  <!-- ══════════════════════════════════════════════════
+       VISTA 3: FORMULARIO (Wizard de 3 pasos)
+  ══════════════════════════════════════════════════ -->
+  <div *ngIf="vistaActual === 'formulario'">
+
+    <!-- Botón volver al listado -->
+    <div class="mb-3">
+      <button class="btn btn-outline-secondary" (click)="volverAlListado()">
+        <i class="fas fa-arrow-left me-2"></i>Volver al listado
+      </button>
+    </div>
+
+    <!-- BARRA DE PROGRESO -->
+    <div class="progress-wizard mb-4" *ngIf="!exitoso">
+
+      <div class="step" [class.active]="pasoActual >= 1" [class.done]="pasoActual > 1"
+           (click)="irPaso(1)" title="Paso 1: Datos">
+        <div class="step-circle">
+          <i *ngIf="pasoActual <= 1" class="fas fa-clipboard-list"></i>
+          <i *ngIf="pasoActual > 1" class="fas fa-check"></i>
+        </div>
+        <span class="step-label">Datos</span>
+      </div>
+
+      <div class="step-line" [class.done]="pasoActual > 1"></div>
+
+      <div class="step" [class.active]="pasoActual >= 2" [class.done]="pasoActual > 2"
+           (click)="irPaso(2)" title="Paso 2: Fotos">
+        <div class="step-circle">
+          <i *ngIf="pasoActual <= 2" class="fas fa-camera"></i>
+          <i *ngIf="pasoActual > 2" class="fas fa-check"></i>
+        </div>
+        <span class="step-label">Fotos</span>
+      </div>
+
+      <div class="step-line" [class.done]="pasoActual > 2"></div>
+
+      <div class="step" [class.active]="pasoActual >= 3" title="Paso 3: Confirmar">
+        <div class="step-circle">
+          <i class="fas fa-paper-plane"></i>
+        </div>
+        <span class="step-label">Confirmar</span>
+      </div>
+
+    </div>
+
+    <!-- TÍTULO PASO -->
+    <h4 class="paso-titulo mb-3" *ngIf="!exitoso">
+      <span class="paso-numero">Paso {{ pasoActual }} de 3</span>
+      — {{ tituloPaso }}
+    </h4>
+
+    <!-- PASO 1 — DATOS DEL COMPONENTE -->
+    <div *ngIf="pasoActual === 1 && !exitoso" class="card shadow-sm">
+      <div class="card-body">
+
+        <!-- Toggle tipo solicitud -->
+        <div class="tipo-toggle mb-4">
+          <div class="form-check form-switch fs-6">
+            <input class="form-check-input" type="checkbox" id="tieneDiferencial"
+                   [(ngModel)]="tieneDiferencial">
+            <label class="form-check-label fw-semibold" for="tieneDiferencial">
+              Incluir Diferencial / Transferencia
+            </label>
+          </div>
+          <div class="mt-2">
+            <span class="badge fs-6" [ngClass]="tieneDiferencial ? 'bg-info' : 'bg-primary'">
+              <i class="fas me-1" [ngClass]="tieneDiferencial ? 'fa-wrench' : 'fa-cog'"></i>
+              {{ tieneDiferencial ? 'CAJA DE CAMBIO + DIFERENCIAL' : 'SOLO CAJA DE CAMBIO' }}
+            </span>
+          </div>
+        </div>
+
+        <!-- ── INFO USUARIO (solo lectura) ──────────────────────────── -->
+        <div class="alert alert-light d-flex align-items-center gap-2 py-2 mb-4 small">
+          <i class="fas fa-user-shield text-primary"></i>
+          <div>
+            Solicitud registrada a nombre de
+            <strong>{{ usuario1?.nombreUsuario }}</strong>
+            — Agencia: <strong>{{ usuario1?.agencia || formulario?.agencia || '—' }}</strong>
+          </div>
+        </div>
+
+        <!-- CAJA DE CAMBIO -->
+        <div class="section-block mb-4">
+          <h5 class="section-title">
+            <i class="fas fa-cog me-2 text-primary"></i>Caja de Cambio
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Agencia <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.agencia" name="agencia"
+                     placeholder="Nombre de la agencia" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Modelo <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.modelo" name="modelo"
+                     placeholder="Ej: HW27716XSTCL" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Serie Caja <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.serie" name="serie"
+                     placeholder="Número de serie" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cliente <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.cliente" name="cliente"
+                     placeholder="Nombre del cliente" maxlength="200">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Orden de Trabajo <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.ordenTrabajo" name="ordenTrabajo"
+                     placeholder="Nº de orden" maxlength="50">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Guía de Remisión <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.guiaRemision" name="guiaRemision"
+                     placeholder="Nº de guía" maxlength="50">
+            </div>
+          </div>
+        </div>
+
+        <!-- DIFERENCIAL (condicional) -->
+        <div *ngIf="tieneDiferencial" class="section-block mb-4 diferencial-block">
+          <h5 class="section-title">
+            <i class="fas fa-wrench me-2 text-info"></i>Diferencial / Transferencia
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Agencia <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.agenciaDif" name="agenciaDif"
+                     placeholder="Agencia diferencial" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Modelo <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.modeloDif" name="modeloDif"
+                     placeholder="Modelo diferencial" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Serie <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.serieDif" name="serieDif"
+                     placeholder="Serie diferencial" maxlength="100">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Cliente <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.clienteDif" name="clienteDif"
+                     placeholder="Cliente diferencial" maxlength="200">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Orden de Trabajo <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.ordenTrabajoDif" name="ordenTrabajoDif"
+                     placeholder="Orden diferencial" maxlength="50">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Guía de Remisión <span class="text-danger">*</span></label>
+              <input type="text" class="form-control"
+                     [(ngModel)]="formulario.guiaRemisionDif" name="guiaRemisionDif"
+                     placeholder="Guía diferencial" maxlength="50">
+            </div>
+          </div>
+        </div>
+
+        <!-- INFORMACIÓN ADICIONAL -->
+        <div class="section-block">
+          <h5 class="section-title">
+            <i class="fas fa-info-circle me-2 text-secondary"></i>Información Adicional
+          </h5>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Fecha de Ingreso <span class="text-danger">*</span></label>
+              <input type="datetime-local" class="form-control"
+                     [(ngModel)]="formulario.fechaIngreso" name="fechaIngreso">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fecha de Entrega (estimada)</label>
+              <input type="datetime-local" class="form-control"
+                     [(ngModel)]="formulario.fechaEntrega" name="fechaEntrega">
+            </div>
+            <div class="col-12">
+              <label class="form-label">Observaciones</label>
+              <textarea class="form-control" rows="3"
+                        [(ngModel)]="formulario.observaciones" name="observaciones"
+                        placeholder="Defectos observados, indicaciones especiales..."></textarea>
+            </div>
+         <!-- <div class="col-12">
+              <label class="form-label">
+                URL del Tutorial <small class="text-muted">(opcional)</small>
+              </label>
+              <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-link"></i></span>
+                <input type="url" class="form-control"
+                       [(ngModel)]="formulario.tutorialUrl" name="tutorialUrl"
+                       placeholder="https://youtu.be/...">
+              </div>
+              <div class="form-text">Enlace al video tutorial del funcionamiento del componente.</div>
+            </div>-->
+          </div>
+        </div>
+
+      </div>
+      <div class="card-footer text-end bg-transparent">
+        <button class="btn btn-primary btn-lg px-5" (click)="siguiente()">
+          Siguiente — Fotografías
+          <i class="fas fa-arrow-right ms-2"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- PASO 2 — FOTOGRAFÍAS -->
+    <div *ngIf="pasoActual === 2 && !exitoso" class="card shadow-sm">
+      <div class="card-body">
+
+        <!-- Requisitos -->
+        <div class="alert alert-info mb-4">
+          <h6 class="alert-heading">
+            <i class="fas fa-camera me-2"></i>Requisitos de imágenes
+          </h6>
+          <ul class="mb-0 small">
+            <li><strong>1 imagen de la placa</strong> del conjunto (número de serie visible)</li>
+            <li><strong>4 fotografías</strong> de diferentes vistas del componente</li>
+            <li>Formato: JPG, PNG o WEBP &nbsp;|&nbsp; Tamaño máximo por imagen: <strong>5 MB</strong></li>
+          </ul>
+        </div>
+
+        <!-- IMAGEN DE PLACA -->
+        <div class="upload-block mb-4">
+          <h6 class="upload-title">
+            <i class="fas fa-id-card me-2 text-warning"></i>
+            Imagen de Placa <span class="text-danger">*</span>
+            <span *ngIf="archivoPlaca" class="badge bg-success ms-2 fw-normal">
+              <i class="fas fa-check me-1"></i>Lista
+            </span>
+          </h6>
+
+          <div *ngIf="!archivoPlaca" class="drop-zone" (click)="inputPlaca.click()">
+            <i class="fas fa-cloud-upload-alt fa-2x text-muted"></i>
+            <p class="mt-2 mb-0 text-muted">Haz clic para seleccionar la imagen de la placa</p>
+            <small class="text-muted">JPG · PNG · WEBP · máx. 5 MB</small>
+          </div>
+          <input #inputPlaca type="file" class="d-none" accept="image/*"
+                 (change)="onPlacaSelected($event)">
+
+          <div *ngIf="archivoPlaca" class="preview-card">
+            <img [src]="previsualizacionPlaca" alt="Placa" class="preview-img">
+            <div class="preview-info">
+              <span class="fw-semibold text-truncate" style="max-width:200px">{{ archivoPlaca.name }}</span>
+              <small class="text-muted d-block">{{ formatBytes(archivoPlaca.size) }}</small>
+            </div>
+            <div class="preview-actions">
+              <button class="btn btn-sm btn-outline-primary" (click)="inputPlaca.click()" title="Cambiar">
+                <i class="fas fa-exchange-alt"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" (click)="eliminarPlaca()" title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 FOTOGRAFÍAS -->
+        <div class="upload-block">
+          <h6 class="upload-title">
+            <i class="fas fa-images me-2 text-primary"></i>
+            4 Fotografías del Componente <span class="text-danger">*</span>
+            <span class="badge ms-2 fw-normal"
+                  [ngClass]="archivosFotografias.length === 4 ? 'bg-success' : 'bg-secondary'">
+              {{ archivosFotografias.length }}/4
+            </span>
+          </h6>
+
+          <div *ngIf="archivosFotografias.length === 0"
+               class="drop-zone" (click)="inputFotos.click()">
+            <i class="fas fa-photo-video fa-2x text-muted"></i>
+            <p class="mt-2 mb-0 text-muted">
+              Haz clic para seleccionar exactamente <strong>4 fotos</strong>
+            </p>
+            <small class="text-muted">Selecciona las 4 de una sola vez (Ctrl+clic)</small>
+          </div>
+          <input #inputFotos type="file" class="d-none" multiple accept="image/*"
+                 (change)="onFotografiasSelected($event)">
+
+          <div *ngIf="archivosFotografias.length > 0" class="fotos-grid">
+            <div *ngFor="let prev of previsualizacionesFotos; let i = index" class="foto-item">
+              <img [src]="prev" [alt]="'Foto ' + (i+1)" class="foto-thumb">
+              <div class="foto-overlay">
+                <span class="foto-label">Vista {{ i + 1 }}</span>
+                <button class="btn btn-sm btn-danger foto-del"
+                        (click)="eliminarFoto(i)" title="Eliminar">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <small class="text-muted d-block text-center mt-1 text-truncate px-1"
+                     style="font-size:0.7rem">
+                {{ archivosFotografias[i]?.name }}
+              </small>
+            </div>
+          </div>
+
+          <div *ngIf="archivosFotografias.length > 0 && archivosFotografias.length < 4"
+               class="alert alert-warning mt-3 py-2 small">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Necesitas seleccionar las 4 fotos nuevamente.
+          </div>
+
+          <div *ngIf="archivosFotografias.length > 0" class="text-end mt-2">
+            <button class="btn btn-sm btn-outline-secondary" (click)="inputFotosReset.click()">
+              <i class="fas fa-redo me-1"></i>Reemplazar las 4 fotos
+            </button>
+            <input #inputFotosReset type="file" class="d-none" multiple accept="image/*"
+                   (change)="onFotografiasSelected($event)">
+          </div>
+
+        </div>
+
+      </div>
+      <div class="card-footer d-flex justify-content-between bg-transparent">
+        <button class="btn btn-outline-secondary btn-lg" (click)="anterior()">
+          <i class="fas fa-arrow-left me-2"></i>Anterior
+        </button>
+        <button class="btn btn-primary btn-lg px-5" (click)="siguiente()">
+          Revisar Solicitud
+          <i class="fas fa-arrow-right ms-2"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- PASO 3 — RESUMEN / ÉXITO -->
+    <div *ngIf="pasoActual === 3">
+
+      <!-- PANTALLA DE ÉXITO -->
+      <div *ngIf="exitoso" class="card shadow-sm border-success success-card text-center p-5">
+        <div class="success-icon mb-3">
+          <i class="fas fa-check-circle fa-5x text-success"></i>
+        </div>
+        <h3 class="text-success fw-bold mb-2">¡Solicitud Enviada con Éxito!</h3>
+        <p class="text-muted mb-1">Tu solicitud fue registrada con el ID</p>
+        <div class="id-badge my-3">
+          <span class="badge bg-primary fs-4">#{{ idCreado }}</span>
+        </div>
+        <p class="text-muted small">
+          El equipo de laboratorio recibirá tu solicitud y te notificará sobre el avance del proceso.
+        </p>
+        <div class="d-flex gap-3 justify-content-center mt-4">
+          <button class="btn btn-outline-primary btn-lg" (click)="nuevaSolicitud()">
+            <i class="fas fa-plus me-2"></i>Nueva Solicitud
+          </button>
+          <button class="btn btn-primary btn-lg" (click)="volverAlListado()">
+            <i class="fas fa-list me-2"></i>Ver mis solicitudes
+          </button>
+        </div>
+      </div>
+
+      <!-- RESUMEN PARA CONFIRMAR -->
+      <div *ngIf="!exitoso" class="card shadow-sm">
+        <div class="card-header bg-transparent">
+          <h5 class="mb-0">
+            <i class="fas fa-list-alt me-2 text-primary"></i>Resumen de la Solicitud
+          </h5>
+          <small class="text-muted">Revisa los datos antes de confirmar</small>
+        </div>
+        <div class="card-body">
+
+          <!-- Usuario creador (solo lectura) -->
+          <div class="alert alert-light d-flex align-items-center gap-2 py-2 mb-3 small">
+            <i class="fas fa-user-shield text-primary"></i>
+            <span>
+              Registrado por <strong>{{ usuario1?.nombreUsuario }}</strong>
+              — Agencia: <strong>{{ usuario1?.agencia || formulario?.agencia }}</strong>
+            </span>
+          </div>
+
+          <!-- Tipo de solicitud -->
+          <div class="mb-3">
+            <span class="badge fs-6" [ngClass]="tieneDiferencial ? 'bg-info' : 'bg-primary'">
+              <i class="fas me-1" [ngClass]="tieneDiferencial ? 'fa-wrench' : 'fa-cog'"></i>
+              {{ tieneDiferencial ? 'CAJA DE CAMBIO + DIFERENCIAL' : 'SOLO CAJA DE CAMBIO' }}
+            </span>
+          </div>
+
+          <!-- Caja de cambio -->
+          <h6 class="section-title">
+            <i class="fas fa-cog me-2 text-primary"></i>Caja de Cambio
+          </h6>
+          <dl class="row small mb-3 resumen-dl">
+            <dt class="col-sm-4">Agencia</dt>
+            <dd class="col-sm-8">{{ formulario.agencia }}</dd>
+            <dt class="col-sm-4">Modelo</dt>
+            <dd class="col-sm-8">{{ formulario.modelo }}</dd>
+            <dt class="col-sm-4">Serie Caja</dt>
+            <dd class="col-sm-8">{{ formulario.serie }}</dd>
+            <dt class="col-sm-4">Cliente</dt>
+            <dd class="col-sm-8">{{ formulario.cliente }}</dd>
+            <dt class="col-sm-4">Orden Trabajo</dt>
+            <dd class="col-sm-8 fw-semibold text-primary">{{ formulario.ordenTrabajo }}</dd>
+            <dt class="col-sm-4">Guía Remisión</dt>
+            <dd class="col-sm-8">{{ formulario.guiaRemision }}</dd>
+            <dt class="col-sm-4">Fecha Ingreso</dt>
+            <dd class="col-sm-8">{{ formulario.fechaIngreso | date:'dd/MM/yyyy HH:mm' }}</dd>
+            <ng-container *ngIf="formulario.fechaEntrega">
+              <dt class="col-sm-4">Fecha Entrega</dt>
+              <dd class="col-sm-8">{{ formulario.fechaEntrega | date:'dd/MM/yyyy HH:mm' }}</dd>
+            </ng-container>
+          </dl>
+
+          <!-- Diferencial -->
+          <ng-container *ngIf="tieneDiferencial">
+            <h6 class="section-title">
+              <i class="fas fa-wrench me-2 text-info"></i>Diferencial / Transferencia
+            </h6>
+            <dl class="row small mb-3 resumen-dl">
+              <dt class="col-sm-4">Agencia</dt>
+              <dd class="col-sm-8">{{ formulario.agenciaDif }}</dd>
+              <dt class="col-sm-4">Modelo</dt>
+              <dd class="col-sm-8">{{ formulario.modeloDif }}</dd>
+              <dt class="col-sm-4">Serie</dt>
+              <dd class="col-sm-8">{{ formulario.serieDif }}</dd>
+              <dt class="col-sm-4">Cliente</dt>
+              <dd class="col-sm-8">{{ formulario.clienteDif }}</dd>
+              <dt class="col-sm-4">Orden Trabajo</dt>
+              <dd class="col-sm-8 fw-semibold text-info">{{ formulario.ordenTrabajoDif }}</dd>
+              <dt class="col-sm-4">Guía Remisión</dt>
+              <dd class="col-sm-8">{{ formulario.guiaRemisionDif }}</dd>
+            </dl>
+          </ng-container>
+
+          <!-- Imágenes -->
+          <h6 class="section-title">
+            <i class="fas fa-camera me-2 text-secondary"></i>
+            Imágenes adjuntas
+            <small class="text-muted">({{ 1 + archivosFotografias.length }} archivos)</small>
+          </h6>
+          <div class="resumen-imgs mb-3">
+            <div class="resumen-img-item" *ngIf="previsualizacionPlaca">
+              <img [src]="previsualizacionPlaca" alt="Placa" class="resumen-thumb">
+              <small class="d-block text-center mt-1 text-muted">Placa</small>
+            </div>
+            <div class="resumen-img-item"
+                 *ngFor="let p of previsualizacionesFotos; let i = index">
+              <img [src]="p" [alt]="'Vista '+(i+1)" class="resumen-thumb">
+              <small class="d-block text-center mt-1 text-muted">Vista {{ i+1 }}</small>
+            </div>
+          </div>
+
+          <!-- Observaciones -->
+          <div *ngIf="formulario.observaciones" class="alert alert-light small">
+            <i class="fas fa-comment me-2 text-muted"></i>
+            <strong>Observaciones:</strong> {{ formulario.observaciones }}
+          </div>
+
+          <!-- Tutorial -->
+          <!--<div *ngIf="formulario.tutorialUrl" class="alert alert-light small">
+            <i class="fas fa-link me-2 text-muted"></i>
+            <strong>Tutorial:</strong>
+            <a [href]="formulario.tutorialUrl" target="_blank" class="ms-1">
+              {{ formulario.tutorialUrl }}
+            </a>
+          </div>-->
+
+        </div>
+        <div class="card-footer d-flex justify-content-between bg-transparent">
+          <button class="btn btn-outline-secondary btn-lg"
+                  (click)="anterior()" [disabled]="cargando">
+            <i class="fas fa-arrow-left me-2"></i>Anterior
+          </button>
+          <button class="btn btn-success btn-lg px-5"
+                  (click)="enviarSolicitud()" [disabled]="cargando">
+            <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+            <i *ngIf="!cargando" class="fas fa-paper-plane me-2"></i>
+            {{ cargando ? 'Enviando...' : 'Confirmar y Enviar' }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+  </div><!-- /formulario -->
+
+  <!-- ══════════════════════════════════════════════════
+       MODAL LIGHTBOX — Imagen ampliada
+  ══════════════════════════════════════════════════ -->
+  <div class="img-modal-backdrop" *ngIf="modalImagenUrl"
+       (click)="cerrarModalImagen()">
+
+    <div class="img-modal-box" (click)="$event.stopPropagation()">
+
+      <!-- Botón cerrar -->
+      <button class="img-modal-close" (click)="cerrarModalImagen()" title="Cerrar">
+        <i class="fas fa-times"></i>
+      </button>
+
+      <!-- Etiqueta -->
+      <div class="img-modal-label">
+        <i class="fas fa-image me-2"></i>{{ modalImagenLabel }}
+        <span class="ms-2 text-muted" *ngIf="modalImagenes.length > 1">
+          ({{ modalImagenIndex + 1 }} / {{ modalImagenes.length }})
+        </span>
+      </div>
+
+      <!-- Imagen -->
+      <div class="img-modal-img-wrap">
+        <img [src]="modalImagenUrl" [alt]="modalImagenLabel" class="img-modal-img">
+      </div>
+
+      <!-- Navegación (solo si hay más de 1 imagen) -->
+      <div class="img-modal-nav" *ngIf="modalImagenes.length > 1">
+        <button class="btn btn-outline-light btn-sm px-3" (click)="modalAnterior()">
+          <i class="fas fa-chevron-left me-1"></i>Anterior
+        </button>
+        <!-- Puntos indicadores -->
+        <div class="img-modal-dots">
+          <span *ngFor="let img of modalImagenes; let i = index"
+                class="img-modal-dot"
+                [class.active]="i === modalImagenIndex"
+                (click)="modalImagenIndex = i; modalImagenUrl = img.url; modalImagenLabel = img.label">
+          </span>
+        </div>
+        <button class="btn btn-outline-light btn-sm px-3" (click)="modalSiguiente()">
+          Siguiente<i class="fas fa-chevron-right ms-1"></i>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /solicitud-container -->

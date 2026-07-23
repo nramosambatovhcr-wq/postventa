@@ -1,0 +1,344 @@
+<div class="revision-container">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-content">
+      <h1>🔍 Revisión de Repuestos</h1>
+      <div class="oficina-info">
+        <span class="oficina-label">Oficina:</span>
+        <span class="oficina-nombre">{{ oficinaNombre || oficinaId }}</span>
+        <span class="oficina-id">(ID: {{ oficinaId }})</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="export-dropdown">
+        <button class="btn-export" (click)="toggleExportMenu()" [disabled]="cargando || isDownloading">
+          📥 Exportar Excel
+        </button>
+        <div class="export-menu" *ngIf="showExportMenu">
+          <a (click)="downloadExcelSinImagenes()" class="export-opcion">
+            <span class="export-icono">📄</span>
+            <div class="export-texto">
+              <strong>Excel Simple</strong>
+              <span class="export-desc">Sin imágenes • Instantáneo</span>
+            </div>
+          </a>
+          <a (click)="downloadExcelConImagenes()" class="export-opcion export-opcion-destacada">
+            <span class="export-icono">🖼️</span>
+            <div class="export-texto">
+              <strong>Excel con Imágenes</strong>
+              <span class="export-desc">{{ repuestosFiltrados.length }} registros • Imágenes embebidas</span>
+            </div>
+          </a>
+        </div>
+      </div>
+      <button class="btn-refresh" (click)="cargarRepuestosDeOficina()" [disabled]="cargando">
+        🔄 Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- Progreso de exportación con imágenes -->
+  <div class="export-progreso-banner" *ngIf="isDownloading">
+    <div class="spinner-mini"></div>
+    <span>Generando Excel con imágenes, esto puede tardar varios minutos...</span>
+  </div>
+
+  <!-- Estado de carga -->
+  <div class="loading-state" *ngIf="cargando">
+    <div class="spinner"></div>
+    <p>Cargando repuestos...</p>
+  </div>
+
+  <!-- Estado de error -->
+  <div class="error-state" *ngIf="error && !cargando">
+    <div class="error-icon">⚠️</div>
+    <h3>{{ error }}</h3>
+    <button class="btn-reintentar" (click)="cargarRepuestosDeOficina()">Reintentar</button>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="content" *ngIf="!cargando && !error">
+
+    <!-- Resumen -->
+    <div class="resumen-cards">
+      <div class="resumen-card total">
+        <span class="resumen-numero">{{ repuestos.length }}</span>
+        <span class="resumen-label">Total Repuestos</span>
+      </div>
+      <div class="resumen-card ok">
+        <span class="resumen-numero">{{ getRepuestosOK() }}</span>
+        <span class="resumen-label">✓ Coinciden</span>
+      </div>
+      <div class="resumen-card diferencia">
+        <span class="resumen-numero">{{ getRepuestosConDiferencia() }}</span>
+        <span class="resumen-label">⚠ Con Diferencia</span>
+      </div>
+      <div class="resumen-card sin-stock">
+        <span class="resumen-numero">{{ getRepuestosSinStock() }}</span>
+        <span class="resumen-label">Sin Stock</span>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filtros-section">
+      <div class="filtro-grupo">
+        <input
+          type="text"
+          class="filtro-input"
+          placeholder="🔍 Buscar por código o descripción..."
+          [(ngModel)]="filtroTexto"
+          (input)="aplicarFiltros()"
+        >
+      </div>
+      <div class="filtro-grupo">
+        <select class="filtro-select" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+          <option value="todos">Todos los estados</option>
+          <option value="ok">✓ Coinciden (Dif. = 0)</option>
+          <option value="diferencia">⚠ Con Diferencia</option>
+          <option value="sin_stock">Sin Stock Físico</option>
+        </select>
+      </div>
+      <button class="btn-limpiar" (click)="limpiarFiltros()" *ngIf="filtroTexto || filtroEstado !== 'todos'">
+        ✕ Limpiar filtros
+      </button>
+    </div>
+
+    <!-- Tabla de repuestos -->
+    <div class="tabla-container" *ngIf="repuestosFiltrados.length > 0">
+      <table class="repuestos-table">
+        <thead>
+          <tr>
+            <th class="th-img">IMAGEN</th>
+            <th>CÓDIGO</th>
+            <th>DESCRIPCIÓN</th>
+            <th>MARCA</th>
+            <th>MODELO</th>
+            <th>LÍNEA</th>
+            <th>CATEGORÍA</th>
+            <th>ESTADO</th>
+            <th>BODEGA</th>
+            <th class="text-center">STOCK FÍSICO</th>
+            <th class="text-center">DISPONIBLE</th>
+            <th class="text-center">RESERVADO</th>
+            <th class="text-center">CANT. SISTEMA</th>
+            <th class="text-center">DIFERENCIA</th>
+            <th class="text-center">ESTADO INV.</th>
+            <th class="text-center">DETALLE</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let repuesto of repuestosFiltrados" [class.fila-diferencia]="repuesto.diferencia !== 0">
+
+            <!-- Imagen miniatura -->
+            <td class="img-cell">
+              <div class="img-thumb-container" (click)="abrirDetalle(repuesto)">
+                <img
+                  *ngIf="repuesto.imagen_nombre"
+                  [src]="getUrlImagen(repuesto.imagen_nombre)"
+                  class="img-thumb"
+                  [alt]="repuesto.codigo"
+                  (error)="onImgError($event)"
+                >
+                <div class="no-img" *ngIf="!repuesto.imagen_nombre">
+                  <span>📷</span>
+                </div>
+              </div>
+            </td>
+
+            <td class="codigo-cell"><strong>{{ repuesto.codigo }}</strong></td>
+            <td class="descripcion-cell">{{ repuesto.descripcion }}</td>
+            <td>{{ repuesto.marca_nombre || '-' }}</td>
+            <td>{{ repuesto.modelo || '-' }}</td>
+            <td>{{ repuesto.linea || '-' }}</td>
+            <td>{{ repuesto.categoria || '-' }}</td>
+            <td>
+              <span class="estado-rep-badge">{{ repuesto.estado_nombre || '-' }}</span>
+            </td>
+            <td>
+              <span class="bodega-badge">{{ repuesto.bodega }}</span>
+            </td>
+            <td class="text-center stock-cell">
+              <span class="stock-valor" [class]="getStockClass(repuesto.stock)">
+                {{ formatearNumero(repuesto.stock) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="disponible-valor">{{ formatearNumero(repuesto.stock_disponible) }}</span>
+            </td>
+            <td class="text-center">
+              <span class="reservado-valor" [class.tiene-reservado]="repuesto.stock_reservado > 0">
+                {{ formatearNumero(repuesto.stock_reservado) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="sistema-valor">{{ formatearNumero(repuesto.cantidad_sistema) }}</span>
+            </td>
+            <td class="text-center diferencia-cell">
+              <span class="diferencia-valor" [class]="getDiferenciaClass(repuesto.diferencia)">
+                {{ repuesto.diferencia > 0 ? '+' : '' }}{{ formatearNumero(repuesto.diferencia) }}
+              </span>
+            </td>
+            <td class="text-center">
+              <span class="estado-badge" [class]="getDiferenciaClass(repuesto.diferencia)">
+                {{ repuesto.diferencia === 0 ? '✓ OK' : repuesto.diferencia > 0 ? '▲ Sobrante' : '▼ Faltante' }}
+              </span>
+            </td>
+            <td class="text-center">
+              <button class="btn-detalle" (click)="abrirDetalle(repuesto)" title="Ver detalle completo">
+                🔎
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sin resultados -->
+    <div class="no-results" *ngIf="repuestosFiltrados.length === 0 && repuestos.length > 0">
+      <div class="no-data-icon">🔍</div>
+      <h3>No se encontraron repuestos</h3>
+      <p>Intenta ajustar los filtros de búsqueda</p>
+    </div>
+
+    <!-- Sin datos -->
+    <div class="no-data" *ngIf="repuestos.length === 0">
+      <div class="no-data-icon">📦</div>
+      <h3>No hay repuestos registrados</h3>
+      <p>Esta oficina no tiene repuestos en el sistema</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL DETALLE ===== -->
+<div class="modal-overlay" *ngIf="repuestoSeleccionado" (click)="cerrarDetalle()">
+  <div class="modal-panel" (click)="$event.stopPropagation()">
+
+    <!-- Modal Header -->
+    <div class="modal-header">
+      <div class="modal-title">
+        <span class="modal-codigo">{{ repuestoSeleccionado.codigo }}</span>
+        <span class="modal-descripcion">{{ repuestoSeleccionado.descripcion }}</span>
+      </div>
+      <button class="btn-cerrar" (click)="cerrarDetalle()">✕</button>
+    </div>
+
+    <!-- Modal Body -->
+    <div class="modal-body">
+
+      <!-- Imagen principal ampliada -->
+      <div class="galeria-section">
+        <h3 class="seccion-titulo">📷 Imagen</h3>
+
+        <!-- Con imagen -->
+        <div class="imagen-ampliada" *ngIf="repuestoSeleccionado.imagen_nombre">
+          <img
+            [src]="getUrlImagen(repuestoSeleccionado.imagen_nombre)"
+            [alt]="repuestoSeleccionado.codigo"
+            (error)="onImgError($event)"
+          >
+        </div>
+
+        <!-- Sin imagen -->
+        <div class="galeria-vacia" *ngIf="!repuestoSeleccionado.imagen_nombre">
+          <span class="no-img-icon">📷</span>
+          <p>Sin imagen disponible</p>
+        </div>
+      </div>
+
+      <!-- Datos del repuesto -->
+      <div class="datos-section">
+
+        <!-- Información general -->
+        <div class="datos-grupo">
+          <h3 class="seccion-titulo">📋 Información General</h3>
+          <div class="datos-grid">
+            <div class="dato-item">
+              <span class="dato-label">ID Repuesto</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.id_repuesto }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Código</span>
+              <span class="dato-valor"><strong>{{ repuestoSeleccionado.codigo }}</strong></span>
+            </div>
+            <div class="dato-item full-width">
+              <span class="dato-label">Descripción</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.descripcion }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Marca</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.marca_nombre || '-' }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Modelo</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.modelo || '-' }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Línea</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.linea || '-' }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Categoría / Ubicación</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.categoria || '-' }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Estado</span>
+              <span class="dato-valor estado-rep-badge">{{ repuestoSeleccionado.estado_nombre || '-' }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Inventario -->
+        <div class="datos-grupo">
+          <h3 class="seccion-titulo">📦 Inventario</h3>
+          <div class="datos-grid">
+            <div class="dato-item">
+              <span class="dato-label">Oficina</span>
+              <span class="dato-valor">{{ repuestoSeleccionado.oficina || '-' }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Bodega</span>
+              <span class="dato-valor"><span class="bodega-badge">{{ repuestoSeleccionado.bodega || '-' }}</span></span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Stock Físico</span>
+              <span class="dato-valor" [class]="getStockClass(repuestoSeleccionado.stock)">
+                <strong>{{ formatearNumero(repuestoSeleccionado.stock) }}</strong>
+              </span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Stock Disponible</span>
+              <span class="dato-valor disponible-valor">{{ formatearNumero(repuestoSeleccionado.stock_disponible) }}</span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Stock Reservado</span>
+              <span class="dato-valor reservado-valor" [class.tiene-reservado]="repuestoSeleccionado.stock_reservado > 0">
+                {{ formatearNumero(repuestoSeleccionado.stock_reservado) }}
+              </span>
+            </div>
+            <div class="dato-item">
+              <span class="dato-label">Cantidad en Sistema</span>
+              <span class="dato-valor sistema-valor">{{ formatearNumero(repuestoSeleccionado.cantidad_sistema) }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diferencia resaltada -->
+        <div class="diferencia-resumen" [class]="getDiferenciaClass(repuestoSeleccionado.diferencia)">
+          <span class="diferencia-label">Diferencia (Físico − Sistema)</span>
+          <span class="diferencia-numero">
+            {{ repuestoSeleccionado.diferencia > 0 ? '+' : '' }}{{ formatearNumero(repuestoSeleccionado.diferencia) }}
+          </span>
+          <span class="diferencia-estado">
+            {{ repuestoSeleccionado.diferencia === 0 ? '✓ Sin diferencia' : repuestoSeleccionado.diferencia > 0 ? '▲ Sobrante en físico' : '▼ Faltante en físico' }}
+          </span>
+        </div>
+
+      </div><!-- /datos-section -->
+    </div><!-- /modal-body -->
+
+    <!-- Modal Footer -->
+    <div class="modal-footer">
+      <button class="btn-cerrar-modal" (click)="cerrarDetalle()">Cerrar</button>
+    </div>
+  </div>
+</div>

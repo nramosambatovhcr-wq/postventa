@@ -1,0 +1,981 @@
+<!-- Modal Overlay -->
+<div class="modal-overlay" *ngIf="visible" (click)="cerrarModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="modal-header">
+      <div class="header-content">
+        <h2>
+          <span *ngIf="modo === 'nuevo'">➕ Nuevo Repuesto</span>
+          <span *ngIf="modo === 'editar'">✏️ Editar Repuesto</span>
+          <span *ngIf="modo === 'revision'">🔍 Revisar Repuesto</span>
+        </h2>
+        <div class="oficina-tags" *ngIf="oficina">
+          <span class="tag tag-oficina">{{ oficina.oficina }}</span>
+          <span class="tag tag-bodega">{{ oficina.bodega }}</span>
+        </div>
+        <!-- Badge de datos cargados -->
+        <span class="badge-datos" *ngIf="datosCargados && modo !== 'nuevo'">
+          ✓ Datos cargados de sistema
+        </span>
+      </div>
+      <button class="btn-close" (click)="cerrarModal()" [disabled]="guardando">×</button>
+    </div>
+
+    <!-- Progress -->
+    <div class="progress-section">
+      <div class="progress-bar">
+        <div class="progress-fill" [style.width.%]="progresoWizard"></div>
+      </div>
+      <div class="step-tabs">
+        <button 
+          *ngFor="let step of [1,2,3,4,5]; let i = index" 
+          class="step-tab"
+          [class.active]="pasoActual === step"
+          [class.completed]="pasoActual > step"
+          [disabled]="step > pasoActual && !validarPasosAnteriores(step)"
+          (click)="irAPaso(step)">
+          <span class="step-num">
+            <span *ngIf="pasoActual > step">✓</span>
+            <span *ngIf="pasoActual <= step">{{ step }}</span>
+          </span>
+          <span class="step-name">{{ ['Básico', 'Ubicación', 'Medidas', 'Técnico', 'Imágenes'][i] }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+      
+      <!-- ==================== PASO 1: BÁSICO (CON DATOS PRECARGADOS) ==================== -->
+      <div *ngIf="pasoActual === 1" class="step-content">
+        <div class="step-header">
+          <h3>📋 Información Básica</h3>
+          <span class="info-badge" *ngIf="datosCargados">
+            Datos precargados del inventario
+          </span>
+        </div>
+
+        <!-- CÓDIGO (precargado desde articulo) -->
+        <div class="form-row">
+          <div class="form-group form-group-lg">
+            <label class="label-required">
+              Código (Artículo)
+              <span class="data-source" *ngIf="datosCargados">← Desde tabla: articulo</span>
+            </label>
+            <div class="input-with-icon">
+              <span class="input-icon">🔢</span>
+              <input 
+                type="text" 
+                [(ngModel)]="datosBasicos.codigo" 
+                placeholder="Ej: WG1664335100"
+                [readonly]="modo === 'editar' && datosCargados"
+                [class.readonly]="modo === 'editar' && datosCargados">
+            </div>
+            <small class="help-text" *ngIf="datosCargados">
+              Código del artículo en el sistema
+            </small>
+          </div>
+          
+          <div class="form-group">
+            <label class="label-required">Stock Disponible</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📦</span>
+              <input type="number" [(ngModel)]="datosBasicos.stock_disponible" min="0" step="0.01" readonly="true">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="label-required">Cantidad en Stock</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📦</span>
+              <input type="number" [(ngModel)]="datosBasicos.qty" min="0" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <!-- DESCRIPCIÓN (precargada desde nombre) -->
+        <div class="form-group">
+          <label class="label-required">
+            Descripción (Nombre)
+            <span class="data-source" *ngIf="datosCargados">← Desde tabla: nombre</span>
+          </label>
+          <div class="input-with-icon textarea-icon">
+            <span class="input-icon">📝</span>
+            <textarea 
+              [(ngModel)]="datosBasicos.descripcion" 
+              rows="3" 
+              placeholder="Descripción detallada del repuesto"></textarea>
+          </div>
+          <small class="help-text" *ngIf="datosCargados">
+            Nombre completo del artículo
+          </small>
+        </div>
+
+        <!-- LÍNEA / CLASE (precargada desde clase_id) -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>
+              Línea (Clase ID)
+              <span class="data-source" *ngIf="datosCargados">← Desde tabla: clase_id</span>
+            </label>
+            <div class="linea-display" *ngIf="datosCargados">
+              <span class="linea-codigo">{{ datosBasicos.linea }}</span>
+              <span class="linea-nombre">{{ claseNombre }}</span>
+            </div>
+            <input 
+              *ngIf="!datosCargados"
+              type="text" 
+              [(ngModel)]="datosBasicos.linea" 
+              placeholder="Ej: 01-MOTOR">
+          </div>
+          
+          <div class="form-group">
+            <label>ID Clase (Sistema)</label>
+            <input 
+              type="text" 
+              [(ngModel)]="datosBasicos.idClase" 
+              [value]="datosBasicos.idClase || ''"
+              readonly
+              class="readonly system-field">
+          </div>
+        </div>
+
+        <!-- Marca y Modelo -->
+              
+        <div class="form-row">
+          <div class="form-group">
+            <label>Marca</label>
+            <div class="input-with-icon marca-select-wrapper">
+              <span class="input-icon">🏷️</span>
+              <select 
+                [(ngModel)]="datosBasicos.idMarca" 
+                (change)="onMarcaChange()"
+                [disabled]="cargandoMarcas">
+                <option [ngValue]="null">
+                  {{ cargandoMarcas ? 'Cargando marcas...' : 'Seleccionar marca' }}
+                </option>
+                <option *ngFor="let m of marcas" [ngValue]="m.id_marca">{{ m.nombre }}</option>
+              </select>
+              <span class="loading-indicator" *ngIf="cargandoMarcas">⏳</span>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Modelo</label>
+            <div class="input-with-icon modelo-select-wrapper">
+              <span class="input-icon">🚗</span>
+              <select 
+                [(ngModel)]="datosBasicos.modelo" 
+                [disabled]="!datosBasicos.idMarca || cargandoModelos || modelos.length === 0">
+                <option value="">
+                  {{ cargandoModelos ? 'Cargando...' : 
+                     !datosBasicos.idMarca ? 'Seleccione marca primero' : 
+                     modelos.length === 0 ? 'Sin modelos - cree uno nuevo' : 
+                     'Seleccionar modelo' }}
+                </option>
+                <option *ngFor="let m of modelos" [value]="m.nombre_modelo || m.nombre">
+                  {{ m.nombre_modelo || m.nombre }}
+                </option>
+              </select>
+              <!-- Botón + para agregar nuevo modelo -->
+              <button
+                type="button"
+                class="btn-add-modelo"
+                *ngIf="datosBasicos.idMarca"
+                (click)="abrirModalNuevoModelo()"
+                title="Crear nuevo modelo para esta marca">
+                ＋
+              </button>
+            </div>
+            <small class="help-text text-warning" *ngIf="datosBasicos.idMarca && modelos.length === 0 && !cargandoModelos">
+              ⚠️ No hay modelos disponibles para esta marca
+            </small>
+          </div>
+        </div>
+
+        <!-- Año y Estado -->
+        <div class="form-row">
+          <div class="form-group">
+            <label>Año</label>
+            <div class="input-with-icon">
+              <span class="input-icon">📅</span>
+              <input 
+                type="number" 
+                [(ngModel)]="datosBasicos.ano" 
+                [min]="1900" 
+                [max]="currentYear + 1"
+                placeholder="Ej: 2024">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Estado</label>
+            <div class="input-with-icon">
+              <span class="input-icon">⚡</span>
+              <select [(ngModel)]="datosBasicos.idEstado">
+                <option [ngValue]="null">Seleccionar estado</option>
+                <option *ngFor="let e of estados" [ngValue]="e.id_estado">{{ e.nombre }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ubicación en Almacén -->
+        <div class="form-group ubicacion-searchable-group">
+          <label>
+            Ubicación en Almacén
+            <span class="data-source" *ngIf="repuestoExistente?.ubicacion">← Desde tabla: ubicacion</span>
+          </label>
+
+          <div class="ubicacion-wrapper">
+
+            <!-- ── Campo de búsqueda + chip de selección ── -->
+            <div class="ubicacion-input-box"
+                 [class.focused]="dropdownUbicacionAbierto"
+                 [class.has-value]="ubicacionSeleccionadaObj">
+
+              <span class="input-icon">📍</span>
+
+              <!-- Chip cuando hay selección y el input está vacío -->
+              <span class="ub-chip"
+                    *ngIf="ubicacionSeleccionadaObj && !ubicacionBusqueda">
+                <span class="ub-chip-code">{{ ubicacionSeleccionadaObj.codigo_ubicacion }}</span>
+                <span class="ub-chip-name">{{ ubicacionSeleccionadaObj.nombre }}</span>
+              </span>
+
+              <input
+                type="text"
+                class="ubicacion-text-input"
+                [(ngModel)]="ubicacionBusqueda"
+                (input)="filtrarUbicaciones()"
+                (focus)="abrirDropdownUbicacion()"
+                (blur)="cerrarDropdownUbicacion()"
+                [placeholder]="cargandoUbicaciones ? 'Cargando ubicaciones…'
+                               : ubicacionSeleccionadaObj ? ''
+                               : 'Escribe para buscar ubicación…'"
+                [disabled]="cargandoUbicaciones"
+                autocomplete="off"
+              />
+
+              <!-- Spinner cargando -->
+              <span class="loading-indicator" *ngIf="cargandoUbicaciones">⏳</span>
+
+              <!-- Botón limpiar selección -->
+              <button type="button"
+                      class="btn-ub-clear"
+                      *ngIf="ubicacionSeleccionadaObj && !cargandoUbicaciones"
+                      (mousedown)="$event.preventDefault(); limpiarUbicacion()"
+                      title="Quitar ubicación">✕</button>
+
+              <!-- Flecha toggle -->
+              <button type="button"
+                      class="btn-ub-toggle"
+                      *ngIf="!cargandoUbicaciones"
+                      (mousedown)="$event.preventDefault(); toggleDropdownUbicacion()"
+                      title="Ver lista">
+                {{ dropdownUbicacionAbierto ? '▲' : '▼' }}
+              </button>
+            </div>
+
+            <!-- ── Dropdown de resultados ── -->
+            <div class="ubicacion-dropdown" *ngIf="dropdownUbicacionAbierto">
+
+              <!-- Sin resultados -->
+              <div class="ub-empty" *ngIf="ubicacionesFiltradas.length === 0">
+                🔎 Sin resultados
+                <span *ngIf="ubicacionBusqueda"> para "<strong>{{ ubicacionBusqueda }}</strong>"</span>
+              </div>
+
+              <!-- Lista -->
+              <ul class="ub-list" *ngIf="ubicacionesFiltradas.length > 0">
+                <li class="ub-item"
+                    *ngFor="let u of ubicacionesFiltradas"
+                    [class.ub-item-selected]="datosBasicos.idUbicacion === u.id_ubicacion"
+                    (mousedown)="$event.preventDefault(); seleccionarUbicacion(u)">
+
+                  <span class="ub-item-code">{{ u.codigo_ubicacion }}</span>
+                  <span class="ub-item-name"
+                        [innerHTML]="resaltarTexto(u.nombre, ubicacionBusqueda)"></span>
+
+                  <span class="ub-item-meta" *ngIf="u.seccion || u.estante || u.nivel">
+                    <span *ngIf="u.seccion">Sec: {{ u.seccion }}</span>
+                    <span *ngIf="u.estante">Est: {{ u.estante }}</span>
+                    <span *ngIf="u.nivel">Niv: {{ u.nivel }}</span>
+                  </span>
+
+                  <span class="ub-item-check"
+                        *ngIf="datosBasicos.idUbicacion === u.id_ubicacion">✓</span>
+                </li>
+              </ul>
+
+              <div class="ub-footer">
+                {{ ubicacionesFiltradas.length }} resultado(s)
+                <span *ngIf="ubicacionesFiltradas.length >= maxUbicacionesVisibles"> · escribe para filtrar más</span>
+              </div>
+            </div>
+
+            <!-- Botón nueva ubicación -->
+            <button type="button"
+                    class="btn-add-modelo"
+                    (click)="abrirModalNuevaUbicacion()"
+                    title="Crear nueva ubicación">＋</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PASO 2: UBICACIÓN VEHÍCULO ==================== -->
+      <div *ngIf="pasoActual === 2" class="step-content">
+        <h3>🚗 Ubicación en Vehículo</h3>
+
+        <div class="category-grid">
+          <div 
+            class="category-card" 
+            *ngFor="let cat of ubicacionesVehiculo"
+            [class.selected]="datosUbicacion.ubicacionVehiculo === cat.value"
+            (click)="datosUbicacion.ubicacionVehiculo = cat.value">
+            <span class="cat-icon">{{ cat.icon }}</span>
+            <span class="cat-label">{{ cat.label }}</span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Lado</label>
+            <select [(ngModel)]="datosUbicacion.lado">
+              <option value="">Seleccionar lado</option>
+              <option *ngFor="let l of lados" [value]="l.value">{{ l.label }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Posición</label>
+            <select [(ngModel)]="datosUbicacion.posicion">
+              <option value="">Seleccionar posición</option>
+              <option *ngFor="let p of posiciones" [value]="p.value">{{ p.label }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PASO 3: MEDIDAS ==================== -->
+      <div *ngIf="pasoActual === 3" class="step-content">
+        <h3>📐 Medidas y Especificaciones</h3>
+
+        <h4>Dimensiones</h4>
+        <div class="measures-grid">
+          <div class="measure-field">
+            <label>Diámetro</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.diametro" step="0.001">
+              <select [(ngModel)]="datosMedidas.diametroUnidad">
+                <option *ngFor="let u of unidadesLongitud" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="measure-field">
+            <label>Altura</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.altura" step="0.001">
+              <select [(ngModel)]="datosMedidas.alturaUnidad">
+                <option *ngFor="let u of unidadesLongitud" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="measure-field">
+            <label>Ancho</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.ancho" step="0.001">
+              <select [(ngModel)]="datosMedidas.anchoUnidad">
+                <option *ngFor="let u of unidadesLongitud" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="measure-field">
+            <label>Longitud</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.longitud" step="0.001">
+              <select [(ngModel)]="datosMedidas.longitudUnidad">
+                <option *ngFor="let u of unidadesLongitud" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <h4>Peso y Otras Medidas</h4>
+        <div class="measures-grid">
+          <div class="measure-field">
+            <label>Peso</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.peso" step="0.001">
+              <select [(ngModel)]="datosMedidas.pesoUnidad">
+                <option *ngFor="let u of unidadesPeso" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="measure-field">
+            <label>Torque</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.torque" step="0.1">
+              <select [(ngModel)]="datosMedidas.torqueUnidad">
+                <option *ngFor="let u of unidadesTorque" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <h4>Propiedades Eléctricas</h4>
+        <div class="measures-grid">
+          <div class="measure-field">
+            <label>Voltaje</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.voltaje" step="0.1">
+              <select [(ngModel)]="datosMedidas.voltajeUnidad">
+                <option *ngFor="let u of unidadesVoltaje" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="measure-field">
+            <label>Amperaje</label>
+            <div class="measure-input">
+              <input type="number" [(ngModel)]="datosMedidas.amperaje" step="0.1">
+              <select [(ngModel)]="datosMedidas.amperajeUnidad">
+                <option *ngFor="let u of unidadesAmperaje" [value]="u">{{ u }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ==================== PASO 4: TÉCNICO ==================== -->
+      <div *ngIf="pasoActual === 4" class="step-content">
+        <h3>⚙️ Especificaciones Técnicas</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Material</label>
+            <input type="text" [(ngModel)]="datosEspecificaciones.tipoMaterial" placeholder="Ej: Acero inoxidable 304">
+          </div>
+          <div class="form-group">
+            <label>Forma / Perfil</label>
+            <select [(ngModel)]="datosEspecificaciones.formaPerfil">
+              <option value="">Seleccionar</option>
+              <option *ngFor="let p of perfiles" [value]="p">{{ p }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de Rosca</label>
+            <input type="text" [(ngModel)]="datosEspecificaciones.tipoRosca" placeholder="Ej: M14 x 1.25">
+          </div>
+          <div class="form-group">
+            <label>Versión Equipamiento</label>
+            <select [(ngModel)]="datosEspecificaciones.versionEquipamiento">
+              <option value="">Seleccionar</option>
+              <option *ngFor="let v of versiones" [value]="v">{{ v }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row numbers-row">
+          <div class="form-group">
+            <label>N° de Dientes</label>
+            <input type="number" [(ngModel)]="datosEspecificaciones.numDientes" min="0">
+          </div>
+          <div class="form-group">
+            <label>N° de Espiras</label>
+            <input type="number" [(ngModel)]="datosEspecificaciones.numEspiras" min="0">
+          </div>
+          <div class="form-group">
+            <label>N° de Pines</label>
+            <input type="number" [(ngModel)]="datosEspecificaciones.numPines" min="0">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de Conexión</label>
+          <input type="text" [(ngModel)]="datosEspecificaciones.tipoConexion" placeholder="Ej: Conector rápido, Terminal">
+        </div>
+
+        <div class="form-group">
+          <label>Sistema de Fijación</label>
+          <input type="text" [(ngModel)]="datosEspecificaciones.sistemaFijacion" placeholder="Ej: Tornillos M6, Clips">
+        </div>
+
+        <div class="form-group">
+          <label>Notas Adicionales</label>
+          <textarea [(ngModel)]="datosEspecificaciones.notas" rows="3" placeholder="Información técnica adicional relevante"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Etiquetas (separadas por coma)</label>
+          <input type="text" [(ngModel)]="datosEspecificaciones.etiquetas" placeholder="toyota, corolla, motor, filtro">
+        </div>
+      </div>
+
+      <!-- ==================== PASO 5: IMÁGENES Y RESUMEN ==================== -->
+      <div *ngIf="pasoActual === 5" class="step-content">
+        <h3>📷 Imágenes del Repuesto</h3>
+
+        <div class="upload-area">
+          <input 
+            type="file" 
+            #fileInput 
+            style="display: none" 
+            accept="image/*" 
+            multiple 
+            (change)="onFileSelected($event)">
+          
+          <button class="btn-upload-main" (click)="fileInput.click()" [disabled]="imagenes.length >= maxImagenes">
+            <span class="upload-icon-big">📁</span>
+            <span class="upload-text">Seleccionar Imágenes</span>
+            <span class="upload-hint">Máximo {{ maxImagenes }} imágenes ({{ imagenes.length }} agregadas)</span>
+          </button>
+        </div>
+
+        <div class="images-preview" *ngIf="imagenes.length > 0">
+          <div class="image-card" *ngFor="let img of imagenes; let i = index">
+            <div class="image-wrapper">
+              <img [src]="img.preview" [alt]="img.nombre">
+              <div class="image-actions">
+                <span class="badge-main" *ngIf="i === 0">Principal</span>
+                <button class="btn-remove" (click)="eliminarImagen(i)" title="Eliminar">×</button>
+              </div>
+            </div>
+            <span class="image-name" [title]="img.nombre">{{ img.nombre | slice:0:20 }}...</span>
+          </div>
+        </div>
+
+        <!-- RESUMEN FINAL -->
+        <div class="final-summary" *ngIf="datosBasicos.codigo">
+          <h4>📋 Resumen del Repuesto</h4>
+          <div class="summary-cards">
+            <div class="summary-card">
+              <span class="summary-label">Código</span>
+              <span class="summary-value code">{{ datosBasicos.codigo }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">Descripción</span>
+              <span class="summary-value">{{ datosBasicos.descripcion | slice:0:30 }}...</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">Línea/Clase</span>
+              <span class="summary-value">{{ datosBasicos.linea || 'No especificada' }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">Cantidad</span>
+              <span class="summary-value qty">{{ datosBasicos.qty | number:'1.2-2' }}</span>
+            </div>
+            <div class="summary-card">
+              <span class="summary-label">Imágenes</span>
+              <span class="summary-value">{{ imagenes.length }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <div class="footer-left">
+        <button 
+          class="btn-prev" 
+          (click)="pasoAnterior()" 
+          *ngIf="pasoActual > 1"
+          [disabled]="guardando">
+          ← Anterior
+        </button>
+      </div>
+
+      <div class="footer-center">
+        <div class="step-dots">
+          <span 
+            *ngFor="let s of [1,2,3,4,5]" 
+            [class.active]="pasoActual === s"
+            [class.completed]="pasoActual > s">
+          </span>
+        </div>
+        <span class="step-text">Paso {{ pasoActual }} de {{ totalPasos }}</span>
+      </div>
+
+      <div class="footer-right">
+        <button class="btn-cancel" (click)="cerrarModal()" [disabled]="guardando">
+          Cancelar
+        </button>
+        
+        <button 
+          class="btn-next" 
+          (click)="siguientePaso()" 
+          *ngIf="pasoActual < totalPasos"
+          [disabled]="!validarPasoActual()">
+          Siguiente →
+        </button>
+        
+        <button 
+          class="btn-save" 
+          (click)="guardarRepuesto()" 
+          *ngIf="pasoActual === totalPasos"
+          [disabled]="!puedeGuardar() || guardando">
+          <span *ngIf="!guardando">💾 Guardar Cambios</span>
+          <span *ngIf="guardando">⏳ Guardando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+ 
+
+<div class="modal-overlay modal-nuevo-modelo" *ngIf="mostrarModalNuevoModelo" style="z-index: 10000;">
+  <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
+    
+    <!-- Header -->
+    <div class="modal-header header-warning">
+      <div class="header-content">
+        <h3>⚠️ Sin Modelos Disponibles</h3>
+        <p class="header-subtitle">
+          La marca <strong>{{ getNombreMarcaSeleccionada() }}</strong> no tiene modelos registrados
+        </p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+      <div class="alerta-info">
+        <span class="alerta-icon">💡</span>
+        <p>Debes crear al menos un modelo para poder continuar con el registro del repuesto.</p>
+      </div>
+
+      <div class="form-group">
+        <label class="label-required">Nombre del Nuevo Modelo</label>
+        <div class="input-with-icon">
+          <span class="input-icon">🚗</span>
+          <input 
+            type="text" 
+            [(ngModel)]="nuevoModeloNombre" 
+            placeholder="Ej: Corolla, Civic, Sentra..."
+            (keyup.enter)="guardarNuevoModelo()"
+            autofocus>
+        </div>
+        <small class="help-text">
+          Este modelo quedará asociado a {{ getNombreMarcaSeleccionada() }}
+        </small>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button 
+        class="btn-secondary" 
+        (click)="cerrarModalNuevoModelo()"
+        [disabled]="guardandoModelo">
+        Cancelar
+      </button>
+      <button 
+        class="btn-primary" 
+        (click)="guardarNuevoModelo()"
+        [disabled]="!nuevoModeloNombre.trim() || guardandoModelo">
+        <span *ngIf="!guardandoModelo">💾 Crear Modelo</span>
+        <span *ngIf="guardandoModelo">⏳ Guardando...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL NUEVA UBICACIÓN ===== -->
+<div class="modal-overlay modal-nuevo-modelo" *ngIf="mostrarModalNuevaUbicacion" style="z-index: 10000;">
+  <div class="modal-container modal-sm" (click)="$event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header header-warning">
+      <div class="header-content">
+        <h3>📍 Nueva Ubicación</h3>
+        <p class="header-subtitle">Completa los datos para registrar una nueva ubicación en almacén</p>
+      </div>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="label-required">Código</label>
+          <div class="input-with-icon">
+            <span class="input-icon">🔢</span>
+            <input
+              type="text"
+              [(ngModel)]="nuevaUbicacion.codigoUbicacion"
+              placeholder="Ej: UB-001"
+              (keyup.enter)="guardarNuevaUbicacion()">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="label-required">Nombre</label>
+          <div class="input-with-icon">
+            <span class="input-icon">🏷️</span>
+            <input
+              type="text"
+              [(ngModel)]="nuevaUbicacion.nombre"
+              placeholder="Ej: Bodega Principal"
+              (keyup.enter)="guardarNuevaUbicacion()">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Sección</label>
+          <input type="text" [(ngModel)]="nuevaUbicacion.seccion" placeholder="Ej: A">
+        </div>
+        <div class="form-group">
+          <label>Estante</label>
+          <input type="text" [(ngModel)]="nuevaUbicacion.estante" placeholder="Ej: E1">
+        </div>
+        <div class="form-group">
+          <label>Nivel</label>
+          <input type="text" [(ngModel)]="nuevaUbicacion.nivel" placeholder="Ej: N2">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Capacidad Máxima</label>
+          <input type="number" [(ngModel)]="nuevaUbicacion.capacidadMaxima" placeholder="Ej: 100" min="0">
+        </div>
+        <div class="form-group">
+          <label>Descripción</label>
+          <input type="text" [(ngModel)]="nuevaUbicacion.descripcion" placeholder="Descripción opcional">
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+      <button
+        class="btn-secondary"
+        (click)="cerrarModalNuevaUbicacion()"
+        [disabled]="guardandoUbicacion">
+        Cancelar
+      </button>
+      <button
+        class="btn-primary"
+        (click)="guardarNuevaUbicacion()"
+        [disabled]="!nuevaUbicacion.codigoUbicacion.trim() || !nuevaUbicacion.nombre.trim() || guardandoUbicacion">
+        <span *ngIf="!guardandoUbicacion">💾 Crear Ubicación</span>
+        <span *ngIf="guardandoUbicacion">⏳ Guardando...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ===== BOTÓN + AGREGAR MODELO ===== */
+
+/* ══════════════════════════════════════════════════════
+   UBICACIÓN SEARCHABLE
+══════════════════════════════════════════════════════ */
+
+.ubicacion-searchable-group { position: relative; }
+
+.ubicacion-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.ubicacion-input-box {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 40px;
+  padding: 4px 52px 4px 10px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  background: #fff;
+  cursor: text;
+  transition: border-color .2s, box-shadow .2s;
+}
+
+.ubicacion-input-box .input-icon { font-size: .95rem; flex-shrink: 0; }
+
+.ubicacion-input-box.focused {
+  border-color: #6c63ff;
+  box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+}
+
+.ubicacion-input-box.has-value { border-color: #a5b4fc; }
+
+.ub-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #ede9fe;
+  border: 1px solid #c4b5fd;
+  border-radius: 20px;
+  padding: 2px 10px;
+  max-width: 90%;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ub-chip-code {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #5b21b6;
+  background: #c4b5fd;
+  border-radius: 10px;
+  padding: 0 6px;
+  flex-shrink: 0;
+}
+
+.ub-chip-name {
+  font-size: .8rem;
+  color: #4c1d95;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ubicacion-text-input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: .875rem;
+  flex: 1;
+  min-width: 80px;
+  padding: 2px 0;
+  color: #1f2937;
+}
+
+.ubicacion-text-input::placeholder { color: #9ca3af; }
+.ubicacion-text-input:disabled     { cursor: not-allowed; }
+
+.btn-ub-clear,
+.btn-ub-toggle {
+  position: absolute;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 5px;
+  color: #6b7280;
+  font-size: .78rem;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color .15s, background .15s;
+}
+
+.btn-ub-clear  { right: 26px; top: 50%; transform: translateY(-50%); }
+.btn-ub-toggle { right: 6px;  top: 50%; transform: translateY(-50%); }
+
+.btn-ub-clear:hover  { color: #ef4444; background: #fee2e2; }
+.btn-ub-toggle:hover { color: #6c63ff; background: #ede9fe; }
+
+.ubicacion-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 40px;
+  background: #fff;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.13);
+  z-index: 2000;
+  max-height: 260px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ub-empty {
+  padding: 14px 16px;
+  font-size: .85rem;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.ub-list {
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.ub-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  cursor: pointer;
+  transition: background .1s;
+  font-size: .85rem;
+}
+
+.ub-item:hover          { background: #f5f3ff; }
+.ub-item-selected       { background: #ede9fe; }
+.ub-item-selected:hover { background: #ddd6fe; }
+
+.ub-item-code {
+  font-size: .72rem;
+  font-weight: 700;
+  color: #5b21b6;
+  background: #ede9fe;
+  border-radius: 4px;
+  padding: 1px 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ub-item-name {
+  flex: 1;
+  color: #1f2937;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ub-item-name mark {
+  background: #fef08a;
+  color: #92400e;
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: 700;
+}
+
+.ub-item-meta {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.ub-item-meta span {
+  font-size: .7rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  border-radius: 4px;
+  padding: 1px 5px;
+  white-space: nowrap;
+}
+
+.ub-item-check {
+  color: #7c3aed;
+  font-weight: bold;
+  font-size: .9rem;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.ub-footer {
+  padding: 5px 14px;
+  font-size: .72rem;
+  color: #9ca3af;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+  flex-shrink: 0;
+  text-align: right;
+}
+</style>

@@ -1,0 +1,468 @@
+<!-- Updated dashboard.component.html with error fixes -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">ORDEN DETALLES - {{ resumenOrden?.ordenInvoicen || 'N/A' }}</div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            placeholder="Buscar por código, descripción, invoices..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+      </div>
+    </div>
+</header>
+  
+<main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Detalles de Orden #{{ codigoCot }}</h1>
+        <p class="panel-subtitulo" *ngIf="resumenOrden">
+          {{ resumenOrden.totalItems }} items total • 
+          {{ resumenOrden.itemsConInvoice }} con invoice • 
+          {{ resumenOrden.itemsSinInvoice }} solo en orden
+        </p>
+      </div>
+      
+      <!-- Sección de Resumen Mejorado - CON SAFE NAVIGATION -->
+      <div class="contenedor-estadisticas" *ngIf="resumenOrden">
+        <div class="tarjeta-estadistica">
+            <div class="icono-estadistica">📦</div>
+            <div class="valor-estadistica">{{ resumenOrden.totalItems }}</div>
+            <div class="etiqueta-estadistica">Total Items</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="icono-estadistica">📋</div>
+          <div class="valor-estadistica">{{ resumenOrden.estadisticasCantidades?.totalSolicitado | number:'1.0-2' }}</div>
+          <div class="etiqueta-estadistica">Total Solicitado</div>
+        </div>
+        <div class="tarjeta-estadistica">
+            <div class="icono-estadistica">✅</div>
+            <div class="valor-estadistica">{{ resumenOrden.estadisticasCantidades?.totalFacturado | number:'1.0-2' }}</div>
+            <div class="etiqueta-estadistica">Total Facturado</div>
+        </div>
+        <div class="tarjeta-estadistica">
+           <div class="icono-estadistica">📊</div>
+           <div class="valor-estadistica">{{ resumenOrden.estadisticasCantidades?.porcentajeCumplimiento | number:'1.1-1' }}%</div>
+           <div class="etiqueta-estadistica">Cumplimiento</div>
+        </div>
+        <div class="tarjeta-estadistica">
+           <div class="icono-estadistica">⏳</div>
+           <div class="valor-estadistica">{{ resumenOrden.estadisticasCantidades?.itemsPendientes }}</div>
+           <div class="etiqueta-estadistica">Items Pendientes</div>
+        </div>
+        <div class="tarjeta-estadistica">
+           <div class="icono-estadistica">🎯</div>
+           <div class="valor-estadistica">{{ resumenOrden.estadisticasCantidades?.itemsCompletos }}</div>
+           <div class="etiqueta-estadistica">Items Completos</div>
+        </div>
+        <div class="tarjeta-estadistica" *ngIf="resumenOrden.invoicesAsociadas && resumenOrden.invoicesAsociadas.length > 0">
+           <div class="icono-estadistica">📄</div>
+           <div class="valor-estadistica">{{ resumenOrden.invoicesAsociadas.length }}</div>
+           <div class="etiqueta-estadistica">Invoices</div>
+        </div>
+      </div>
+
+      <!-- Barra de Progreso Visual - CON SAFE NAVIGATION -->
+      <div class="progreso-cumplimiento" *ngIf="resumenOrden?.estadisticasCantidades">
+        <div class="progreso-label">
+          <span>Progreso de Cumplimiento: {{ resumenOrden?.estadisticasCantidades?.porcentajeCumplimiento | number:'1.1-1' }}%</span>
+          <span class="progreso-detalle">
+            {{ resumenOrden?.estadisticasCantidades?.totalFacturado | number:'1.0-2' }} de {{ resumenOrden?.estadisticasCantidades?.totalSolicitado | number:'1.0-2' }}
+          </span>
+        </div>
+        <div class="barra-progreso">
+          <div class="progreso-relleno" 
+                [style.width.%]="resumenOrden?.estadisticasCantidades?.porcentajeCumplimiento"
+                >
+            </div>
+        </div>
+      </div>
+
+      <!-- Lista de Invoices Asociadas - CON SAFE NAVIGATION -->
+      <div class="invoices-asociadas" *ngIf="resumenOrden?.invoicesAsociadas">
+        <h3>Invoices Asociadas:</h3>
+        <div class="invoices-tags">
+          <span class="invoice-tag" *ngFor="let invoice of resumenOrden?.invoicesAsociadas">
+            {{ invoice }}
+          </span>
+        </div>
+      </div>
+      
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Detalles de la Orden</div>
+          <div class="acciones-tabla">
+            <!-- Filtros mejorados -->
+            <div class="filtros-orden">
+              <select [(ngModel)]="filtroOrigen" (change)="aplicarFiltroOrigen()" class="select-filtro">
+                <option value="">Todos los orígenes</option>
+                <option value="INVOICE_BL">Solo Invoice BL</option>
+                <option value="ORDEN_COMPRA">Solo Orden Compra</option>
+                <option value="AMBOS">Ambos</option>
+              </select>
+              <select [(ngModel)]="filtroEstado" (change)="aplicarFiltroEstado()" class="select-filtro">
+                <option value="">Todos los estados</option>
+                <option value="COMPLETO">Completos</option>
+                <option value="PENDIENTE">Pendientes</option>
+                <option value="SIN_SOLICITUD">Sin Solicitud</option>
+              </select>
+            </div>
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Cant. Solicitada</th>
+                <th>Cant. Facturada</th>
+                <th>Cant. Pendiente</th>
+                <th>Estado</th>
+                <th>Origen</th>
+                <th>Invoices</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos" 
+                  [ngClass]="{'fila-invoice-bl': item.origenDatos === 'INVOICE_BL', 
+                            'fila-orden-compra': item.origenDatos === 'ORDEN_COMPRA',
+                            'fila-ambos': item.origenDatos === 'AMBOS'}">
+                <td data-label="Codigo">
+                  <strong>{{ item.codigo }}</strong>
+                </td>
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cant. Solicitada" class="cantidad-cell">
+                  <span class="cantidad-badge cantidad-solicitada">{{ (item.cantidadSolicitada || 0) | number:'1.0-2' }}</span>
+                </td>
+                <td data-label="Cant. Facturada" class="cantidad-cell">
+                  <span class="cantidad-badge cantidad-facturada">{{ (item.cantidadFacturada || 0) | number:'1.0-2' }}</span>
+                </td>
+                <td data-label="Cant. Pendiente" class="cantidad-cell">
+                  <span class="cantidad-badge cantidad-pendiente" 
+                        *ngIf="((item.cantidadSolicitada || 0) - (item.cantidadFacturada || 0)) > 0">
+                    {{ ((item.cantidadSolicitada || 0) - (item.cantidadFacturada || 0)) | number:'1.0-2' }}
+                  </span>
+                  <span class="cantidad-badge cantidad-cero" 
+                        *ngIf="((item.cantidadSolicitada || 0) - (item.cantidadFacturada || 0)) <= 0">
+                    0
+                  </span>
+                </td>
+                <td data-label="Estado">
+                  <span class="estado-badge" 
+                        [style.background-color]="getEstadoColor(item)"
+                        [ngClass]="'estado-' + getEstadoItem(item).toLowerCase().replace('_', '-')">
+                    <ng-container [ngSwitch]="getEstadoItem(item)">
+                      <span *ngSwitchCase="'COMPLETO'">✅ Completo</span>
+                      <span *ngSwitchCase="'PENDIENTE'">⏳ Pendiente</span>
+                      <span *ngSwitchCase="'SIN_SOLICITUD'">➖ Sin Solicitud</span>
+                    </ng-container>
+                  </span>
+                  <div class="porcentaje-cumplimiento" 
+                       *ngIf="(item.cantidadSolicitada || 0) > 0">
+                    {{ ((item.cantidadFacturada || 0) / (item.cantidadSolicitada || 1) * 100) | number:'1.0-0' }}%
+                  </div>
+                </td>
+                <td data-label="Origen">
+                  <span class="origen-badge" [ngClass]="'origen-' + (item.origenDatos || '').toLowerCase().replace('_', '-')">
+                    {{ item.origenDatos }}
+                  </span>
+                </td>
+                <td data-label="Invoices">
+                  <span *ngIf="item.invoicesAsociadas" class="invoices-mini">
+                    {{ item.invoicesAsociadas }}
+                  </span>
+                  <span *ngIf="!item.invoicesAsociadas" class="text-muted">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- Mensaje cuando no hay datos -->
+          <div *ngIf="lista.length === 0 && !loading" class="no-data">
+            <p>No se encontraron detalles para mostrar.</p>
+          </div>
+          
+          <!-- Loading spinner -->
+          <div *ngIf="loading" class="loading-spinner">
+            <p>Cargando detalles de la orden...</p>
+          </div>
+        </div>
+        
+        <div class="pie-tabla">
+            <div class="items-count">
+                Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} items
+                <span *ngIf="resumenOrden?.estadisticasCantidades"> • 
+                Solicitado: {{ resumenOrden?.estadisticasCantidades?.totalSolicitado | number:'1.0-2' }}
+                Facturado: {{ resumenOrden?.estadisticasCantidades?.totalFacturado | number:'1.0-2' }}
+                </span>
+            </div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+</main>
+
+<!-- Estilos mejorados para la nueva funcionalidad -->
+<style>
+  /* Estilos existentes mantenidos */
+  .invoices-asociadas {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+  }
+  
+  .invoices-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  
+  .invoice-tag {
+    background-color: #007bff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  
+  .filtros-orden {
+    margin-right: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .select-filtro {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 140px;
+  }
+  
+  .fila-invoice-bl {
+    background-color: #e8f4fd !important;
+  }
+  
+  .fila-orden-compra {
+    background-color: #fff3cd !important;
+  }
+  
+  .fila-ambos {
+    background-color: #d1ecf1 !important;
+  }
+  
+  /* Nuevos estilos para cantidades diferenciadas */
+  .cantidad-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .cantidad-solicitada {
+    background-color: #17a2b8; /* Azul info */
+  }
+  
+  .cantidad-facturada {
+    background-color: #28a745; /* Verde éxito */
+  }
+  
+  .cantidad-pendiente {
+    background-color: #ffc107; /* Amarillo warning */
+    color: #212529;
+  }
+  
+  .cantidad-cero {
+    background-color: #6c757d; /* Gris */
+  }
+  
+  /* Estilos para badges de estado */
+  .estado-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    display: inline-block;
+    margin-bottom: 2px;
+  }
+  
+  .estado-completo {
+    background-color: #28a745 !important;
+  }
+  
+  .estado-pendiente {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+  }
+  
+  .estado-sin-solicitud {
+    background-color: #6c757d !important;
+  }
+  
+  .porcentaje-cumplimiento {
+    font-size: 10px;
+    color: #666;
+    font-weight: normal;
+  }
+  
+  .origen-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+  }
+  
+  .origen-invoice-bl {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  .origen-orden-compra {
+    background-color: #ffc107;
+    color: #212529;
+  }
+  
+  .origen-ambos {
+    background-color: #17a2b8;
+    color: white;
+  }
+  
+  /* Barra de progreso general */
+  .progreso-cumplimiento {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+  }
+  
+  .progreso-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  
+  .progreso-detalle {
+    font-size: 12px;
+    color: #666;
+    font-weight: normal;
+  }
+  
+  .barra-progreso {
+    width: 100%;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  
+  .progreso-relleno {
+    height: 100%;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+  }
+  
+  .progreso-bajo {
+    background-color: #dc3545; /* Rojo */
+  }
+  
+  .progreso-medio {
+    background-color: #ffc107; /* Amarillo */
+  }
+  
+  .progreso-alto {
+    background-color: #28a745; /* Verde */
+  }
+  
+  .invoices-mini {
+    font-size: 12px;
+    color: #666;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+  }
+  
+  .text-muted {
+    color: #6c757d;
+  }
+  
+  .no-data {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+  }
+  
+  .loading-spinner {
+    text-align: center;
+    padding: 40px;
+  }
+  
+  .icono-estadistica {
+    font-size: 24px;
+    margin-bottom: 8px;
+  }
+  
+  .etiqueta-estadistica {
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+  }
+  
+  /* Responsive improvements */
+  @media (max-width: 768px) {
+    .filtros-orden {
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+    
+    .progreso-label {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 5px;
+    }
+    
+    .contenedor-estadisticas {
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    }
+  }
+</style>

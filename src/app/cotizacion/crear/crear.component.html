@@ -1,0 +1,168 @@
+<div class="container">
+  <div class="header">
+    <h1>Cotizaciones</h1>
+  </div>
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Cotizaciones de Repuestos</h1>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div  (click)="cancelar()">
+        <div class="valor-estadistica">DASHBOARD</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="individual()">
+        <div class="valor-estadistica">CREAR PEDIDO</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="excel()">
+        <div class="valor-estadistica">SUBIR EXCEL</div>
+      </div>
+    </div>
+  </section>
+  <div class="form-container">
+    <h2>Nueva Cotización</h2>
+    <p>Ingrese los detalles de la cotización</p>
+
+    <form [formGroup]="cotizacionForm" (ngSubmit)="guardarCotizacion()">
+       <div class="form-row">
+        <div class="form-group">
+          <label for="Cotigeneral">Nombre de Cotización *</label>
+          <input 
+            type="text" 
+            id="Cotigeneral" 
+            formControlName="Cotigeneral" 
+            maxlength="20" 
+            placeholder="Código de la cotización general"
+            [ngClass]="{'invalid-field': isFieldInvalid('Cotigeneral')}">
+          <div class="error-message" *ngIf="isFieldInvalid('Cotigeneral')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+    <!--  <div class="form-row">
+        <div class="form-group">
+          <label for="codigoCot">Cotización Proveedor *</label>
+          <input 
+            type="text" 
+            id="codigoCot" 
+            formControlName="codigoCot" 
+            maxlength="20" 
+            placeholder="Código de la cotización proveedor"
+            [ngClass]="{'invalid-field': isFieldInvalid('codigoCot')}">
+          <div class="error-message" *ngIf="isFieldInvalid('codigoCot')">
+            Campo requerido
+          </div>
+        </div>
+      </div>-->
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="proveedorId">Proveedor *</label>
+          <select 
+            id="proveedorId" 
+            formControlName="proveedorId"
+            [ngClass]="{'invalid-field': isFieldInvalid('proveedorId')}">
+            <option value="" disabled selected>Seleccione un Proveedor</option>
+            <div *ngFor="let item of allData">
+                  <option [value]="item.id">{{item.nombre}}</option>
+            </div>
+         
+           <!--<option value="2">Xiamen</option>
+            <option value="3">Chonqing</option>
+            <option value="4">Sinotruk</option>
+            <option value="5">Case</option>
+            <option value="6">Keyton</option>
+            <option value="7">Chonqing</option>
+            <option value="8">Braem</option>--> 
+          </select>
+          <div class="error-message" *ngIf="isFieldInvalid('proveedorId')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="fechaSolicitud">Fecha de Solicitud *</label>
+          <input 
+            type="datetime-local" 
+            id="fechaSolicitud" 
+            formControlName="fechaSolicitud"
+            [ngClass]="{'invalid-field': isFieldInvalid('fechaSolicitud')}">
+          <div class="error-message" *ngIf="isFieldInvalid('fechaSolicitud')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="estadoCotizacion">Estado de Cotización *</label>
+          <select 
+            id="estadoCotizacion" 
+            formControlName="estadoCotizacion"
+            [ngClass]="{'invalid-field': isFieldInvalid('estadoCotizacion')}">
+            <option value="" disabled>Seleccione un estado</option>
+            <option value="Solicitada">Solicitada</option>
+            <option value="Recibida">Recibida</option>
+            <option value="Aprobada">Aprobada</option>
+            <option value="Rechazada">Rechazada</option>
+            
+          </select>
+          <div class="error-message" *ngIf="isFieldInvalid('estadoCotizacion')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+
+     <!-- <div class="form-row">
+        <div class="form-group">
+          <label for="validezCotizacion">Validez de Cotización *</label>
+          <input 
+            type="number" 
+            id="validezCotizacion" 
+            formControlName="validezCotizacion"
+            placeholder="Días de validez"
+            [ngClass]="{'invalid-field': isFieldInvalid('validezCotizacion')}">
+          <div class="error-message" *ngIf="isFieldInvalid('validezCotizacion')">
+            Campo requerido
+          </div>
+        </div>
+      </div>
+      -->
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="referenciaSolicitud">Referencia Solicitud</label>
+          <input 
+            type="text" 
+            id="referenciaSolicitud" 
+            formControlName="referenciaSolicitud" 
+            maxlength="50" 
+            placeholder="Referencia de la solicitud">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group full-width">
+          <label for="observacionesSolicitud">Observaciones de Solicitud</label>
+          <textarea 
+            id="observacionesSolicitud" 
+            formControlName="observacionesSolicitud" 
+            rows="3" 
+            placeholder="Observaciones para la solicitud"></textarea>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancelar" (click)="cancelar()">Cancelar</button>
+        <button type="submit" class="btn-guardar" [disabled]="isLoading">
+          <span *ngIf="isLoading">Guardando...</span>
+          <span *ngIf="!isLoading">Guardar Cotización</span>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

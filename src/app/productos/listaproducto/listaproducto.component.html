@@ -1,0 +1,118 @@
+<div class="container">
+  <h2>Inventario Consolidado</h2>
+
+  <div class="toolbar">
+    <button (click)="refrescar()" class="btn primary">Refrescar</button>
+    <button (click)="descargarExcel()" class="btn success">Descargar Excel</button>
+    <button (click)="guardarTiemposLote()" class="btn warning">Guardar Tiempos (Lote)</button>
+    <button (click)="guardarCantidadesMinimasLote()" class="btn warning">Guardar Cantidades Mínimas (Lote)</button>
+  </div>
+
+  <!-- ── Aplicar masivo ── -->
+  <div class="bulk-bar">
+    <!-- Tiempo de entrega masivo -->
+    <div class="bulk-group">
+      <span class="bulk-label">⏱ Tiempo entrega masivo</span>
+      <input
+        type="number"
+        class="bulk-input"
+        [(ngModel)]="bulkTiempo"
+        min="0"
+        placeholder="días"/>
+      <button class="btn bulk-btn-tiempo" (click)="aplicarTiempoMasivo()">
+        Aplicar a {{ filtrado.length }} {{ hayFiltroActivo() ? '(filtrados)' : '(todos)' }}
+      </button>
+    </div>
+
+    <!-- Cantidad mínima masiva -->
+    <div class="bulk-group">
+      <span class="bulk-label">📦 Cantidad mínima masiva</span>
+      <input
+        type="number"
+        class="bulk-input"
+        [(ngModel)]="bulkCantidad"
+        min="0"
+        placeholder="unidades"/>
+      <button class="btn bulk-btn-cantidad" (click)="aplicarCantidadMasiva()">
+        Aplicar a {{ filtrado.length }} {{ hayFiltroActivo() ? '(filtrados)' : '(todos)' }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensaje de feedback masivo -->
+  <div class="bulk-feedback" *ngIf="bulkMsg" [ngClass]="bulkMsgType">
+    {{ bulkMsg }}
+  </div>
+
+  <div class="filters">
+    <input placeholder="Código" [(ngModel)]="filtro.codigo" (input)="aplicarFiltros()"/>
+    <input placeholder="Descripción" [(ngModel)]="filtro.descripcion" (input)="aplicarFiltros()"/>
+
+    <select [(ngModel)]="filtro.claseId" (change)="aplicarFiltros()">
+      <option value="">-- Clase --</option>
+      <option *ngFor="let c of clasesIds" [value]="c">{{ c }}</option>
+    </select>
+
+    <select [(ngModel)]="filtro.grupoId" (change)="aplicarFiltros()">
+      <option value="">-- Grupo --</option>
+      <option *ngFor="let g of gruposIds" [value]="g">{{ g }}</option>
+    </select>
+  </div>
+
+  <div class="loader-overlay" *ngIf="cargando">
+    <div class="spinner"></div>
+    <p>Cargando inventario...</p>
+  </div>
+
+  <div class="table-wrapper" *ngIf="!cargando">
+    <table #tabla>
+      <thead>
+        <tr>
+          <th class="index">#</th>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th>ClaseId</th>
+          <th>GrupoId</th>
+          <th>Stock Total</th>
+          <th>Stock Disp.</th>
+          <th>FOB.</th>
+          <th>Costo Prom.</th>
+          <!-- <th>Valor Inventario</th> -->
+          <th>Tiempo Entrega</th>
+          <th>Cantidad Mínima</th>
+          <th class="accion">Acción</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filtrado; let i = index"
+            [class.active]="i === currentIndex"
+            (click)="seleccionar(i)">
+          <td class="index">{{ i + 1 }}</td>
+          <td>{{ item.codigoArticulo }}</td>
+          <td>{{ item.descripcion }}</td>
+          <td>{{ item.claseId }}</td>
+          <td>{{ item.grupoId }}</td>
+          <td>{{ item.stockTotalConsolidado }}</td>
+          <td>{{ item.stockDisponibleTotal }}</td>
+          <td>{{ item.fob | currency }}</td>
+          <td>{{ item.precioSinIva | currency }}</td>
+          <!-- <td>{{ item.valorInventarioTotal | currency }}</td> -->
+          <td><input type="number" [(ngModel)]="item.tiempoEntrega" min="0"/></td>
+          <td><input type="number" [(ngModel)]="item.cantidadMinima" min="0"/></td>
+          <td class="accion">
+            <button class="btn primary" (click)="guardarTiempoIndividual(item); $event.stopPropagation()">T</button>
+            <button class="btn primary" (click)="guardarCantidadMinimaIndividual(item); $event.stopPropagation()">C</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="detail" *ngIf="currentItem">
+    <h3>Detalle</h3>
+    <p><strong>Código:</strong> {{ currentItem.codigoArticulo }}</p>
+    <p><strong>Descripción:</strong> {{ currentItem.descripcion }}</p>
+    <p><strong>Última Compra:</strong> {{ currentItem.ultimaCompra || 'N/A' }}</p>
+    <p><strong>Última Venta:</strong> {{ currentItem.ultimaVenta || 'N/A' }}</p>
+  </div>
+</div>

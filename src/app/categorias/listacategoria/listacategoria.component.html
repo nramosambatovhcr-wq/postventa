@@ -1,0 +1,86 @@
+<div class="list row">
+    <div class="col-md-8">
+      <div class="input-group mb-2">
+        <a routerLink="/addcat" class="btn"> <i class="material-icons right">add_circle</i> Nueva Categoria</a>
+      </div>
+    
+      <div class="input-group mb-3">
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search by title"
+          [(ngModel)]="title"
+        />
+        <div class="input-group-append">
+          <button
+            class="btn btn-outline-secondary"
+            type="button"
+            (click)="searchTitle()"
+          >
+            Search
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+    <div class="list row">
+    <div class="col-md-3">
+      <h4> Lineas</h4>
+     
+      <div class="form-group">
+        <label for="contactMethod">Lineas</label>
+        <select 
+            name="contactMethod" 
+            id="contactMethod" 
+            class="form-control"
+            [ngModel]="linea" (change)="onChange($event)">
+             <option *ngFor="let method of tutorials" [value]="method.id">{{ method.nombre }}</option>
+        </select>
+      </div>
+    </div>
+        <div class="col-md-3">
+        <div *ngIf="ver==true">
+            <h4>Lista categorias</h4>
+            <label for="contactMethod">Categorias</label>
+            <select 
+            name="contactMethod" 
+            id="contactMethod" 
+            class="form-control"
+            [ngModel]="categoria" (change)="onChange1($event)">
+             <option *ngFor="let method of lista" [value]="method.categoriaId">{{ method.categoriaNombre }}</option>
+          </select>
+             
+        </div>
+    </div>
+    <div class="col-md-3">
+      <div *ngIf="ver==true">
+          <h4>Lista familias</h4>
+          <label for="contactMethod">Familias</label>
+          <select 
+          name="contactMethod" 
+          id="contactMethod" 
+          class="form-control"
+          [ngModel]="familia" (change)="onChange2($event)">
+           <option *ngFor="let method of lista1" [value]="method.familia">{{ method.familiaNombre }}</option>
+        </select>
+           
+      </div>
+  </div>
+  <div class="col-md-3">
+    <div *ngIf="ver==true">
+        <h4>Lista Subgrupo</h4>
+        <label for="contactMethod">Subgrupos</label>
+        <select 
+        name="contactMethod" 
+        id="contactMethod" 
+        class="form-control"
+        [ngModel]="familia" (change)="onChange2($event)">
+         <option *ngFor="let method of lista2" [value]="method.id">{{ method.descripcion }}</option>
+      </select>
+         
+    </div>
+</div>
+       
+    </div>
+   
+  

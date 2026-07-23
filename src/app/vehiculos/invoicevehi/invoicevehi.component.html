@@ -1,0 +1,801 @@
+<!-- ============================================
+     VISTA PRINCIPAL: LISTADO DE INVOICES
+     ============================================ -->
+
+<div class="container-fluid animate-fade-in">
+
+  <!-- Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <div class="page-header">
+        <h2><i class="fas fa-file-invoice-dollar"></i> Gestión de Invoices</h2>
+        <p class="subtitle">Administra las facturas y sus líneas de detalle</p>
+      </div>
+    </div>
+    <div class="col-md-6 text-end">
+      <div class="btn-toolbar justify-content-end">
+        <button class="btn btn-success" (click)="openUploadModal()">
+          <i class="fas fa-file-excel"></i> Cargar Excel
+        </button>
+        <button class="btn btn-primary" (click)="openCreateModal()">
+          <i class="fas fa-plus"></i> Nueva Invoice
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="row mb-4" *ngIf="stats">
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card stat-card primary">
+        <div class="card-body">
+          <h3>{{ stats.totalInvoices }}</h3>
+          <small>Total Invoices</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card stat-card warning">
+        <div class="card-body">
+          <h3>{{ stats.pending }}</h3>
+          <small>Pendientes</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card stat-card success">
+        <div class="card-body">
+          <h3>{{ stats.paid }}</h3>
+          <small>Pagadas</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6 mb-3">
+      <div class="card stat-card info">
+        <div class="card-body">
+          <h3>{{ stats.totalAmount | number:'1.2-2' }}</h3>
+          <small>Monto Total</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card mb-4">
+    <div class="card-body">
+      <div class="row align-items-end">
+        <div class="col-md-6">
+          <div class="form-group mb-0">
+            <label class="form-label">Buscar</label>
+            <div class="search-box">
+              <i class="fas fa-search"></i>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="searchTerm"
+                     placeholder="Número de invoice, estado o notas..."
+                     (keyup.enter)="loadInvoices()">
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-group mb-0">
+            <label class="form-label">Filtrar por B/L ID</label>
+            <input type="number"
+                   class="form-control"
+                   [(ngModel)]="selectedBlId"
+                   placeholder="Ingrese ID del B/L">
+          </div>
+        </div>
+        <div class="col-md-2 text-end">
+          <button class="btn btn-outline-secondary w-100" (click)="clearFilters()">
+            <i class="fas fa-undo"></i> Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando invoices...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="alert alert-danger">
+    <h6><i class="fas fa-exclamation-triangle"></i> Error</h6>
+    <p class="mb-0">{{ error }}</p>
+    <button class="btn btn-sm btn-outline-danger mt-2" (click)="loadInvoices()">
+      <i class="fas fa-sync"></i> Reintentar
+    </button>
+  </div>
+
+  <!-- Tabla de Invoices -->
+  <div class="card animate-fade-in" *ngIf="!loading && !error">
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Número</th>
+              <th>Fecha</th>
+              <th>B/L ID</th>
+              <th>Cliente ID</th>
+              <th class="text-center">Contenedores</th>
+              <th class="text-end">Peso Bruto</th>
+              <th class="text-end">Monto</th>
+              <th class="text-center">Estado</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let invoice of filteredInvoices"
+                (dblclick)="openDetailModal(invoice)"
+                class="clickable">
+              <td>
+                <strong>{{ invoice.invoiceNumber }}</strong>
+              </td>
+              <td>{{ invoice.invoiceDate | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <span class="badge secondary" *ngIf="invoice.blId">BL-{{ invoice.blId }}</span>
+                <span class="text-muted" *ngIf="!invoice.blId">—</span>
+              </td>
+              <td>
+                <span *ngIf="invoice.customerId">{{ invoice.customerId }}</span>
+                <span class="text-muted" *ngIf="!invoice.customerId">—</span>
+              </td>
+              <td class="text-center">
+                <span class="badge primary">{{ invoice.containerCount || 0 }}</span>
+              </td>
+              <td class="text-end fw-bold">
+                {{ invoice.totalGrossWeight | number:'1.2-2' }} kg
+              </td>
+              <td class="text-end">
+                {{ invoice.currency }} {{ invoice.totalAmount | number:'1.2-2' }}
+              </td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="getStatusClass(invoice.status)">
+                  {{ getStatusLabel(invoice.status) }}
+                </span>
+              </td>
+              <td class="text-center">
+                <div class="btn-toolbar justify-content-center">
+                  <button class="btn btn-sm btn-info"
+                          (click)="openDetailModal(invoice); $event.stopPropagation()"
+                          title="Ver detalle">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button class="btn btn-sm btn-warning"
+                          (click)="openEditModal(invoice); $event.stopPropagation()"
+                          title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-secondary"
+                          (click)="goToBlDetail(invoice.blId); $event.stopPropagation()"
+                          title="Ver B/L"
+                          [disabled]="!invoice.blId">
+                    <i class="fas fa-ship"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger"
+                          (click)="deleteInvoice(invoice); $event.stopPropagation()"
+                          title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="filteredInvoices.length === 0">
+              <td colspan="9">
+                <div class="empty-state">
+                  <i class="fas fa-inbox"></i>
+                  <p>No se encontraron invoices</p>
+                  <small class="text-muted" *ngIf="searchTerm || selectedBlId">
+                    Intenta ajustar los filtros
+                  </small>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center"
+         *ngIf="filteredInvoices.length > 0">
+      <small class="text-muted">
+        Mostrando {{ filteredInvoices.length }} de {{ invoices.length }} invoices
+      </small>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     MODALES
+     ============================================ -->
+
+<!-- Modal: Crear Invoice -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header primary">
+      <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Nueva Invoice</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form #invoiceForm="ngForm">
+
+        <div class="row">
+          <!-- Número de Invoice -->
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de Invoice *</label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.invoiceNumber"
+                     name="invoiceNumber"
+                     required
+                     #invoiceNumber="ngModel"
+                     [class.is-invalid]="invoiceNumber.invalid && invoiceNumber.touched"
+                     placeholder="Ej: INV-2024-001">
+              <div class="invalid-feedback" *ngIf="invoiceNumber.invalid && invoiceNumber.touched">
+                El número de invoice es obligatorio
+              </div>
+            </div>
+          </div>
+          <!-- Fecha -->
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Fecha *</label>
+              <input type="date"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.invoiceDate"
+                     name="invoiceDate"
+                     required>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- B/L ID -->
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">B/L ID</label>
+              <input type="number"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.blId"
+                     name="blId"
+                     placeholder="ID del B/L asociado">
+            </div>
+          </div>
+          <!-- Cliente ID -->
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Cliente ID</label>
+              <input type="number"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.customerId"
+                     name="customerId"
+                     placeholder="ID del cliente">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Moneda -->
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Moneda</label>
+              <select class="form-select" [(ngModel)]="newInvoice.currency" name="currency">
+                <option *ngFor="let c of currencyOptions" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+          </div>
+          <!-- Estado -->
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="newInvoice.status" name="status">
+                <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+          </div>
+          <!-- Monto Total -->
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Monto Total *</label>
+              <input type="number"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.totalAmount"
+                     name="totalAmount"
+                     required
+                     min="0"
+                     step="0.01"
+                     placeholder="0.00">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <!-- Términos de Pago -->
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Términos de Pago</label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.paymentTerms"
+                     name="paymentTerms"
+                     placeholder="Ej: NET 30">
+            </div>
+          </div>
+          <!-- Fecha de Vencimiento -->
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input type="date"
+                     class="form-control"
+                     [(ngModel)]="newInvoice.dueDate"
+                     name="dueDate">
+            </div>
+          </div>
+        </div>
+
+        <!-- Notas -->
+        <div class="form-group">
+          <label class="form-label">Notas</label>
+          <textarea class="form-control"
+                    [(ngModel)]="newInvoice.notes"
+                    name="notes"
+                    rows="3"
+                    placeholder="Observaciones adicionales..."></textarea>
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary"
+              (click)="createInvoice()"
+              [disabled]="invoiceForm.invalid || isSubmitting">
+        <i class="fas fa-save"></i>
+        {{ isSubmitting ? 'Guardando...' : 'Guardar Invoice' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Invoice -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header warning">
+      <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Invoice</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form *ngIf="editInvoiceData" #editForm="ngForm">
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de Invoice</label>
+              <input type="text"
+                     class="form-control"
+                     [(ngModel)]="editInvoiceData.invoiceNumber"
+                     name="editInvoiceNumber"
+                     required>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Fecha</label>
+              <input type="date"
+                     class="form-control"
+                     [(ngModel)]="editInvoiceData.invoiceDate"
+                     name="editInvoiceDate">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">B/L ID</label>
+              <input type="number"
+                     class="form-control"
+                     [(ngModel)]="editInvoiceData.blId"
+                     name="editBlId"
+                     placeholder="ID del B/L asociado">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Estado</label>
+              <select class="form-select" [(ngModel)]="editInvoiceData.status" name="editStatus">
+                <option *ngFor="let s of statusOptions" [value]="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Moneda</label>
+              <select class="form-select" [(ngModel)]="editInvoiceData.currency" name="editCurrency">
+                <option *ngFor="let c of currencyOptions" [value]="c">{{ c }}</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Monto Total</label>
+              <input type="number"
+                     class="form-control"
+                     [(ngModel)]="editInvoiceData.totalAmount"
+                     name="editTotalAmount"
+                     min="0"
+                     step="0.01">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Fecha de Vencimiento</label>
+              <input type="date"
+                     class="form-control"
+                     [(ngModel)]="editInvoiceData.dueDate"
+                     name="editDueDate">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Notas</label>
+          <textarea class="form-control"
+                    [(ngModel)]="editInvoiceData.notes"
+                    name="editNotes"
+                    rows="3"></textarea>
+        </div>
+
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-warning"
+              (click)="updateInvoice()"
+              [disabled]="isSubmitting">
+        <i class="fas fa-save"></i>
+        {{ isSubmitting ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle de Invoice -->
+<div class="modal-overlay" *ngIf="showDetailModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-xl">
+    <div class="modal-header info">
+      <h5 class="modal-title">
+        <i class="fas fa-file-invoice"></i>
+        Invoice: {{ selectedInvoice?.invoiceNumber }}
+      </h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" *ngIf="selectedInvoice">
+
+      <!-- Loading detalles -->
+      <div *ngIf="loadingDetails" class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando detalles...</p>
+      </div>
+
+      <ng-container *ngIf="!loadingDetails">
+
+        <!-- Tarjetas de resumen -->
+        <div class="row mb-4">
+          <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card stat-card primary">
+              <div class="card-body">
+                <h3>{{ selectedInvoice.containerCount || 0 }}</h3>
+                <small>Contenedores</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card stat-card success">
+              <div class="card-body">
+                <h3>{{ selectedInvoice.totalGrossWeight | number:'1.2-2' }}</h3>
+                <small>KG Peso Bruto</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card stat-card info">
+              <div class="card-body">
+                <h3>{{ selectedInvoice.totalNetWeight | number:'1.2-2' }}</h3>
+                <small>KG Peso Neto</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-3 col-sm-6 mb-2">
+            <div class="card stat-card secondary">
+              <div class="card-body">
+                <h3>{{ selectedInvoice.totalVolume | number:'1.3-3' }}</h3>
+                <small>M³ Volumen</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Información General + Datos Financieros -->
+        <div class="row mb-4">
+          <div class="col-md-6">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title"><i class="fas fa-info-circle"></i> Información General</span>
+              </div>
+              <div class="card-body">
+                <table class="table table-borderless table-sm">
+                  <tr>
+                    <td class="fw-bold">Número:</td>
+                    <td>{{ selectedInvoice.invoiceNumber }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Fecha:</td>
+                    <td>{{ selectedInvoice.invoiceDate | date:'dd/MM/yyyy' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Vencimiento:</td>
+                    <td>{{ selectedInvoice.dueDate ? (selectedInvoice.dueDate | date:'dd/MM/yyyy') : '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">B/L ID:</td>
+                    <td>
+                      <span class="badge secondary" *ngIf="selectedInvoice.blId">BL-{{ selectedInvoice.blId }}</span>
+                      <span class="text-muted" *ngIf="!selectedInvoice.blId">—</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Cliente ID:</td>
+                    <td>{{ selectedInvoice.customerId ?? '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Estado:</td>
+                    <td>
+                      <span class="badge" [ngClass]="getStatusClass(selectedInvoice.status)">
+                        {{ getStatusLabel(selectedInvoice.status) }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Creado por:</td>
+                    <td>{{ selectedInvoice.createdBy ?? '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Creado el:</td>
+                    <td>{{ selectedInvoice.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+                  </tr>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <div class="card h-100">
+              <div class="card-header">
+                <span class="card-title"><i class="fas fa-dollar-sign"></i> Datos Financieros</span>
+              </div>
+              <div class="card-body">
+                <table class="table table-borderless table-sm">
+                  <tr>
+                    <td class="fw-bold">Moneda:</td>
+                    <td>{{ selectedInvoice.currency ?? '—' }}</td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Monto Total:</td>
+                    <td class="fw-bold text-success fs-5">
+                      {{ selectedInvoice.currency }} {{ selectedInvoice.totalAmount | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="fw-bold">Términos de Pago:</td>
+                    <td>{{ selectedInvoice.paymentTerms ?? '—' }}</td>
+                  </tr>
+                  <tr *ngIf="invoiceWithDetails && invoiceWithDetails.details.length > 0">
+                    <td class="fw-bold">Total Líneas:</td>
+                    <td class="fw-bold">
+                      {{ selectedInvoice.currency }}
+                      {{ calcDetailTotal(invoiceWithDetails.details) | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                  <tr *ngIf="getAverageWeight(selectedInvoice) > 0">
+                    <td class="fw-bold">Peso Promedio:</td>
+                    <td>{{ getAverageWeight(selectedInvoice) | number:'1.2-2' }} kg/cont.</td>
+                  </tr>
+                </table>
+                <div *ngIf="selectedInvoice.notes" class="mt-3">
+                  <h6><i class="fas fa-sticky-note"></i> Notas:</h6>
+                  <p class="mb-0 text-muted">{{ selectedInvoice.notes }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ==========================================
+             LÍNEAS DE DETALLE
+             ========================================== -->
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span class="card-title">
+              <i class="fas fa-list-ul"></i> Líneas de Detalle
+            </span>
+            <span class="badge primary" *ngIf="invoiceWithDetails">
+              {{ invoiceWithDetails.details.length }} línea(s)
+            </span>
+          </div>
+          <div class="card-body p-0">
+
+            <!-- Sin datos de detalle aún -->
+            <div *ngIf="!invoiceWithDetails" class="p-3">
+              <div class="alert alert-warning mb-0">
+                <i class="fas fa-exclamation-circle"></i> No se pudieron cargar los detalles.
+              </div>
+            </div>
+
+            <!-- Sin líneas -->
+            <div *ngIf="invoiceWithDetails && invoiceWithDetails.details.length === 0" class="p-3">
+              <div class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <p>Esta invoice no tiene líneas de detalle registradas.</p>
+              </div>
+            </div>
+
+            <!-- Tabla de líneas -->
+            <div class="table-responsive"
+                 *ngIf="invoiceWithDetails && invoiceWithDetails.details.length > 0">
+              <table class="table table-sm table-hover sub-table mb-0">
+                <thead>
+                  <tr>
+                    <th class="text-center">#</th>
+                    <th>Cód. Item</th>
+                    <th>Descripción</th>
+                    <th>Cód. HS</th>
+                    <th>País Origen</th>
+                    <th class="text-end">Cantidad</th>
+                    <th>U/M</th>
+                    <th class="text-end">Precio Unit.</th>
+                    <th class="text-end fw-bold">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let detail of invoiceWithDetails.details">
+                    <td class="text-center">
+                      <span class="badge secondary">{{ detail.lineNumber }}</span>
+                    </td>
+                    <td>
+                      <code class="code" *ngIf="detail.itemCode">{{ detail.itemCode }}</code>
+                      <span class="text-muted" *ngIf="!detail.itemCode">—</span>
+                    </td>
+                    <td>
+                      <span *ngIf="detail.itemDescription">
+                        {{ detail.itemDescription | slice:0:60 }}
+                        <span *ngIf="detail.itemDescription && detail.itemDescription.length > 60"
+                              title="{{ detail.itemDescription }}">...</span>
+                      </span>
+                      <span class="text-muted" *ngIf="!detail.itemDescription">—</span>
+                    </td>
+                    <td>
+                      <small *ngIf="detail.hsCode">{{ detail.hsCode }}</small>
+                      <span class="text-muted" *ngIf="!detail.hsCode">—</span>
+                    </td>
+                    <td>
+                      <small *ngIf="detail.originCountry">{{ detail.originCountry }}</small>
+                      <span class="text-muted" *ngIf="!detail.originCountry">—</span>
+                    </td>
+                    <td class="text-end">
+                      {{ detail.quantity | number:'1.2-2' }}
+                    </td>
+                    <td>
+                      <small>{{ detail.unitOfMeasure ?? '—' }}</small>
+                    </td>
+                    <td class="text-end">
+                      {{ selectedInvoice.currency }}
+                      {{ detail.unitPrice | number:'1.2-2' }}
+                    </td>
+                    <td class="text-end fw-bold text-success">
+                      {{ selectedInvoice.currency }}
+                      {{ detail.totalPrice | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot *ngIf="invoiceWithDetails.details.length > 1">
+                  <tr class="table-active fw-bold">
+                    <td colspan="8" class="text-end">Total Líneas:</td>
+                    <td class="text-end text-success">
+                      {{ selectedInvoice.currency }}
+                      {{ calcDetailTotal(invoiceWithDetails.details) | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+          </div>
+        </div>
+
+      </ng-container>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-primary"
+              (click)="goToBlDetail(selectedInvoice!.blId)"
+              [disabled]="!selectedInvoice?.blId">
+        <i class="fas fa-ship"></i> Ver B/L
+      </button>
+      <button class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cargar Excel -->
+<div class="modal-overlay" *ngIf="showUploadModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-xl">
+    <div class="modal-header success">
+      <h5 class="modal-title"><i class="fas fa-file-excel"></i> Cargar Invoices desde Excel</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">
+        <h6><i class="fas fa-info-circle"></i> Formato requerido:</h6>
+        <ul class="mb-0">
+          <li><strong>invoiceNumber</strong>: Número de invoice (obligatorio)</li>
+          <li><strong>totalAmount</strong>: Monto total (obligatorio)</li>
+          <li><strong>invoiceDate</strong>: Fecha (YYYY-MM-DD)</li>
+          <li><strong>blId</strong>: ID del B/L asociado</li>
+          <li><strong>customerId</strong>: ID del cliente</li>
+          <li><strong>currency</strong>: Moneda (USD, EUR, CNY)</li>
+          <li><strong>status</strong>: Estado (issued, paid, pending, cancelled)</li>
+          <li><strong>notes</strong>: Observaciones</li>
+        </ul>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Seleccione archivo Excel</label>
+        <input type="file"
+               class="form-control"
+               accept=".xlsx,.xls"
+               (change)="onFileSelected($event)">
+      </div>
+
+      <div *ngIf="uploadErrors.length > 0" class="alert alert-danger">
+        <h6><i class="fas fa-exclamation-triangle"></i> Errores detectados:</h6>
+        <ul class="mb-0">
+          <li *ngFor="let err of uploadErrors">{{ err }}</li>
+        </ul>
+      </div>
+
+      <div *ngIf="excelPreview.length > 0">
+        <h6>Vista previa (primeras 5 filas):</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead>
+              <tr>
+                <th *ngFor="let key of getObjectKeys(excelPreview[0])">{{ key }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of excelPreview">
+                <td *ngFor="let key of getObjectKeys(row)">{{ row[key] }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-success"
+              [disabled]="!excelFile || uploadErrors.length > 0 || isSubmitting"
+              (click)="uploadExcel()">
+        <i class="fas fa-upload"></i>
+        {{ isSubmitting ? 'Procesando...' : 'Cargar Invoices' }}
+      </button>
+    </div>
+  </div>
+</div>

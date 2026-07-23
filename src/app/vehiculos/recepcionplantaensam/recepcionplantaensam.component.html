@@ -1,0 +1,634 @@
+<!-- recepcionplantaensam.component.html -->
+<div class="container-fluid mt-3">
+
+  <!-- HEADER -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Recepción de Contenedores - Planta Ensambladora</h2>
+    <button class="btn btn-success btn-lg" (click)="openModal('create')">
+      ➕ Nueva Recepción
+    </button>
+  </div>
+
+  <!-- ESTADÍSTICAS -->
+  <div class="row mb-3">
+    <div class="col-6 col-md-3 mb-2">
+      <div class="card text-white bg-primary h-100">
+        <div class="card-body py-2 d-flex align-items-center gap-2">
+          <span style="font-size:1.8rem">📅</span>
+          <div><h4 class="mb-0">{{ stats.todayReceptions }}</h4><small>Hoy</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 mb-2">
+      <div class="card text-dark bg-warning h-100">
+        <div class="card-body py-2 d-flex align-items-center gap-2">
+          <span style="font-size:1.8rem">⏳</span>
+          <div><h4 class="mb-0">{{ stats.pendingReceptions }}</h4><small>En Proceso</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 mb-2">
+      <div class="card text-white bg-success h-100">
+        <div class="card-body py-2 d-flex align-items-center gap-2">
+          <span style="font-size:1.8rem">✅</span>
+          <div><h4 class="mb-0">{{ stats.completedReceptions }}</h4><small>Completados</small></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3 mb-2">
+      <div class="card text-white bg-info h-100">
+        <div class="card-body py-2 d-flex align-items-center gap-2">
+          <span style="font-size:1.8rem">📦</span>
+          <div><h4 class="mb-0">{{ stats.totalReceptions }}</h4><small>Total</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="card mb-3">
+    <div class="card-header bg-light"><strong>🔍 Filtros</strong></div>
+    <div class="card-body">
+      <div class="row g-2">
+        <div class="col-12 col-md-4">
+          <label class="form-label">Buscar</label>
+          <input type="text" class="form-control"
+            placeholder="Contenedor, B/L, Placa, Conductor..."
+            [(ngModel)]="searchTerm" (input)="applyFilters()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Estado</label>
+          <select class="form-select" [(ngModel)]="filterStatus" (change)="applyFilters()">
+            <option value="">Todos</option>
+            <option value="EN_PROCESO">En Proceso</option>
+            <option value="APROBADO">Aprobado</option>
+            <option value="RECHAZADO">Rechazado</option>
+            <option value="COMPLETADO">Completado</option>
+          </select>
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateFrom" (change)="applyFilters()">
+        </div>
+        <div class="col-6 col-md-2">
+          <label class="form-label">Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateTo" (change)="applyFilters()">
+        </div>
+        <div class="col-6 col-md-2 d-flex align-items-end">
+          <button class="btn btn-outline-secondary w-100" (click)="clearFilters()">🗑️ Limpiar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTADOR -->
+  <div class="d-flex justify-content-between align-items-center mb-2">
+    <span class="text-muted">
+      Mostrando <strong>{{ filteredReceptions.length }}</strong> de {{ receptions.length }} registros
+    </span>
+    <button class="btn btn-outline-success btn-sm" (click)="exportToCsv()">⬇️ Exportar CSV</button>
+  </div>
+
+  <!-- TABLA -->
+  <div class="table-responsive">
+    <table class="table table-striped table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>ID</th>
+          <th>Fecha Ingreso</th>
+          <th>Empresa</th>
+          <th>Conductor</th>
+          <th>Placa</th>
+          <th>Contenedor</th>
+          <th>B/L</th>
+          <th>Estado</th>
+          <th>Duración</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let reception of filteredReceptions">
+          <td><strong>#{{ reception.receptionId }}</strong></td>
+          <td>
+            {{ formatDate(reception.entryDate) }}<br>
+            <small class="text-muted">{{ formatTime(reception.entryTime) }}</small>
+          </td>
+          <td>{{ reception.companyName }}</td>
+          <td>
+            {{ reception.driverName }}<br>
+            <small class="text-muted">CI: {{ reception.driverIdCard }}</small>
+          </td>
+          <td><span class="badge bg-secondary">{{ reception.plateNumber }}</span></td>
+          <td>
+            <span *ngIf="reception.containerNumber" class="font-monospace">{{ reception.containerNumber }}</span>
+            <span *ngIf="!reception.containerNumber" class="text-muted">—</span>
+          </td>
+          <td>
+            <span *ngIf="reception.blNumber" class="font-monospace small">{{ reception.blNumber }}</span>
+            <span *ngIf="!reception.blNumber" class="text-muted">—</span>
+          </td>
+          <td>
+            <span [class]="'badge ' + getStatusClass(reception.receptionStatus)">
+              {{ getStatusText(reception.receptionStatus) }}
+            </span>
+          </td>
+          <td>{{ calculateDuration(reception) }}</td>
+          <td>
+            <button class="btn btn-sm btn-info me-1"           (click)="viewDetail(reception)"   title="Ver">👁️</button>
+            <button class="btn btn-sm btn-warning me-1"        (click)="openEditModal(reception)" title="Editar">📝</button>
+            <button class="btn btn-sm btn-success me-1"
+                    *ngIf="!reception.exitTime"
+                    (click)="openExitModal(reception)"         title="Registrar salida">🚪</button>
+            <button class="btn btn-sm btn-outline-primary me-1" (click)="printReport(reception)"  title="Imprimir">🖨️</button>
+            <button class="btn btn-sm btn-danger"              (click)="confirmDelete(reception)" title="Eliminar">🗑️</button>
+          </td>
+        </tr>
+        <tr *ngIf="filteredReceptions.length === 0">
+          <td colspan="10" class="text-center py-4 text-muted">📭 No se encontraron recepciones</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ======================================================
+       MODAL VER DETALLE
+  ====================================================== -->
+  <div class="modal-overlay" *ngIf="activeModal === 'detail'" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Recepción #{{ selectedReception?.receptionId }}</h5>
+        <button class="btn-close" (click)="closeModal()">✖</button>
+      </div>
+
+      <div class="modal-body" *ngIf="selectedReception">
+
+        <div class="text-center mb-3">
+          <span [class]="'badge fs-6 ' + getStatusClass(selectedReception.receptionStatus)">
+            {{ getStatusText(selectedReception.receptionStatus) }}
+          </span>
+        </div>
+
+        <!-- DATOS GENERALES -->
+        <section class="mb-4">
+          <h6 class="section-title">Datos generales</h6>
+          <div class="row">
+            <div class="col-md-6"><strong>Empresa transporte:</strong><br>{{ selectedReception.companyName }}</div>
+            <div class="col-md-6"><strong>Conductor:</strong><br>{{ selectedReception.driverName }}</div>
+            <div class="col-md-6"><strong>Cédula conductor:</strong><br>{{ selectedReception.driverIdCard }}</div>
+            <div class="col-md-6"><strong>Placa unidad:</strong><br>
+              <span class="badge bg-secondary">{{ selectedReception.plateNumber }}</span>
+            </div>
+            <div class="col-md-6"><strong>Fecha ingreso:</strong><br>{{ formatDate(selectedReception.entryDate) }}</div>
+            <div class="col-md-6"><strong>Hora ingreso:</strong><br>{{ formatTime(selectedReception.entryTime) }}</div>
+            <div class="col-md-6"><strong>Hora salida:</strong><br>{{ selectedReception.exitTime ? formatTime(selectedReception.exitTime) : '—' }}</div>
+            <div class="col-md-6"><strong>Duración:</strong><br>{{ calculateDuration(selectedReception) }}</div>
+            <div class="col-md-6"><strong>Entregado por:</strong><br>{{ selectedReception.deliveredBy || '—' }}</div>
+            <div class="col-md-6"><strong>Recibido por:</strong><br>{{ selectedReception.receivedBy || '—' }}</div>
+            <div class="col-md-12"><strong>Observaciones:</strong><br>{{ selectedReception.generalObservations || '—' }}</div>
+          </div>
+        </section>
+
+        <!-- CONTENEDOR -->
+        <section class="mb-4">
+          <h6 class="section-title">Información del contenedor</h6>
+          <div class="row">
+            <div class="col-md-6"><strong>Número:</strong><br>
+              <span class="font-monospace">{{ selectedReception.containerNumber || '—' }}</span>
+            </div>
+            <div class="col-md-6"><strong>Tipo:</strong><br>{{ selectedReception.containerType || '—' }}</div>
+            <div class="col-md-6"><strong>Sello:</strong><br>{{ selectedReception.sealNumber || '—' }}</div>
+            <div class="col-md-6"><strong>B/L:</strong><br>
+              <span class="font-monospace">{{ selectedReception.blNumber || '—' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- FOTOS -->
+        <section class="mb-4" *ngIf="$any(selectedReception).photos?.length">
+          <h6 class="section-title">Fotos</h6>
+          <div class="gallery">
+            <div class="photo-box" *ngFor="let f of $any(selectedReception).photos">
+              <span class="badge bg-secondary mb-1">{{ f.photoType }}</span>
+              <img [src]="getPhotoUrl(f.fileName)" alt="foto" />
+              <small class="text-muted">{{ f.uploadedBy }}<br>{{ f.uploadedAt | date:'short' }}</small>
+            </div>
+          </div>
+        </section>
+
+        <!-- INSPECCIÓN -->
+        <section class="mb-4" *ngIf="selectedReception.inspection">
+          <h6 class="section-title">Inspección</h6>
+          <div class="alert"
+            [class.alert-success]="selectedReception.inspection.isApproved"
+            [class.alert-danger]="!selectedReception.inspection.isApproved">
+            <strong>{{ selectedReception.inspection.isApproved ? '✅ APROBADO' : '❌ RECHAZADO' }}</strong>
+            <div *ngIf="selectedReception.inspection.overallCondition">
+              Condición: {{ selectedReception.inspection.overallCondition }}
+            </div>
+            <div *ngIf="selectedReception.inspection.inspectedBy">
+              Por: {{ selectedReception.inspection.inspectedBy }}
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <div class="modal-footer">
+        <button *ngIf="!selectedReception?.exitTime" class="btn btn-success me-2"
+                (click)="closeModal(); openExitModal(selectedReception!)">
+          🚪 Registrar Salida
+        </button>
+        <button class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================
+       MODAL CREAR
+  ====================================================== -->
+  <div class="modal-overlay" *ngIf="activeModal === 'create'" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h5 class="modal-title">➕ Nueva Recepción de Contenedor</h5>
+        <button class="btn-close" (click)="closeModal()">✖</button>
+      </div>
+
+      <div class="modal-body">
+        <form>
+
+          <!-- DATOS GENERALES -->
+          <section class="mb-4">
+            <h6 class="section-title">Datos generales</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Empresa de Transporte <span class="text-danger">*</span></label>
+                <select class="form-select"
+                  [ngModel]="formData.companyId" name="companyId"
+                  (ngModelChange)="onCompanyChange($event)">
+                  <option [value]="0">Seleccione empresa...</option>
+                  <option *ngFor="let c of companies" [value]="c.companyId">{{ c.companyName }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Nombre del Conductor <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" [(ngModel)]="driverNameDirect"
+                  name="driverNameDirect" placeholder="Nombre completo del conductor"
+                  autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Cédula del Conductor</label>
+                <input type="text" class="form-control" [(ngModel)]="driverIdCardDirect"
+                  name="driverIdCardDirect" placeholder="Número de cédula"
+                  autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Placa de la Unidad <span class="text-danger">*</span></label>
+                <input type="text" class="form-control text-uppercase" [(ngModel)]="plateNumberDirect"
+                  name="plateNumberDirect" placeholder="Ej: ABC-1234" maxlength="10"
+                  autocomplete="off">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Entregado por</label>
+                <input type="text" class="form-control" [(ngModel)]="formData.deliveredBy" name="deliveredBy" placeholder="Nombre de quien entrega">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Fecha de Ingreso</label>
+                <input type="date" class="form-control" [(ngModel)]="formData.entryDate" name="entryDate">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Hora de Ingreso</label>
+                <input type="time" class="form-control" [(ngModel)]="formData.entryTime" name="entryTime">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Observaciones generales</label>
+                <textarea class="form-control" [(ngModel)]="formData.generalObservations"
+                  name="generalObservations" rows="2" placeholder="Observaciones generales..."></textarea>
+              </div>
+            </div>
+          </section>
+
+          <!-- INFORMACIÓN DEL CONTENEDOR -->
+          <section class="mb-4">
+            <h6 class="section-title">Información del contenedor</h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Número de Contenedor</label>
+                <input type="text" class="form-control text-uppercase"
+                  [(ngModel)]="formData.containerNumber" name="containerNumber"
+                  placeholder="Ej: MSNU6544146" maxlength="11">
+                <small class="text-muted">4 letras + 7 dígitos</small>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Tipo de Contenedor</label>
+                <select class="form-select" [(ngModel)]="formData.containerType" name="containerType">
+                  <option value="">Seleccione...</option>
+                  <option value="20'">20 pies</option>
+                  <option value="40'">40 pies</option>
+                  <option value="40'HC">40 pies High Cube</option>
+                  <option value="45'">45 pies</option>
+                  <option value="OT">Open Top</option>
+                  <option value="FR">Flat Rack</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Número de Sello</label>
+                <input type="text" class="form-control" [(ngModel)]="formData.sealNumber" name="sealNumber" placeholder="Número de sello">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Bill of Lading (B/L)</label>
+                <input type="text" class="form-control" [(ngModel)]="formData.blNumber" name="blNumber" placeholder="Número de B/L">
+              </div>
+            </div>
+          </section>
+
+          <!-- FOTOS -->
+          <section class="mb-4">
+            <h6 class="section-title">Fotos</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Tipo de foto</label>
+                <select class="form-select" [(ngModel)]="newPhotoType" name="newPhotoType">
+                  <option value="">Seleccione tipo...</option>
+                  <option value="FRONTAL">Frontal</option>
+                  <option value="LATERAL_IZQ">Lateral izquierdo</option>
+                  <option value="LATERAL_DER">Lateral derecho</option>
+                  <option value="POSTERIOR">Posterior</option>
+                  <option value="INTERIOR">Interior</option>
+                  <option value="SELLO">Sello</option>
+                  <option value="DAÑO">Daño</option>
+                  <option value="OTRO">Otro</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Archivo de imagen</label>
+                <input type="file" class="form-control" accept="image/*"
+                  (change)="onPhotoSelected($event)" #photoInput>
+              </div>
+              <div class="col-12">
+                <button type="button" class="btn btn-outline-primary btn-sm" (click)="addPhoto()">
+                  📎 Agregar foto
+                </button>
+              </div>
+            </div>
+            <!-- Previews de fotos -->
+            <div class="gallery mt-3" *ngIf="fotosForm.length">
+              <div class="photo-box" *ngFor="let f of fotosForm; let i = index">
+                <span class="badge bg-secondary mb-1">{{ f.tipo }}</span>
+                <img [src]="f.preview" alt="preview" />
+                <button type="button" class="btn btn-danger btn-sm mt-1" (click)="removePhoto(i)">✖ Quitar</button>
+              </div>
+            </div>
+          </section>
+
+          <!-- SELLOS -->
+          <section class="mb-4">
+            <h6 class="section-title">Sellos</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th># Sello</th>
+                    <th>Mecanismos / cerraduras</th>
+                    <th>Tirar sello</th>
+                    <th>Torcer / girar sello</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of sellosForm; let i = index">
+                    <td><input class="form-control form-control-sm" [(ngModel)]="s.numero"    [name]="'sn'+i" placeholder="N° sello"></td>
+                    <td><input class="form-control form-control-sm" [(ngModel)]="s.mecanismos" [name]="'sm'+i" placeholder="Estado"></td>
+                    <td>
+                      <select class="form-select form-select-sm" [(ngModel)]="s.tirar" [name]="'st'+i">
+                        <option value="">—</option><option value="OK">OK</option><option value="FALLA">Falla</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select class="form-select form-select-sm" [(ngModel)]="s.torcer" [name]="'sg'+i">
+                        <option value="">—</option><option value="OK">OK</option><option value="FALLA">Falla</option>
+                      </select>
+                    </td>
+                    <td><button type="button" class="btn btn-danger btn-sm" (click)="removeSello(i)">✖</button></td>
+                  </tr>
+                  <tr>
+                    <td colspan="5">
+                      <button type="button" class="btn btn-outline-secondary btn-sm" (click)="addSello()">
+                        ➕ Agregar sello
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- INSPECCIÓN DE CONTENEDOR -->
+          <section class="mb-2">
+            <h6 class="section-title">Inspección de contenedor</h6>
+            <div class="table-responsive">
+              <table class="table table-sm table-bordered align-middle">
+                <thead class="table-light">
+                  <tr>
+                    <th>Elemento</th>
+                    <th>Estado</th>
+                    <th>Observación</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let item of inspeccionForm; let i = index">
+                    <td>{{ item.elemento }}</td>
+                    <td>
+                      <select class="form-select form-select-sm" [(ngModel)]="item.estado" [name]="'ie'+i">
+                        <option value="">—</option>
+                        <option value="BUENO">Bueno</option>
+                        <option value="REGULAR">Regular</option>
+                        <option value="MALO">Malo</option>
+                        <option value="N/A">N/A</option>
+                      </select>
+                    </td>
+                    <td><input class="form-control form-control-sm" [(ngModel)]="item.observacion" [name]="'io'+i" placeholder="Observación"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="createReception()">💾 Guardar Recepción</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================
+       MODAL EDITAR
+  ====================================================== -->
+  <div class="modal-overlay" *ngIf="activeModal === 'edit'" (click)="closeModal()">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h5 class="modal-title">📝 Editar Recepción #{{ currentReceptionId }}</h5>
+        <button class="btn-close" (click)="closeModal()">✖</button>
+      </div>
+
+      <div class="modal-body">
+        <form>
+
+          <section class="mb-4">
+            <h6 class="section-title">Datos generales</h6>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Empresa de Transporte</label>
+                <select class="form-select"
+                  [ngModel]="editFormData.companyId" name="editCompanyId"
+                  (ngModelChange)="onCompanyChange($event)">
+                  <option *ngFor="let c of companies" [value]="c.companyId">{{ c.companyName }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Conductor</label>
+                <select class="form-select" [(ngModel)]="editFormData.driverId" name="editDriverId">
+                  <option *ngFor="let d of drivers" [value]="d.driverId">{{ d.fullName }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Placa Unidad</label>
+                <select class="form-select" [(ngModel)]="editFormData.unitId" name="editUnitId">
+                  <option *ngFor="let u of units" [value]="u.unitId">{{ u.plateNumber }}</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Entregado por</label>
+                <input type="text" class="form-control" [(ngModel)]="editFormData.deliveredBy" name="editDeliveredBy">
+              </div>
+              <div class="col-12">
+                <label class="form-label">Observaciones generales</label>
+                <textarea class="form-control" [(ngModel)]="editFormData.generalObservations" name="editObs" rows="2"></textarea>
+              </div>
+            </div>
+          </section>
+
+          <section class="mb-2">
+            <h6 class="section-title">Información del contenedor</h6>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">Número de Contenedor</label>
+                <input type="text" class="form-control text-uppercase" [(ngModel)]="editFormData.containerNumber" name="editContainerNumber">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" [(ngModel)]="editFormData.containerType" name="editContainerType">
+                  <option value="">Seleccione...</option>
+                  <option value="20'">20 pies</option>
+                  <option value="40'">40 pies</option>
+                  <option value="40'HC">40 pies HC</option>
+                  <option value="45'">45 pies</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">Número de Sello</label>
+                <input type="text" class="form-control" [(ngModel)]="editFormData.sealNumber" name="editSealNumber">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">Bill of Lading (B/L)</label>
+                <input type="text" class="form-control" [(ngModel)]="editFormData.blNumber" name="editBlNumber">
+              </div>
+            </div>
+          </section>
+
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-warning" (click)="updateReception()">💾 Actualizar</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================
+       MODAL REGISTRAR SALIDA
+  ====================================================== -->
+  <div class="modal-overlay" *ngIf="activeModal === 'exit'" (click)="closeModal()">
+    <div class="modal-card" style="max-width:480px" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h5 class="modal-title">🚪 Registrar Salida</h5>
+        <button class="btn-close" (click)="closeModal()">✖</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="alert alert-info">ℹ️ Se registrará la hora actual como hora de salida.</div>
+        <section>
+          <h6 class="section-title">Datos de salida</h6>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Recibido por (opcional)</label>
+              <input type="text" class="form-control" [(ngModel)]="receivedByName"
+                name="receivedByName" placeholder="Nombre de quien recibe">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Hora de salida</label>
+              <input type="time" class="form-control" [value]="getCurrentTime()" disabled>
+              <small class="text-muted">Hora actual del sistema</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Fecha de salida</label>
+              <input type="date" class="form-control" [value]="getCurrentDate()" disabled>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-success" (click)="registerExit()">✅ Confirmar Salida</button>
+      </div>
+
+    </div>
+  </div>
+
+
+  <!-- ======================================================
+       MODAL ELIMINAR
+  ====================================================== -->
+  <div class="modal-overlay" *ngIf="activeModal === 'delete'" (click)="closeModal()">
+    <div class="modal-card" style="max-width:480px" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h5 class="modal-title">🗑️ Confirmar Eliminación</h5>
+        <button class="btn-close" (click)="closeModal()">✖</button>
+      </div>
+
+      <div class="modal-body text-center">
+        <div style="font-size:4rem">🗑️</div>
+        <h5 class="mt-2">¿Está seguro de eliminar esta recepción?</h5>
+        <p class="text-muted" *ngIf="selectedReception">
+          Recepción <strong>#{{ selectedReception.receptionId }}</strong><br>
+          Contenedor: <strong>{{ selectedReception.containerNumber || 'N/A' }}</strong><br>
+          Fecha: <strong>{{ formatDate(selectedReception.entryDate) }}</strong>
+        </p>
+        <div class="alert alert-warning">⚠️ Esta acción no se puede deshacer.</div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="deleteReception()">🗑️ Sí, Eliminar</button>
+      </div>
+
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,88 @@
+<div class="reconteo-container">
+  <header class="header">
+    <h1>📝 Gestión de Reconteo Pendiente ({{ totalPendientes }})</h1>
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Buscar por código, artículo o ubicación..."
+        [(ngModel)]="searchTerm"
+        (input)="search(searchTerm)"
+        title="Búsqueda por código de artículo, nombre, ubicación o agencia"
+      >
+      <i class="search-icon">🔍</i>
+    </div>
+  </header>
+
+  <hr>
+
+  <div *ngIf="isLoading" class="state-message loading-message">
+    <div class="spinner"></div>
+    Cargando reconteos pendientes...
+  </div>
+
+  <div *ngIf="errorMessage" class="state-message error-message">
+    ❌ {{ errorMessage }}
+    <button (click)="loadReconteos()" class="btn-retry">Reintentar Carga</button>
+  </div>
+  
+  <div *ngIf="!isLoading && !errorMessage" class="reconteo-list">
+    
+    <div *ngIf="filteredReconteos.length === 0" class="state-message empty-message full-width">
+      <p *ngIf="searchTerm">No se encontraron artículos con el término "{{ searchTerm }}" que requieran reconteo.</p>
+      <p *ngIf="!searchTerm">¡Excelente! No hay artículos pendientes de reconteo en el sistema.</p>
+    </div>
+<div class="header-left">
+    <h1>📝 Gestión de Reconteo Pendiente ({{ totalPendientes }})</h1>
+    <button 
+        (click)="exportToExcel()" 
+        [disabled]="isLoading || filteredReconteos.length === 0"
+        class="btn-export"
+        title="Exportar los {{ filteredReconteos.length }} resultados actuales a Excel (XLSX)"
+    >
+        Descargar Excel ({{ filteredReconteos.length }}) ⬇️
+    </button>
+</div>
+    <div *ngFor="let item of filteredReconteos" class="reconteo-card">
+      <div class="card-header">
+        <span class="articulo-code">{{ item.codigo_articulo }}</span>
+        <span class="agencia-tag">{{ item.nombre_agencia }}</span>
+      </div>
+      
+      <div class="card-body">
+        <p class="articulo-name">{{ item.nombre_articulo || 'Sin descripción' }}</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <strong>Ubicación:</strong>
+            <span>{{ item.ubicacion || 'N/A' }}</span>
+          </div>
+          <div class="detail-item">
+            <strong>Contado Inicial:</strong>
+            <span class="count-value">{{ item.cantidad_contada_inicial | number:'1.0-2' }}</span>
+          </div>
+           <div class="detail-item">
+            <strong>Conteo 2:</strong>
+            <span class="count-value">{{ item.cantidad_reconteo | number:'1.0-2' }}</span>
+          </div>
+          <div class="detail-item">
+            <strong>ID Conteo:</strong>
+            <span>#{{ item.conteo_id_individual }}</span>
+          </div>
+          <div class="detail-item">
+            <strong>Fecha Conteo:</strong>
+            <span>{{ item.fecha_conteo | date:'short' }}</span>
+          </div>
+          <div class="detail-item full-width">
+            <strong>Contador:</strong>
+            <span>{{ item.usuario_contador || 'Desconocido' }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card-footer">
+        <span class="status-badge pending">PENDIENTE DE ACCIÓN</span>
+        <button class="btn-action" title="Abrir formulario de resolución">Resolver Reconteo</button>
+      </div>
+    </div>
+  </div>
+</div>

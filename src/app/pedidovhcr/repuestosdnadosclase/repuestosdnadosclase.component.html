@@ -1,0 +1,588 @@
+<!-- ============================================================
+     PORTAL DEL PROVEEDOR — Vista de repuestos dañados por clase/rol
+     ============================================================ -->
+<div class="page">
+
+  <!-- ── Cabecera ──────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header__title">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path d="M0 1.5A.5.5 0 0 1 .5 1H2a.5.5 0 0 1 .485.379L2.89 3H14.5a.5.5 0 0 1 .491.592l-1.5 8A.5.5 0 0 1 13 12H4a.5.5 0 0 1-.491-.408L2.01 3.607 1.61 2H.5a.5.5 0 0 1-.5-.5M3.102 4l1.313 7h8.17l1.313-7zM5 12a2 2 0 1 0 0 4 2 2 0 0 0 0-4m7 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4M5 13a1 1 0 1 1 0 2 1 1 0 0 1 0-2m7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2"/>
+      </svg>
+      <div>
+        <h1>Portal del Proveedor</h1>
+        <p class="page-header__sub">
+          Repuestos dañados · {{ etiquetaRol }}
+          <span *ngFor="let c of clasesActivas" class="clase-chip">{{ c }}</span>
+        </p>
+      </div>
+    </div>
+    <div class="page-header__actions" *ngIf="cargado && items.length > 0">
+      <button class="btn btn--outline" (click)="exportarExcel()"
+              [disabled]="itemsFiltrados.length === 0">
+        📥 Exportar Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Sin acceso ─────────────────────────────────────────── -->
+  <div *ngIf="sinAcceso" class="estado-vacio estado-vacio--card">
+    <div class="estado-vacio__icon">🔒</div>
+    <p class="estado-vacio__titulo">Sin acceso</p>
+    <p class="estado-vacio__sub">
+      Tu rol <strong>{{ rolActivo }}</strong> no tiene clases asignadas en el sistema.
+    </p>
+    <p class="estado-vacio__sub">Contacta al administrador para configurar tu acceso.</p>
+  </div>
+
+  <!-- ── Cargando ───────────────────────────────────────────── -->
+  <div *ngIf="loading" class="estado-vacio">
+    <div class="spinner spinner--lg"></div>
+    <p>
+      Cargando registros para <strong>{{ etiquetaRol }}</strong>…<br>
+      <span class="clases-hint">Clases: {{ clasesActivas.join(', ') }}</span>
+    </p>
+  </div>
+
+  <!-- ── Sin resultados ─────────────────────────────────────── -->
+  <div *ngIf="!loading && cargado && items.length === 0 && !sinAcceso"
+       class="estado-vacio estado-vacio--card">
+    <div class="estado-vacio__icon">📦</div>
+    <p class="estado-vacio__titulo">Sin registros</p>
+    <p class="estado-vacio__sub">
+      No se encontraron repuestos dañados para
+      <strong>{{ etiquetaRol }}</strong> ({{ clasesActivas.join(', ') }}).
+    </p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════
+       RESULTADOS
+       ════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="!loading && cargado && items.length > 0">
+
+    <!-- ── Banner rol activo ────────────────────────────────── -->
+    <div class="proveedor-banner">
+      <div class="proveedor-banner__info">
+        <span class="proveedor-banner__label">Perfil</span>
+        <span class="proveedor-banner__nombre">{{ etiquetaRol }}</span>
+        <div class="proveedor-banner__clases">
+          <span *ngFor="let c of clasesActivas" class="clase-chip clase-chip--dark">{{ c }}</span>
+        </div>
+      </div>
+      <div class="proveedor-banner__stats">
+        <div class="stat-pill">
+          <span class="stat-pill__val">{{ items.length }}</span>
+          <span class="stat-pill__lab">Total registros</span>
+        </div>
+        <div class="stat-pill stat-pill--warn">
+          <span class="stat-pill__val">{{ itemsFiltrados.length }}</span>
+          <span class="stat-pill__lab">Mostrando</span>
+        </div>
+        <div class="stat-pill stat-pill--blue">
+          <span class="stat-pill__val">{{ totalCostoBase | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="stat-pill__lab">Costo base</span>
+        </div>
+        <div class="stat-pill stat-pill--green">
+          <span class="stat-pill__val">{{ totalNeto | currency:'USD':'symbol':'1.2-2' }}</span>
+          <span class="stat-pill__lab">Total neto</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Barra de descuento global ───────────────────────── -->
+    <div class="descuento-bar">
+      <div class="descuento-bar__left">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M13.405 3.027a2 2 0 0 0-2.828 0L1.343 12.26a1 1 0 0 0 0 1.414l.98.98a1 1 0 0 0 1.414 0L12.97 5.421l1.858-1.858a.5.5 0 0 0-.707-.707zM4.5 5a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3m7 7a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3"/>
+        </svg>
+        <span class="descuento-bar__title">Descuento global</span>
+        <span class="descuento-bar__hint">Aplica el mismo % a todos los ítems de la vista</span>
+      </div>
+      <div class="descuento-bar__right">
+        <div class="descuento-input-wrap">
+          <input type="number" class="descuento-global-input"
+                 [(ngModel)]="descuentoGlobal"
+                 min="0" max="100" step="0.5" placeholder="0">
+          <span class="descuento-pct">%</span>
+        </div>
+        <button class="btn btn--primary btn--sm"
+                (click)="aplicarDescuentoGlobal()"
+                [disabled]="descuentoGlobal == null">
+          Aplicar a todos
+        </button>
+        <button class="btn btn--ghost btn--sm"
+                (click)="limpiarDescuentos()"
+                *ngIf="totalDescuento > 0">
+          ✕ Quitar descuentos
+        </button>
+
+        <!-- Separador visual -->
+        <span class="descuento-bar__sep" *ngIf="items.length > 0">|</span>
+
+        <!-- Botón guardar en BD -->
+        <button class="btn btn--guardar btn--sm"
+                (click)="guardarDescuentosLote()"
+                [disabled]="guardandoDescuentos || !hayDescuentosPendientes"
+                title="Guardar todos los descuentos en la base de datos">
+          <span *ngIf="guardandoDescuentos" class="spinner spinner--sm spinner--white"></span>
+          <span *ngIf="!guardandoDescuentos">💾</span>
+          {{ guardandoDescuentos ? 'Guardando…' : 'Guardar descuentos' }}
+        </button>
+
+        <!-- Feedback éxito -->
+        <span *ngIf="descuentosGuardados" class="descuento-ok">
+          ✓ Guardado
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Filtros ──────────────────────────────────────────── -->
+    <div class="filtros">
+      <div class="filtro-field">
+        <label>Buscar por código</label>
+        <input type="text" placeholder="Ej: AAK-110"
+               [(ngModel)]="filtro.codigoArticulo"
+               (ngModelChange)="aplicarFiltros()">
+      </div>
+      <div class="filtro-field">
+        <label>Agencia</label>
+        <select [(ngModel)]="filtro.agenciaId" (change)="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option *ngFor="let ag of agenciasUnicas" [value]="ag">Agencia {{ ag }}</option>
+        </select>
+      </div>
+      <div class="filtro-field">
+        <label>Severidad</label>
+        <select [(ngModel)]="filtro.severidad" (change)="aplicarFiltros()">
+          <option value="">Todas</option>
+          <option *ngFor="let s of severidadOpciones" [value]="s">{{ s }}</option>
+        </select>
+      </div>
+      <div class="filtro-field">
+        <label>Estado</label>
+        <select [(ngModel)]="filtro.estado" (change)="aplicarFiltros()">
+          <option value="">Todos</option>
+          <option *ngFor="let e of estadosOpciones" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+      <div class="filtro-field filtro-field--btn">
+        <button class="btn btn--ghost" (click)="limpiarFiltros()">✕ Limpiar</button>
+      </div>
+    </div>
+
+    <!-- ── Resumen chips ────────────────────────────────────── -->
+    <div class="resumen">
+      <span class="chip chip--gris">
+        Mostrando: {{ itemsFiltrados.length }} de {{ items.length }}
+      </span>
+      <ng-container *ngFor="let s of severidadOpciones">
+        <span *ngIf="contarPorSeveridad(s) > 0"
+              class="chip" [ngClass]="getSevClass(s)">
+          {{ s }}: {{ contarPorSeveridad(s) }}
+        </span>
+      </ng-container>
+    </div>
+
+    <!-- ── Tabla ────────────────────────────────────────────── -->
+    <div *ngIf="itemsFiltrados.length > 0; else sinItems" class="tabla-wrapper">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th class="col-num">#</th>
+            <th class="col-agencia">Agencia</th>
+            <th class="col-codigo">Código</th>
+            <th>Artículo</th>
+            <th class="col-tipo">Tipo de Daño</th>
+            <th class="col-sev">Severidad</th>
+            <th class="col-estado">Estado</th>
+            <th class="col-costo">Costo Base</th>
+            <th class="col-desc">Descuento %</th>
+            <th class="col-neto">Valor Neto</th>
+            <th class="col-fecha">Fecha</th>
+            <th class="col-acc">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of itemsFiltrados; let i = index"
+              [ngClass]="getFilaClass(item.registro.severidad)">
+
+            <td class="col-num">{{ i + 1 }}</td>
+
+            <td class="col-agencia">
+              <span class="chip chip--gris chip--sm">Ag. {{ item.registro.agencia_id }}</span>
+            </td>
+
+            <td class="col-codigo">
+              <strong class="codigo-badge">{{ item.registro.codigo_articulo }}</strong>
+            </td>
+
+            <td>
+              <div class="articulo-nombre">{{ item.registro.nombre_articulo }}</div>
+              <div class="articulo-desc" *ngIf="item.registro.descripcion">
+                {{ item.registro.descripcion }}
+              </div>
+            </td>
+
+            <td class="col-tipo">{{ item.registro.tipo_dano }}</td>
+
+            <td class="col-sev">
+              <span class="chip" [ngClass]="getSevClass(item.registro.severidad)">
+                {{ item.registro.severidad }}
+              </span>
+            </td>
+
+            <td class="col-estado">
+              <span class="chip" [ngClass]="getEstadoClass(item.registro.estado)">
+                {{ item.registro.estado }}
+              </span>
+            </td>
+
+            <td class="col-costo num-cell">
+              <span *ngIf="item.registro.costo_promedio != null; else sinCosto">
+                {{ item.registro.costo_promedio | currency:'USD':'symbol':'1.2-2' }}
+              </span>
+              <ng-template #sinCosto><span class="text-muted">—</span></ng-template>
+            </td>
+
+            <td class="col-desc">
+              <div class="desc-input-wrap">
+                <input type="number" class="desc-input"
+                       [(ngModel)]="item.descuento"
+                       min="0" max="100" step="0.5" placeholder="0"
+                       [disabled]="item.registro.costo_promedio == null"
+                       title="Porcentaje de descuento para este ítem">
+                <span class="desc-pct">%</span>
+              </div>
+            </td>
+
+            <td class="col-neto num-cell"
+                [ngClass]="{ 'neto-highlight': item.descuento > 0 }">
+              <span *ngIf="item.registro.costo_promedio != null">
+                {{ costoConDescuento(item) | currency:'USD':'symbol':'1.2-2' }}
+              </span>
+              <span *ngIf="item.registro.costo_promedio == null" class="text-muted">—</span>
+              <span *ngIf="item.descuento > 0 && item.registro.costo_promedio != null"
+                    class="ahorro-badge">
+                -{{ item.descuento }}%
+              </span>
+            </td>
+
+            <td class="col-fecha">
+              {{ item.registro.fecha_registro | date:'dd/MM/yyyy' }}
+            </td>
+
+            <td class="col-acc">
+              <div class="acciones">
+                <button class="icon-btn" title="Ver detalle"
+                        (click)="verDetalle(item.registro)">👁</button>
+                <button class="icon-btn"
+                        *ngIf="(item.registro.total_imagenes ?? 0) > 0"
+                        title="Ver imágenes ({{ item.registro.total_imagenes }})"
+                        (click)="abrirImagenes(item.registro)">
+                  📷
+                  <span class="img-count-badge">{{ item.registro.total_imagenes }}</span>
+                </button>
+              </div>
+            </td>
+
+          </tr>
+        </tbody>
+
+        <tfoot>
+          <tr class="totales-row">
+            <td colspan="7" class="totales-label">TOTALES</td>
+            <td class="num-cell totales-base">
+              {{ totalCostoBase | currency:'USD':'symbol':'1.2-2' }}
+            </td>
+            <td class="num-cell totales-desc">
+              <span *ngIf="totalDescuento > 0" class="ahorro-total">
+                − {{ totalDescuento | currency:'USD':'symbol':'1.2-2' }}
+              </span>
+              <span *ngIf="totalDescuento === 0" class="text-muted">—</span>
+            </td>
+            <td class="num-cell totales-neto">
+              {{ totalNeto | currency:'USD':'symbol':'1.2-2' }}
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <ng-template #sinItems>
+      <div class="estado-vacio">
+        <span>🔍</span>
+        <p>Ningún ítem coincide con los filtros aplicados.</p>
+        <button class="btn btn--ghost btn--sm" (click)="limpiarFiltros()">Limpiar filtros</button>
+      </div>
+    </ng-template>
+
+  </ng-container>
+
+</div><!-- /page -->
+
+
+<!-- ============================================================
+     MODAL: Detalle (solo lectura)
+     ============================================================ -->
+<div class="overlay" *ngIf="modalDetalleVisible"
+     (click)="modalDetalleVisible = false">
+  <div class="modal-panel modal-panel--lg"
+       (click)="$event.stopPropagation()"
+       *ngIf="registroActivo">
+
+    <div class="modal-header" [ngClass]="'modal-header--' + getSevClass(registroActivo.severidad)">
+      <div>
+        <h2>{{ registroActivo.codigo_articulo }} — {{ registroActivo.nombre_articulo }}</h2>
+        <p class="modal-subtitle">
+          Agencia {{ registroActivo.agencia_id }} ·
+          <span class="chip chip--sm" [ngClass]="getSevClass(registroActivo.severidad)">
+            {{ registroActivo.severidad }}
+          </span>
+        </p>
+      </div>
+      <button class="close-btn" (click)="modalDetalleVisible = false">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="detalle-grid">
+        <div class="detalle-item">
+          <span class="detalle-label">Código</span>
+          <span class="detalle-valor">{{ registroActivo.codigo_articulo }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">N° Serie / ID</span>
+          <span class="detalle-valor">{{ registroActivo.numero_serie || '—' }}</span>
+        </div>
+        <div class="detalle-item detalle-item--full">
+          <span class="detalle-label">Nombre del artículo</span>
+          <span class="detalle-valor">{{ registroActivo.nombre_articulo }}</span>
+        </div>
+        <div class="detalle-item detalle-item--full">
+          <span class="detalle-label">Descripción</span>
+          <span class="detalle-valor">{{ registroActivo.descripcion || '—' }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Tipo de Daño</span>
+          <span class="detalle-valor">{{ registroActivo.tipo_dano }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Severidad</span>
+          <span class="chip" [ngClass]="getSevClass(registroActivo.severidad)">
+            {{ registroActivo.severidad }}
+          </span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Estado</span>
+          <span class="chip" [ngClass]="getEstadoClass(registroActivo.estado)">
+            {{ registroActivo.estado }}
+          </span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Agencia</span>
+          <span class="detalle-valor">{{ registroActivo.agencia_id }}</span>
+        </div>
+        <div class="detalle-item detalle-item--full detalle-item--highlight">
+          <span class="detalle-label">Descripción del daño</span>
+          <span class="detalle-valor">{{ registroActivo.descripcion_dano }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Parte afectada</span>
+          <span class="detalle-valor">{{ registroActivo.ubicacion_dano || '—' }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Ubicación física</span>
+          <span class="detalle-valor">{{ registroActivo.ubicacion_fisica || '—' }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Costo Promedio</span>
+          <span class="detalle-valor">
+            {{ registroActivo.costo_promedio != null
+                ? (registroActivo.costo_promedio | currency:'USD':'symbol':'1.2-2') : '—' }}
+          </span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Costo Reparación</span>
+          <span class="detalle-valor">
+            {{ registroActivo.costo_reparacion != null
+                ? (registroActivo.costo_reparacion | currency:'USD':'symbol':'1.2-2') : '—' }}
+          </span>
+        </div>
+        <div class="detalle-item detalle-item--full">
+          <span class="detalle-label">Acción tomada</span>
+          <span class="detalle-valor">{{ registroActivo.accion_tomada || '—' }}</span>
+        </div>
+        <div class="detalle-item detalle-item--full">
+          <span class="detalle-label">Observaciones</span>
+          <span class="detalle-valor">{{ registroActivo.observaciones || '—' }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Registrado por</span>
+          <span class="detalle-valor">{{ registroActivo.usuario_registro }}</span>
+        </div>
+        <div class="detalle-item">
+          <span class="detalle-label">Fecha de registro</span>
+          <span class="detalle-valor">
+            {{ registroActivo.fecha_registro | date:'dd/MM/yyyy HH:mm' }}
+          </span>
+        </div>
+
+        <!-- Miniaturas — clic abre el lightbox -->
+        <div *ngIf="registroActivo.imagenes?.length"
+             class="detalle-item detalle-item--full">
+          <span class="detalle-label">
+            Imágenes ({{ registroActivo.imagenes!.length }})
+          </span>
+          <div class="miniatura-grid">
+            <img *ngFor="let img of registroActivo.imagenes; let i = index"
+                 [src]="getImagenUrl(img)"
+                 [title]="img.descripcion_imagen || img.nombre_archivo"
+                 (click)="abrirLightbox(registroActivo!.imagenes!, i)"
+                 class="miniatura-img">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn--ghost" (click)="modalDetalleVisible = false">Cerrar</button>
+      <button *ngIf="(registroActivo.total_imagenes ?? 0) > 0"
+              class="btn btn--outline-blue"
+              (click)="abrirImagenes(registroActivo!); modalDetalleVisible = false">
+        📷 Ver imágenes
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================
+     MODAL: Imágenes (galería con lightbox integrado)
+     ============================================================ -->
+<div class="overlay" *ngIf="modalImagenesVisible"
+     (click)="modalImagenesVisible = false">
+  <div class="modal-panel modal-panel--xl"
+       (click)="$event.stopPropagation()">
+
+    <div class="modal-header modal-header--blue">
+      <div>
+        <h2>Evidencias fotográficas</h2>
+        <p class="modal-subtitle" *ngIf="registroActivo">
+          {{ registroActivo.codigo_articulo }} — {{ registroActivo.nombre_articulo }}
+          <span class="chip chip--sm" [ngClass]="getSevClass(registroActivo.severidad)">
+            {{ registroActivo.severidad }}
+          </span>
+        </p>
+      </div>
+      <button class="close-btn" (click)="modalImagenesVisible = false">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div *ngIf="imagenesRegistro.length === 0" class="estado-vacio estado-vacio--sm">
+        <div class="spinner"></div>
+        <p>Cargando imágenes…</p>
+      </div>
+
+      <div *ngIf="imagenesRegistro.length > 0" class="galeria-section">
+        <p class="galeria-count">
+          {{ imagenesRegistro.length }} imagen(es) — haz clic en cualquiera para ampliar
+        </p>
+        <div class="img-grid">
+          <div *ngFor="let img of imagenesRegistro; let i = index"
+               class="img-card img-card--saved"
+               (click)="abrirLightbox(imagenesRegistro, i)"
+               title="Clic para ampliar">
+            <img [src]="getImagenUrl(img)"
+                 [title]="img.descripcion_imagen || ''">
+            <div class="img-card__info">
+              <span class="img-card__desc">
+                {{ img.descripcion_imagen || img.nombre_archivo }}
+              </span>
+              <span class="img-card__meta">
+                {{ img.fecha_subida | date:'dd/MM/yyyy HH:mm' }} · {{ img.usuario_subida }}
+              </span>
+            </div>
+            <div class="img-card__zoom-hint">🔍 Ampliar</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn--ghost" (click)="modalImagenesVisible = false">Cerrar</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ============================================================
+     LIGHTBOX — visualizador inline con navegación
+     ============================================================ -->
+<div class="lb-overlay" *ngIf="lightboxVisible"
+     (click)="cerrarLightbox()">
+  <div class="lb-box" (click)="$event.stopPropagation()">
+
+    <!-- ── Header del lightbox ─────────────────────────────── -->
+    <div class="lb-header">
+      <span class="lb-counter">
+        {{ lightboxIndex + 1 }} / {{ lightboxImagenes.length }}
+      </span>
+      <span class="lb-desc">
+        {{ lightboxImagenActual?.descripcion_imagen || lightboxImagenActual?.nombre_archivo }}
+      </span>
+      <button class="lb-close" (click)="cerrarLightbox()" title="Cerrar (Esc)">✕</button>
+    </div>
+
+    <!-- ── Área principal de la imagen ────────────────────── -->
+    <div class="lb-stage">
+
+      <!-- Flecha anterior -->
+      <button class="lb-nav lb-nav--prev"
+              (click)="lightboxAnterior()"
+              [class.lb-nav--hidden]="lightboxIndex === 0"
+              title="Anterior (←)">
+        ‹
+      </button>
+
+      <!-- Imagen activa -->
+      <div class="lb-img-wrap">
+        <img class="lb-img"
+             *ngIf="lightboxImagenActual"
+             [src]="getImagenUrl(lightboxImagenActual)"
+             [alt]="lightboxImagenActual.descripcion_imagen || ''">
+      </div>
+
+      <!-- Flecha siguiente -->
+      <button class="lb-nav lb-nav--next"
+              (click)="lightboxSiguiente()"
+              [class.lb-nav--hidden]="lightboxIndex === lightboxImagenes.length - 1"
+              title="Siguiente (→)">
+        ›
+      </button>
+
+    </div>
+
+    <!-- ── Tira de miniaturas ──────────────────────────────── -->
+    <div class="lb-thumbs" *ngIf="lightboxImagenes.length > 1">
+      <div *ngFor="let img of lightboxImagenes; let i = index"
+           class="lb-thumb-wrap"
+           [class.lb-thumb-wrap--active]="i === lightboxIndex"
+           (click)="lightboxIndex = i"
+           title="{{ img.descripcion_imagen || img.nombre_archivo }}">
+        <img [src]="getImagenUrl(img)" class="lb-thumb">
+      </div>
+    </div>
+
+    <!-- ── Meta de la imagen activa ────────────────────────── -->
+    <div class="lb-meta" *ngIf="lightboxImagenActual">
+      <span>📅 {{ lightboxImagenActual.fecha_subida | date:'dd/MM/yyyy HH:mm' }}</span>
+      <span>👤 {{ lightboxImagenActual.usuario_subida }}</span>
+      <span *ngIf="lightboxImagenes.length > 1" class="lb-hint">
+        ← → para navegar · Esc para cerrar
+      </span>
+    </div>
+
+  </div>
+</div>

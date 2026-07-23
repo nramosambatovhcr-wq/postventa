@@ -1,0 +1,316 @@
+<div class="conteo-container">
+  <h2>Detalles de Conteo para BL : {{ blnombre }}</h2>
+
+  <div class="search-container">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilter()"
+      placeholder="Buscar por código, cod. nuevo, VHCR o descripción"
+      class="search-input"
+    />
+    <button (click)="applyFilter()" class="search-button">
+      <i class="fas fa-search"></i> Buscar
+    </button>
+    <button
+      (click)="exportToExcel()"
+      class="button export-button"
+      style="margin-left: 10px; background-color: #1e7e34; color: white;"
+      [disabled]="isLoadingDetails"
+    >
+      <i class="fas fa-file-excel"></i> Descargar Excel
+    </button>
+  </div>
+
+  <!-- ── Barra de progreso ─────────────────────────────────────────────── -->
+  <div class="progress-panel" *ngIf="!isLoadingDetails && currentBlDetails.length > 0">
+    <div class="progress-stats">
+      <div class="stat stat--done">
+        <i class="fas fa-check-circle"></i>
+        <span class="stat-num">{{ totalContados }}</span>
+        <span class="stat-label">contados</span>
+      </div>
+      <div class="stat stat--pending">
+        <i class="fas fa-clock"></i>
+        <span class="stat-num">{{ totalPendientes }}</span>
+        <span class="stat-label">pendientes</span>
+      </div>
+      <div class="stat stat--total">
+        <i class="fas fa-boxes"></i>
+        <span class="stat-num">{{ currentBlDetails.length }}</span>
+        <span class="stat-label">total ítems</span>
+      </div>
+      <div class="stat stat--pct">
+        <span class="stat-pct-num">{{ porcentajeContado }}%</span>
+        <span class="stat-label">completado</span>
+      </div>
+    </div>
+    <div class="progress-bar-track">
+      <div
+        class="progress-bar-fill"
+        [style.width.%]="porcentajeContado"
+        [class.fill-complete]="porcentajeContado === 100"
+      ></div>
+    </div>
+  </div>
+
+  <div class="results-count" *ngIf="!isLoadingDetails">
+    <span>
+      <i class="fas fa-list"></i>
+      Mostrando <strong>{{ filteredBlDetails.length }}</strong>
+      {{ filteredBlDetails.length === 1 ? 'ítem' : 'ítems' }}
+      <ng-container *ngIf="searchTerm"> para "<strong>{{ searchTerm }}</strong>"</ng-container>
+    </span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-conteo">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th class="col-sm">COD. VHCR</th>
+          <th class="col-sm">COD. NUEVO</th>
+          <th>DESCRIPCIÓN</th>
+          <th class="col-conteo">CANT. BL / CONTEO</th>
+          <th class="col-xs">CONTEO</th>
+         <!-- <th class="col-xs">UNIDAD</th>-->
+          
+          <th class="col-xs">ESTADO</th>
+          <th class="col-sm">AJUSTE</th>
+          <th class="col-sm col-ubicacion">UBICACIÓN</th>
+          <th class="col-sm">COMENTARIO</th>
+          <th class="col-fotos">FOTOS</th>
+          <th class="col-xs">ESTADO CONTEO</th>
+          <th class="col-sm">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isLoadingDetails">
+          <td colspan="14" class="loading-message">Cargando detalles...</td>
+        </tr>
+        <tr *ngIf="filteredBlDetails.length === 0 && !isLoadingDetails && !errorMessage">
+          <td colspan="14" class="loading-message">No se encontraron detalles.</td>
+        </tr>
+        <tr *ngIf="errorMessage">
+          <td colspan="14" class="error-message">{{ errorMessage }}</td>
+        </tr>
+
+        <tr
+          *ngFor="let detail of filteredBlDetails"
+          class="data-row"
+          [class.row-saving]="!!detail.isSaving"
+          [class.row-contado]="!!detail.liquidacionId"
+        >
+          <!-- Código original -->
+          <td class="td-codigo">{{ detail.codigo }}</td>
+
+          <!-- Cod VHCR (editable, prellenado desde backend) -->
+          <td>
+            <input
+              class="cell-input"
+              type="text"
+              [(ngModel)]="detail._codvhcr"
+              [disabled]="!!detail.isSaving"
+              placeholder="—"
+              readonly
+            />
+          </td>
+
+          <!-- Cod NUEVO (solo lectura, viene de detalleinvoicebl.code_new) -->
+          <td class="td-center">
+            <span class="code-new-chip" *ngIf="detail.codeNew; else sinCodeNew">
+              {{ detail.codeNew }}
+            </span>
+            <ng-template #sinCodeNew><span class="td-readonly">—</span></ng-template>
+          </td>
+
+          <td class="td-desc">{{ detail.descripcionEspanol }}</td>
+
+          <!-- Cant BL + mini barra de progreso por ítem -->
+          <td class="td-conteo-info">
+            <div class="conteo-info-wrap">
+              <div class="conteo-numbers">
+                <span class="num-bl">{{ detail.cantidadContada }}</span>
+                <ng-container *ngIf="detail.liquidacionId">
+                  <span class="num-sep">/</span>
+                  <span class="num-contado"
+                    [class.num-ok]="detail.conteo >= detail.cantidadContada"
+                    [class.num-warn]="detail.conteo < detail.cantidadContada">
+                    {{ detail.conteo }}
+                  </span>
+                  <span class="num-faltante" *ngIf="detail.conteo < detail.cantidadContada">
+                    (faltan {{ detail.cantidadContada - detail.conteo }})
+                  </span>
+                  <span class="num-extra" *ngIf="detail.conteo > detail.cantidadContada">
+                    (+{{ detail.conteo - detail.cantidadContada }})
+                  </span>
+                </ng-container>
+              </div>
+              <div class="mini-bar-track" *ngIf="detail.liquidacionId">
+                <div
+                  class="mini-bar-fill"
+                  [style.width.%]="getMiniPct(detail)"
+                  [class.mini-bar-ok]="detail.conteo >= detail.cantidadContada"
+                  [class.mini-bar-warn]="detail.conteo < detail.cantidadContada"
+                  [class.mini-bar-extra]="detail.conteo > detail.cantidadContada"
+                ></div>
+              </div>
+            </div>
+          </td>
+
+          <!-- Conteo -->
+          <td>
+            <input
+              class="cell-input cell-input--number"
+              type="number"
+              [(ngModel)]="detail.conteo"
+              [disabled]="!!detail.isSaving"
+              placeholder="0"
+            />
+          </td>
+
+          <!-- Unidad -->
+          <!--<td>
+            <select class="cell-select" [(ngModel)]="detail.unidadSeleccionada" [disabled]="!!detail.isSaving">
+              <option *ngFor="let unit of availableUnits" [value]="unit">{{ unit | uppercase }}</option>
+            </select>
+          </td>-->
+
+          <!-- Comentario -->
+          
+
+          <!-- Estado -->
+          <td>
+            <select class="cell-select" [(ngModel)]="detail.estado" [disabled]="!!detail.isSaving">
+              <option *ngFor="let state of availableStates" [value]="state">{{ state | uppercase }}</option>
+            </select>
+          </td>
+
+          <!-- Estado 2 -->
+          <td>
+            <select class="cell-select" [(ngModel)]="detail.estado2" [disabled]="!!detail.isSaving">
+              <option value="">—</option>
+              <option *ngFor="let state of availableStates2" [value]="state">{{ state | uppercase }}</option>
+            </select>
+          </td>
+
+          <!-- Ubicación -->
+          <td>
+            <input
+              class="cell-input cell-input--ubicacion"
+              type="text"
+              [(ngModel)]="detail._ubicacion"
+              [disabled]="!!detail.isSaving"
+              placeholder="—"
+            />
+          </td>
+
+          <td>
+            <input
+              class="cell-input"
+              type="text"
+              [(ngModel)]="detail.comentarios"
+              [disabled]="!!detail.isSaving"
+              placeholder="—"
+            />
+          </td>
+
+          <!-- Fotos: se acumulan y se suben con el botón Guardar -->
+          <td class="td-fotos">
+            <label class="foto-upload-btn" [class.disabled]="!!detail.isSaving">
+              <i class="fas fa-camera"></i>
+              <span>{{ (detail.photos && detail.photos.length > 0) ? detail.photos.length + ' foto(s)' : 'Agregar' }}</span>
+              <input
+                type="file"
+                (change)="onFileSelected($event, detail)"
+                accept="image/*"
+                multiple
+                [disabled]="!!detail.isSaving"
+                style="display:none"
+              />
+            </label>
+
+            <span class="pending-badge" *ngIf="getPendingCount(detail) > 0">
+              {{ getPendingCount(detail) }} por subir
+            </span>
+
+            <!-- Miniaturas (clic para ver en grande) -->
+            <div class="photo-preview-row" *ngIf="detail.photos && detail.photos.length > 0">
+              <div
+                class="photo-thumb"
+                [class.photo-thumb--pending]="!!photo.file"
+                *ngFor="let photo of detail.photos; let i = index"
+              >
+                <img
+                  [src]="photo.filepath"
+                  alt="Foto {{ i + 1 }}"
+                  (click)="openViewer(detail, i)"
+                  title="Clic para ampliar"
+                />
+                <button
+                  class="remove-thumb-btn"
+                  *ngIf="!!photo.file"
+                  (click)="removePhoto(detail, i)"
+                  [disabled]="!!detail.isSaving"
+                >✕</button>
+              </div>
+            </div>
+          </td>
+
+          <!-- Estado conteo -->
+          <td class="td-center">
+            <span *ngIf="!!detail.isSaving" class="badge-saving">
+              <i class="fas fa-spinner fa-spin"></i>
+            </span>
+            <span *ngIf="!detail.isSaving" class="badge-estado"
+              [class.badge-contado]="!!detail.liquidacionId"
+              [class.badge-pendiente]="!detail.liquidacionId">
+              {{ detail.liquidacionId ? '✓' : '—' }}
+            </span>
+          </td>
+
+          <!-- Acciones: botón Guardar por fila -->
+          <td class="td-center">
+            <button
+              class="save-row-btn"
+              (click)="guardar(detail)"
+              [disabled]="!!detail.isSaving"
+              [class.save-row-btn--update]="!!detail.liquidacionId"
+            >
+              <i class="fas" [ngClass]="!!detail.isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+              <span *ngIf="!detail.isSaving">{{ detail.liquidacionId ? 'Actualizar' : 'Guardar' }}</span>
+              <span *ngIf="!!detail.isSaving">Guardando...</span>
+            </button>
+          </td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Visor de imágenes (lightbox) ─────────────────────────────────────── -->
+<div class="lightbox-overlay" *ngIf="isViewerOpen" (click)="closeViewer()">
+  <button class="lightbox-close" (click)="closeViewer()">✕</button>
+
+  <button
+    class="lightbox-nav lightbox-nav--prev"
+    *ngIf="viewerPhotos.length > 1"
+    (click)="viewerPrev($event)"
+  >&#10094;</button>
+
+  <div class="lightbox-content" (click)="$event.stopPropagation()">
+    <img [src]="viewerPhotos[viewerIndex].filepath" alt="Imagen ampliada" />
+    <div class="lightbox-caption">
+      <strong>{{ viewerCodigo }}</strong>
+      &nbsp;·&nbsp; Foto {{ viewerIndex + 1 }} de {{ viewerPhotos.length }}
+      <span class="lightbox-pending-tag" *ngIf="viewerPhotos[viewerIndex].file">PENDIENTE DE SUBIR</span>
+    </div>
+  </div>
+
+  <button
+    class="lightbox-nav lightbox-nav--next"
+    *ngIf="viewerPhotos.length > 1"
+    (click)="viewerNext($event)"
+  >&#10095;</button>
+</div>

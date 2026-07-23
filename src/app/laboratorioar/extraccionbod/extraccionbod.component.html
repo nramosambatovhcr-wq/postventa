@@ -1,0 +1,540 @@
+<div class="container">
+  <h2 class="title">Extracción de Bodega</h2>
+
+  <!-- ====== DASHBOARD ESTADÍSTICO (piezas) ====== -->
+  <div class="stats-grid">
+    <div class="stat-card total">
+      <div class="stat-icon">📦</div>
+      <div class="stat-info">
+        <span class="stat-label">Total Extraído</span>
+        <span class="stat-number">{{ estadisticas.total }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadTotal }} piezas</span>
+      </div>
+    </div>
+    <div class="stat-card pendiente">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <span class="stat-label">Pendiente</span>
+        <span class="stat-number">{{ estadisticas.pendientes }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadPendiente }} piezas</span>
+      </div>
+    </div>
+    <div class="stat-card entregado">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <span class="stat-label">Entregado</span>
+        <span class="stat-number">{{ estadisticas.entregados }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadEntregada }} piezas</span>
+      </div>
+    </div>
+    <div class="stat-card devuelto">
+      <div class="stat-icon">↩️</div>
+      <div class="stat-info">
+        <span class="stat-label">Devuelto</span>
+        <span class="stat-number">{{ estadisticas.devueltos }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadDevuelta }} piezas</span>
+      </div>
+    </div>
+    <div class="stat-card anulado">
+      <div class="stat-icon">🚫</div>
+      <div class="stat-info">
+        <span class="stat-label">Anulado</span>
+        <span class="stat-number">{{ estadisticas.anulados }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadAnulada }} piezas</span>
+      </div>
+    </div>
+  </div>
+  <!-- ============================================ -->
+
+  <!-- ====== DASHBOARD DE CONJUNTOS ARMADOS ====== -->
+  <div class="stats-grid stats-conjuntos">
+    <div class="stat-card conjuntos">
+      <div class="stat-icon">🧩</div>
+      <div class="stat-info">
+        <span class="stat-label">Conjuntos Intervenidos</span>
+        <span class="stat-number">{{ estadisticas.conjuntosTotal }}</span>
+        <span class="stat-sub">con partes extraídas</span>
+      </div>
+    </div>
+    <div class="stat-card conj-pendiente">
+      <div class="stat-icon">🕒</div>
+      <div class="stat-info">
+        <span class="stat-label">Conjuntos Pendientes</span>
+        <span class="stat-number">{{ estadisticas.conjuntosPendientes }}</span>
+        <span class="stat-sub">con partes por entregar</span>
+      </div>
+    </div>
+    <div class="stat-card conj-completo">
+      <div class="stat-icon">🏁</div>
+      <div class="stat-info">
+        <span class="stat-label">Conjuntos Completados</span>
+        <span class="stat-number">{{ estadisticas.conjuntosCompletos }}</span>
+        <span class="stat-sub">sin partes pendientes</span>
+      </div>
+    </div>
+  </div>
+  <!-- ============================================ -->
+
+  <!-- ====== PANELES INTERACTIVOS (clic para filtrar) ====== -->
+  <div class="analytics-grid">
+
+    <!-- Extracción por Agencia -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📍 Extracción por Agencia <small>(clic para filtrar)</small></span>
+        <button *ngIf="agenciaSel" class="chip-clear" (click)="seleccionarAgencia(agenciaSel)">
+          ✕ {{ agenciaSel }}
+        </button>
+      </div>
+      <div class="panel-body scroll">
+        <div *ngFor="let a of rankingAgencias; let i = index"
+             class="rank-row"
+             [class.active]="agenciaSel === a.agencia"
+             (click)="seleccionarAgencia(a.agencia)">
+          <div class="rank-top">
+            <span class="rank-name"><b>{{ i + 1 }}.</b> {{ a.agencia }}</span>
+            <span class="rank-value">{{ a.piezas }} pzs</span>
+          </div>
+          <div class="rank-bar"><div class="rank-fill agencia" [style.width.%]="a.porcentaje"></div></div>
+          <div class="rank-sub">{{ a.registros }} registros · {{ a.pendientes }} pendientes</div>
+        </div>
+        <div *ngIf="rankingAgencias.length === 0" class="rank-empty">Sin datos</div>
+      </div>
+    </div>
+
+    <!-- Repuestos más pedidos -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">
+          ⭐ Repuestos más pedidos
+          <small *ngIf="agenciaSel">— {{ agenciaSel }}</small>
+        </span>
+        <select class="top-select" [(ngModel)]="topN" (ngModelChange)="recomputarVista()">
+          <option *ngFor="let n of topNOpciones" [ngValue]="n">Top {{ n }}</option>
+        </select>
+      </div>
+      <div class="panel-body scroll">
+        <div *ngFor="let p of rankingArticulos; let i = index"
+             class="rank-row"
+             [class.active]="articuloSel === p.codigo"
+             (click)="seleccionarArticulo(p.codigo)">
+          <div class="rank-top">
+            <span class="rank-name"><b>{{ i + 1 }}.</b> {{ p.articulo || p.codigo }}</span>
+            <span class="rank-value">{{ p.piezas }} pzs</span>
+          </div>
+          <div class="rank-bar"><div class="rank-fill articulo" [style.width.%]="p.porcentaje"></div></div>
+          <div class="rank-sub">{{ p.codigo }} · {{ p.extracciones }} extracción(es)</div>
+        </div>
+        <div *ngIf="rankingArticulos.length === 0" class="rank-empty">Sin datos</div>
+      </div>
+    </div>
+
+  </div>
+  <!-- ============================================ -->
+
+  <!-- Filtros + Acciones -->
+  <div class="toolbar">
+    <div class="filters">
+      <div class="field">
+        <label>Estado</label>
+        <select [(ngModel)]="filtros.estado" (change)="aplicarFiltros()">
+          <option value="">-- Todos --</option>
+          <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Agencia</label>
+        <select [(ngModel)]="filtros.agencia" (change)="aplicarFiltros()">
+          <option value="">-- Todas --</option>
+          <option *ngFor="let a of agencias" [value]="a">{{ a }}</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Código</label>
+        <input type="text" [(ngModel)]="filtros.codigo" (input)="aplicarFiltros()" placeholder="Buscar...">
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" (click)="abrirModalCrear()" *ngIf="esLaboratorio">+ Nuevo</button>
+      <label class="btn btn-secondary" *ngIf="esLaboratorio">
+        📤 Subir Excel
+        <input type="file" accept=".xlsx" (change)="onFileChange($event)" hidden>
+      </label>
+      <button class="btn btn-success" (click)="descargarExcel()">📥 Descargar Excel</button>
+    </div>
+  </div>
+
+  <!-- Chip de filtro activo (selección desde los paneles) -->
+  <div *ngIf="haySeleccion" class="filtro-activo">
+    <span>Filtrando:</span>
+    <span *ngIf="agenciaSel" class="fa-chip">
+      Agencia: {{ agenciaSel }}
+      <button (click)="seleccionarAgencia(agenciaSel)">✕</button>
+    </span>
+    <span *ngIf="articuloSel" class="fa-chip">
+      Artículo: {{ articuloSel }}
+      <button (click)="seleccionarArticulo(articuloSel)">✕</button>
+    </span>
+    <button class="btn-clear-all" (click)="limpiarSeleccion()">Limpiar todo</button>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-container">
+    <table class="table">
+      <thead>
+        <tr>
+          <th>Cód. Conjunto</th>
+          <th>Conjunto</th>
+          <th>Código</th>
+          <th>Artículo</th>
+          <th>Cantidad</th>          
+          <th>Agencia</th>
+          <th>Estado</th>
+          <th>Fecha</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filtrados">
+          <td>{{ item.codigoConjunto }}</td>
+          <td>{{ item.conjunto }}</td>
+          <td>{{ item.codigo }}</td>
+          <td>{{ item.articulo }}</td>
+          <td>{{ item.cantidad }}</td>
+          
+          <td>{{ item.agencia }}</td>
+
+          <!-- Columna Estado: lógica por rol y estado -->
+          <td>
+            <ng-container *ngIf="esBodegaImpor; else badgeEstado">
+              <!-- bodegaimpor: select solo si es PENDIENTE, badge si ya fue procesado -->
+              <ng-container *ngIf="item.estado === 'PENDIENTE'; else estadoFijo">
+                <select class="select-estado estado-pendiente"
+                        [(ngModel)]="item.estado"
+                        (ngModelChange)="cambiarEstadoDirecto(item, $event)">
+                  <option *ngFor="let e of estadosOpciones" [value]="e">{{ e }}</option>
+                </select>
+              </ng-container>
+              <ng-template #estadoFijo>
+                <span class="badge"
+                      [ngClass]="{
+                        'bg-entregado': item.estado === 'ENTREGADO',
+                        'bg-devuelto':  item.estado === 'DEVUELTO',
+                        'bg-anulado':   item.estado === 'ANULADO'
+                      }">{{ item.estado }}</span>
+              </ng-template>
+            </ng-container>
+            <ng-template #badgeEstado>
+              <span class="badge"
+                    [ngClass]="{
+                      'bg-pendiente': item.estado === 'PENDIENTE',
+                      'bg-entregado': item.estado === 'ENTREGADO',
+                      'bg-devuelto':  item.estado === 'DEVUELTO',
+                      'bg-anulado':   item.estado === 'ANULADO'
+                    }">{{ item.estado }}</span>
+            </ng-template>
+          </td>
+
+          <td>{{ item.fechaExtraccion | date:'dd/MM/yyyy' }}</td>
+          <td>
+            <div class="btn-group" role="group">
+              <button class="btn-icon" (click)="abrirModalVer(item)" title="Ver detalles">👁️</button>
+              <button class="btn-icon" (click)="abrirModalEditar(item)" title="Editar">✏️</button>
+              <button class="btn-icon" (click)="abrirImagenes(item)" title="Imágenes">📷</button>
+           <!--  <button class="btn-icon" (click)="eliminar(item.id!)" title="Eliminar">🗑️</button>-->
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     Modal Crear / Editar (estándar)
+════════════════════════════════════════ -->
+<div class="modal-overlay" [class.show]="modalVisible" (click)="cerrarModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>{{ modo === 'crear' ? 'Nuevo Registro' : 'Editar Registro' }}</h3>
+      <button class="btn-close" (click)="cerrarModal()">✖</button>
+    </div>
+
+    <form [formGroup]="form" class="modal-body">
+      <div class="form-grid">
+        <div class="field-float">
+          <input formControlName="codigo" id="f-codigo" placeholder=" " />
+          <label for="f-codigo">Código <span class="req">*</span></label>
+        </div>
+        <div class="field-float">
+          <input formControlName="articulo" id="f-articulo" placeholder=" " />
+          <label for="f-articulo">Artículo <span class="req">*</span></label>
+        </div>
+        <div class="field-float">
+          <input formControlName="cantidad" id="f-cantidad" type="number" placeholder=" " />
+          <label for="f-cantidad">Cantidad <span class="req">*</span></label>
+        </div>
+        <div class="field-float">
+          <input formControlName="conjunto" id="f-conjunto" placeholder=" " />
+          <label for="f-conjunto">Conjunto</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="codigoConjunto" id="f-codigoConjunto" placeholder=" " />
+          <label for="f-codigoConjunto">Código Conjunto</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="agencia" id="f-agencia" placeholder=" " />
+          <label for="f-agencia">Agencia</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="estado" id="f-estado" placeholder=" " />
+          <label for="f-estado">Estado</label>
+        </div>
+        <div class="field-float field-date">
+          <input formControlName="fechaExtraccion" id="f-fechaExtraccion" type="date" placeholder=" " />
+          <label for="f-fechaExtraccion">Fecha Extracción</label>
+        </div>
+        <div class="field-float" *ngIf="modo === 'editar'">
+          <input formControlName="proveedor" id="f-proveedor" placeholder=" " />
+          <label for="f-proveedor">Proveedor</label>
+        </div>
+        <div class="field-float" *ngIf="modo === 'editar'">
+          <input formControlName="stock" id="f-stock" placeholder=" " />
+          <label for="f-stock">Stock</label>
+        </div>
+        <div class="field-float field-full">
+          <input formControlName="requisicionReversion" id="f-requisicion" placeholder=" " />
+          <label for="f-requisicion">Requisición / Reversión</label>
+        </div>
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     Modal Edición Completa (laboratorio1 / laboratorio2)
+════════════════════════════════════════ -->
+<div class="modal-overlay" [class.show]="modalLabVisible" (click)="cerrarModalLab()">
+  <div class="modal-content modal-content-lg" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Editar Registro <span class="rol-badge">{{ usrol }}</span></h3>
+      <button class="btn-close" (click)="cerrarModalLab()">✖</button>
+    </div>
+
+    <form [formGroup]="formLab" class="modal-body">
+      <div class="form-grid">
+
+        <!-- Fila 1 -->
+        <div class="field-float">
+          <input formControlName="codigo" id="l-codigo" placeholder=" " />
+          <label for="l-codigo">Código <span class="req">*</span></label>
+        </div>
+        <div class="field-float">
+          <input formControlName="articulo" id="l-articulo" placeholder=" " />
+          <label for="l-articulo">Artículo <span class="req">*</span></label>
+        </div>
+        <div class="field-float">
+          <input formControlName="cantidad" id="l-cantidad" type="number" placeholder=" " />
+          <label for="l-cantidad">Cantidad <span class="req">*</span></label>
+        </div>
+        <div class="field-float">
+          <input formControlName="conjunto" id="l-conjunto" placeholder=" " />
+          <label for="l-conjunto">Conjunto</label>
+        </div>
+
+        <!-- Fila 2 -->
+        <div class="field-float">
+          <input formControlName="codigoConjunto" id="l-codigoConjunto" placeholder=" " />
+          <label for="l-codigoConjunto">Código Conjunto</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="agencia" id="l-agencia" placeholder=" " />
+          <label for="l-agencia">Agencia</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="proveedor" id="l-proveedor" placeholder=" " />
+          <label for="l-proveedor">Proveedor</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="stock" id="l-stock" placeholder=" " />
+          <label for="l-stock">Stock</label>
+        </div>
+
+        <!-- Fila 3 -->
+        <div class="field-float field-date">
+          <input formControlName="fechaExtraccion" id="l-fechaExtraccion" type="date" placeholder=" " />
+          <label for="l-fechaExtraccion">Fecha Extracción</label>
+        </div>
+        <div class="field-float field-date">
+          <input formControlName="fechaDevolucion" id="l-fechaDevolucion" type="date" placeholder=" " />
+          <label for="l-fechaDevolucion">Fecha Devolución</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="cliente" id="l-cliente" placeholder=" " />
+          <label for="l-cliente">Cliente</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="solicitadoPor" id="l-solicitadoPor" placeholder=" " />
+          <label for="l-solicitadoPor">Solicitado Por</label>
+        </div>
+
+        <!-- Fila 4 -->
+        <div class="field-float">
+          <input formControlName="otPrefacturaProforma" id="l-ot" placeholder=" " />
+          <label for="l-ot">OT / Prefactura / Proforma</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="ajusteJimmy" id="l-ajusteJimmy" placeholder=" " />
+          <label for="l-ajusteJimmy">Ajuste </label>
+        </div>
+        <div class="field-float">
+          <input formControlName="reservado" id="l-reservado" placeholder=" " />
+          <label for="l-reservado">Reservado</label>
+        </div>
+        <div class="field-float">
+          <input formControlName="ajuste" id="l-ajuste" placeholder=" " />
+          <label for="l-ajuste">Ajuste</label>
+        </div>
+
+        <!-- Fila 5 -->
+        <div class="field-float">
+          <input formControlName="codigoEstado" id="l-codigoEstado" placeholder=" " />
+          <label for="l-codigoEstado">Código Estado</label>
+        </div>
+
+        <!-- Estado como SELECT con floating label -->
+        <div class="field-float field-select">
+          <select formControlName="estado" id="l-estado">
+            <option value="" disabled></option>
+            <option *ngFor="let e of estadosOpciones" [value]="e">{{ e }}</option>
+          </select>
+          <label for="l-estado">Estado</label>
+        </div>
+
+        <div class="field-float">
+          <input formControlName="requisicionReversion" id="l-requisicion" placeholder=" " />
+          <label for="l-requisicion">Requisición / Reversión</label>
+        </div>
+
+        <!-- Observación ocupa toda la fila -->
+        <div class="field-float field-full">
+          <textarea formControlName="observacion" id="l-observacion" placeholder=" " rows="3"></textarea>
+          <label for="l-observacion">Observación</label>
+        </div>
+
+      </div>
+    </form>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModalLab()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardarLab()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════
+     Modal Ver
+════════════════════════════════════════ -->
+<div class="modal-overlay" [class.show]="modalVerVisible" (click)="cerrarModalVer()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Detalle del Registro</h3>
+      <button class="btn-close" (click)="cerrarModalVer()">✖</button>
+    </div>
+    <div class="modal-body view-modal-body">
+      <div class="view-grid">
+        <div class="view-item">
+          <span class="view-label">Código</span>
+          <span class="view-value">{{ registroSeleccionado?.codigo }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Artículo</span>
+          <span class="view-value">{{ registroSeleccionado?.articulo }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Cantidad</span>
+          <span class="view-value">{{ registroSeleccionado?.cantidad }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Conjunto</span>
+          <span class="view-value">{{ registroSeleccionado?.conjunto || 'N/A' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Cod. Conjunto</span>
+          <span class="view-value">{{ registroSeleccionado?.codigoConjunto || 'N/A' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Agencia</span>
+          <span class="view-value">{{ registroSeleccionado?.agencia }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Estado</span>
+          <span class="view-value">
+            <span class="badge"
+                  [ngClass]="{
+                    'bg-pendiente': registroSeleccionado?.estado === 'PENDIENTE',
+                    'bg-entregado': registroSeleccionado?.estado === 'ENTREGADO',
+                    'bg-devuelto':  registroSeleccionado?.estado === 'DEVUELTO',
+                    'bg-anulado':   registroSeleccionado?.estado === 'ANULADO'
+                  }">
+              {{ registroSeleccionado?.estado }}
+            </span>
+          </span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">F. Extracción</span>
+          <span class="view-value">{{ registroSeleccionado?.fechaExtraccion | date:'dd/MM/yyyy' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">F. Devolución</span>
+          <span class="view-value">{{ (registroSeleccionado?.fechaDevolucion | date:'dd/MM/yyyy') || '—' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Cliente</span>
+          <span class="view-value">{{ registroSeleccionado?.cliente || '—' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">OT / Prefactura</span>
+          <span class="view-value">{{ registroSeleccionado?.otPrefacturaProforma || '—' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Solicitado por</span>
+          <span class="view-value">{{ registroSeleccionado?.solicitadoPor || '—' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Requisición/Reversión</span>
+          <span class="view-value">{{ registroSeleccionado?.requisicionReversion || '—' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Ajuste </span>
+          <span class="view-value">{{ registroSeleccionado?.ajusteJimmy || '—' }}</span>
+        </div>
+        <div class="view-item">
+          <span class="view-label">Reservado</span>
+          <span class="view-value">{{ registroSeleccionado?.reservado || '—' }}</span>
+        </div>
+        <div class="view-item full">
+          <span class="view-label">Observación</span>
+          <span class="view-value">{{ registroSeleccionado?.observacion || 'Sin observaciones' }}</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="cerrarModalVer()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<app-extraccion-imagenes
+  [tipoExtraccion]="'BOD'"
+  [extraccionId]="imagenesRegistroId"
+  [visible]="imagenesVisible"
+  [subidoPor]="usrol"
+  (cerrar)="cerrarImagenes()">
+</app-extraccion-imagenes>

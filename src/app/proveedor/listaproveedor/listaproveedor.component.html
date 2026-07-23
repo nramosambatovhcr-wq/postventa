@@ -1,0 +1,111 @@
+<!-- dashboard.component.html -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Importaciones</div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            placeholder="Buscar por Proforma, BL, Invoice..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+        <div class="acciones-usuario">
+          <button class="boton boton-primario" (click)="createNewImport()">Nueva Importación</button>
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Proveedores</h1> 
+      </div>
+      
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">Total Proveedores</div>
+          <div class="valor-estadistica">{{ stats.totalImportaciones }}</div>
+          <div class="cambio-estadistica"> </div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">Proveedores activos</div>
+          <div class="valor-estadistica">{{ stats.enTransito }}</div>
+          <div class="cambio-estadistica"> </div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">Proveedores Suspendidos</div>
+          <div class="valor-estadistica">{{ stats.pendientesLiquidacion }}</div>
+          <div class="cambio-estadistica"></div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica"></div>
+          <div class="valor-estadistica"> </div>
+          <div class="cambio-estadistica"> </div>
+        </div>
+      </div>
+      
+  
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Tabla de Proveedores</div>
+          <div class="acciones-tabla">
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Id</th>
+                <th>Codigo</th>
+                <th>Nombre</th>
+                <th>Direccion</th>
+                <th class="hide-mobile">Email</th>
+                 
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Id">{{ item.id }}</td>
+                <td data-label="Codigo">{{ item.codigo || '-' }}</td>
+                <td data-label="Nombre">{{ item.nombre || '-' }}</td>
+                <td data-label="Direccion">{{ item.direccion || '-' }}</td>
+                <td data-label="Email" class="contenedor-cell">{{ item.email || '-' }}</td>
+              
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ itemsPerPage }} de {{ stats.totalImportaciones }} importaciones</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+   
+    </section>
+  </main>
+ 
+  

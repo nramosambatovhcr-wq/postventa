@@ -1,0 +1,673 @@
+/* Estilos generales */
+.cursor-pointer {
+  cursor: pointer;
+  user-select: none;
+}
+
+.cursor-pointer:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Badges de días abierto */
+.dias-normal {
+  background-color: #28a745;
+  color: white;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.dias-alerta {
+  background-color: #ffc107;
+  color: #000;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.dias-critico {
+  background-color: #dc3545;
+  color: white;
+  font-weight: 600;
+  padding: 6px 12px;
+  border-radius: 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Tabla */
+.table-responsive {
+  max-height: calc(100vh - 400px);
+  overflow-y: auto;
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #343a40 !important;
+  font-size: 0.8rem;
+}
+
+.table tbody tr {
+  transition: all 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+  transform: scale(1.005);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table td {
+  vertical-align: middle;
+  padding: 10px 8px;
+  font-size: 0.9rem;
+}
+
+.table th {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.5px;
+  padding: 12px 8px;
+}
+
+/* Cards */
+.card {
+  border: none;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-header {
+  border-bottom: 2px solid #dee2e6;
+}
+
+.shadow-sm {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Paginación */
+.pagination {
+  margin: 0;
+}
+
+.page-link {
+  cursor: pointer;
+  border-radius: 5px;
+  margin: 0 2px;
+  color: #007bff;
+}
+
+.page-link:hover {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
+.page-item.active .page-link {
+  background-color: #007bff;
+  border-color: #007bff;
+}
+
+.page-item.disabled .page-link {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Botones */
+.btn {
+  border-radius: 6px;
+  font-weight: 500;
+  padding: 8px 16px;
+  transition: all 0.3s ease;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.btn i {
+  margin-right: 5px;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 0.85rem;
+}
+
+/* Filtros */
+.form-control {
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 5px;
+  font-size: 0.9rem;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.alert i {
+  margin-right: 8px;
+}
+
+/* Text utilities */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-monospace {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.85rem;
+}
+
+/* Badges personalizados */
+.badge {
+  font-size: 0.8rem;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+}
+
+.badge.bg-info {
+  background-color: #17a2b8 !important;
+  color: white;
+}
+
+.badge.bg-warning {
+  background-color: #ffc107 !important;
+}
+
+.badge.bg-primary {
+  background-color: #007bff !important;
+}
+
+/* Modal */
+.modal.show {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-backdrop.show {
+  opacity: 0.5;
+}
+
+.modal-content {
+  border-radius: 10px;
+  border: none;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px 10px 0 0;
+}
+
+.modal-body {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.modal-body .card {
+  border: 1px solid #dee2e6;
+  margin-bottom: 0;
+}
+
+.modal-body .card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.modal-body .card-body {
+  padding: 15px;
+}
+
+.modal-body p {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.modal-body strong {
+  color: #495057;
+}
+
+.btn-close-white {
+  filter: brightness(0) invert(1);
+}
+
+/* Scrollbar personalizado */
+.table-responsive::-webkit-scrollbar,
+.modal-body::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track,
+.modal-body::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb,
+.modal-body::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 10px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover,
+.modal-body::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.75rem;
+  }
+  
+  .table td, .table th {
+    padding: 8px 5px;
+  }
+  
+  .btn {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .card-body {
+    padding: 15px;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+  }
+  
+  .modal-dialog {
+    margin: 10px;
+  }
+  
+  .modal-body {
+    padding: 15px;
+  }
+}
+
+/* Print styles */
+@media print {
+  .btn, .pagination, .card-header, .form-control, .modal {
+    display: none !important;
+  }
+  
+  .table {
+    font-size: 9pt;
+  }
+  
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+  
+  .table tbody tr:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  
+  .badge {
+    border: 1px solid #000;
+  }
+}
+
+/* Animación de carga */
+.fa-spin {
+  animation: fa-spin 1s infinite linear;
+}
+
+@keyframes fa-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mejoras visuales adicionales */
+.card-body.p-0 {
+  padding: 0 !important;
+}
+
+small {
+  font-size: 0.75rem;
+}
+
+.bg-light {
+  background-color: #f8f9fa !important;
+}
+
+.text-primary {
+  color: #007bff !important;
+}
+
+.text-success {
+  color: #28a745 !important;
+}
+
+/* Estilos para columnas de totales */
+.text-end {
+  text-align: right;
+}
+
+/* Hover effect para botones de acción */
+.btn-outline-info:hover {
+  background-color: #17a2b8;
+  color: white;
+  border-color: #17a2b8;
+}
+
+/* Efecto de enfoque en inputs */
+input:focus {
+  outline: none;
+}
+
+/* Espaciado en modal */
+.modal-body hr {
+  margin: 10px 0;
+  opacity: 0.3;
+}
+
+/* Color de texto muted */
+.text-muted {
+  color: #6c757d !important;
+}
+
+/* ============================================================
+   ⭐️ [NUEVO] Observaciones: texto completo + evidencias (imágenes)
+   ============================================================ */
+
+/* Celda de observación en la tabla: hasta 3 líneas visibles en vez de 1 truncada.
+   El texto completo se ve en el tooltip o al hacer clic (abre el modal). */
+.observacion-celda {
+  max-width: 220px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: normal;
+  word-break: break-word;
+  font-size: 0.85rem;
+  line-height: 1.25;
+  cursor: pointer;
+}
+
+.observacion-celda:hover {
+  color: #007bff;
+  text-decoration: underline;
+}
+
+/* Texto completo de la observación en el modal (respeta saltos de línea) */
+.observacion-texto {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Previews de imágenes seleccionadas (antes de guardar) */
+.preview-imagen {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #ffc107;
+}
+
+.preview-imagen img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: zoom-in;
+}
+
+.btn-quitar-imagen {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(220, 53, 69, 0.9);
+  color: white;
+  font-size: 0.7rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-quitar-imagen:hover {
+  background-color: #dc3545;
+}
+
+/* ⭐️ [NUEVO] Miniaturas de evidencias directamente en la celda de la tabla */
+.miniatura-tabla {
+  width: 34px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+  cursor: zoom-in;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background-color: #fff;
+}
+
+.miniatura-tabla:hover {
+  transform: scale(1.6);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  position: relative;
+  z-index: 5;
+}
+
+/* Botón "+N": indica cuántas evidencias más hay; abre el modal del histórico */
+.miniatura-mas {
+  width: 34px;
+  height: 34px;
+  border: 1px dashed #6c757d;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+  color: #495057;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.15s ease;
+}
+
+.miniatura-mas:hover {
+  background-color: #e9ecef;
+  border-color: #007bff;
+  color: #007bff;
+}
+
+/* Miniaturas de evidencias guardadas (en el histórico del modal) */
+.miniatura-evidencia {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  cursor: zoom-in;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  background-color: #fff;
+}
+
+.miniatura-evidencia:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* ⭐️ [MODIFICADO] Lightbox tipo galería */
+.lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background-color: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: zoom-out;
+}
+
+/* Marco de tamaño FIJO: todas las imágenes se muestran dentro del mismo encuadre,
+   sin que el lightbox "salte" de tamaño al pasar de una foto vertical a una horizontal.
+   object-fit: contain centra la imagen dentro del marco respetando su proporción. */
+.lightbox-marco {
+  width: min(1000px, 86vw);
+  height: min(680px, 78vh);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.35);
+  border-radius: 8px;
+  cursor: default;
+}
+
+.lightbox-marco img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 5px 30px rgba(0, 0, 0, 0.6);
+}
+
+/* Flechas de navegación anterior/siguiente */
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  z-index: 2001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-nav:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}
+
+.lightbox-nav-izq {
+  left: 20px;
+}
+
+.lightbox-nav-der {
+  right: 20px;
+}
+
+/* Pie de la galería: contador "2 / 5" y nombre del archivo */
+.lightbox-pie {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: default;
+}
+
+.lightbox-contador {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 20px;
+}
+
+.lightbox-nombre {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.8rem;
+  max-width: 45vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* En pantallas pequeñas las flechas se acercan a los bordes y el marco usa casi todo el ancho */
+@media (max-width: 768px) {
+  .lightbox-marco {
+    width: 94vw;
+    height: 70vh;
+  }
+
+  .lightbox-nav {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+  }
+
+  .lightbox-nav-izq {
+    left: 6px;
+  }
+
+  .lightbox-nav-der {
+    right: 6px;
+  }
+}
+
+.lightbox-cerrar {
+  position: absolute;
+  top: 20px;
+  right: 25px;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.lightbox-cerrar:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+}

@@ -1,0 +1,694 @@
+<div class="container-fluid mt-4">
+
+  <!-- ══════════════════════════════════════════════════════
+       CABECERA
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+              <h2 class="mb-1">
+                SKUs en Garantía + Stock Actual
+                <span class="badge bg-success ms-2">GRT</span>
+              </h2>
+              <p class="text-muted mb-0">
+                <i class="fas fa-shield-alt me-2"></i>
+                SKUs garantía: <strong>{{ totalSkusApi | number }}</strong> &nbsp;|&nbsp;
+                Unidades garantía: <strong>{{ totalUnidadesGarantia | number }}</strong> &nbsp;|&nbsp;
+                Stock insuficiente: <strong [class.text-danger]="totalSkusInsuficiente > 0">{{ totalSkusInsuficiente | number }}</strong>
+                <span *ngIf="tiempoSegundos" class="ms-2 text-muted">({{ tiempoSegundos | number:'1.2-2' }}s)</span>
+              </p>
+            </div>
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <button class="btn btn-outline-success" (click)="exportarExcel()"
+                      [disabled]="loading || (!skusFiltrados.length && !lineasFiltradas.length)">
+                <i class="fas fa-file-excel me-1"></i> Exportar
+              </button>
+              <button class="btn btn-outline-secondary" (click)="imprimirReporte()">
+                <i class="fas fa-print me-1"></i> Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SELECTOR DE RANGO
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm border-success">
+        <div class="card-header bg-success text-white">
+          <h6 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Seleccionar Rango de Fechas</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">Fecha Inicio</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaInicio">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha Fin</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaFin">
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-success w-100" (click)="buscar()"
+                      [disabled]="loading || !fechaInicio || !fechaFin">
+                <i class="fas fa-search me-1" [class.fa-spin]="loading"></i>
+                {{ loading ? 'Cargando...' : 'Buscar' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ALERTAS
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3" *ngIf="loading || error">
+    <div class="col-12">
+      <div class="alert alert-info d-flex align-items-center" *ngIf="loading">
+        <i class="fas fa-spinner fa-spin me-2"></i> Cargando datos de SKUs y detalle de ventas...
+      </div>
+      <div class="alert alert-danger d-flex align-items-center" *ngIf="error && !loading">
+        <i class="fas fa-exclamation-triangle me-2"></i> {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ALERTA STOCK INSUFICIENTE
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3" *ngIf="!loading && totalSkusInsuficiente > 0">
+    <div class="col-12">
+      <div class="alert alert-warning d-flex align-items-center mb-0">
+        <i class="fas fa-exclamation-circle me-2 fa-lg"></i>
+        <div>
+          <strong>{{ totalSkusInsuficiente }} SKU(s) con stock insuficiente</strong> —
+          el stock actual es menor a las unidades entregadas en garantía en el período.
+          <a class="alert-link ms-2" style="cursor:pointer;"
+             (click)="filtroSkuStock = 'insuficiente'; _aplicarFiltrosSkus(); cambiarVista('skus')">
+            Ver solo insuficientes
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TABS
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3" *ngIf="!loading && (skus.length || lineas.length)">
+    <div class="col-12">
+      <ul class="nav nav-tabs">
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="vistaActiva === 'skus'"
+             style="cursor:pointer;" (click)="cambiarVista('skus')">
+            <i class="fas fa-boxes me-1"></i>
+            SKUs Garantía
+            <span class="badge ms-1"
+                  [class.bg-success]="vistaActiva === 'skus'"
+                  [class.bg-secondary]="vistaActiva !== 'skus'">
+              {{ skusFiltrados.length | number }}
+            </span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" [class.active]="vistaActiva === 'detalle'"
+             style="cursor:pointer;" (click)="cambiarVista('detalle')">
+            <i class="fas fa-list-alt me-1"></i>
+            Detalle Ventas + Stock
+            <span class="badge ms-1"
+                  [class.bg-primary]="vistaActiva === 'detalle'"
+                  [class.bg-secondary]="vistaActiva !== 'detalle'">
+              {{ lineasFiltradas.length | number }}
+            </span>
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       VISTA 1 — SKUs GARANTÍA
+  ════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="vistaActiva === 'skus' && !loading && skus.length">
+
+    <!-- KPIs -->
+    <div class="row mb-4 g-3">
+      <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm border-0 bg-success text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">SKUs en Garantía</p>
+            <h5 class="mb-0 fw-bold">{{ skusFiltrados.length | number }}</h5>
+            <small class="opacity-75">Total: {{ totalSkusApi | number }}</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm border-0 bg-primary text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Unidades en Garantía</p>
+            <h5 class="mb-0 fw-bold">{{ totalUnidadesGarantia | number }}</h5>
+            <small class="opacity-75">En el período consultado</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm border-0 h-100"
+             [class.bg-danger]="totalSkusInsuficiente > 0"
+             [class.bg-secondary]="totalSkusInsuficiente === 0"
+             [class.text-white]="true">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Stock Insuficiente</p>
+            <h5 class="mb-0 fw-bold">{{ totalSkusInsuficiente | number }}</h5>
+            <small class="opacity-75">SKUs bajo mínimo</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3 col-sm-6">
+        <div class="card shadow-sm border-0 bg-info text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Stock Total Disponible</p>
+            <h5 class="mb-0 fw-bold">{{ totalStockDisponible | number }}</h5>
+            <small class="opacity-75">Suma de SKUs filtrados</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros SKUs -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-3">
+                <label class="form-label">Artículo / Código</label>
+                <input type="text" class="form-control" [(ngModel)]="filtroSkuArticulo"
+                       (input)="_aplicarFiltrosSkus()" placeholder="Nombre o código...">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Clase</label>
+                <select class="form-select" [(ngModel)]="filtroSkuClase" (change)="_aplicarFiltrosSkus()">
+                  <option value="">Todas</option>
+                  <option *ngFor="let c of clasesSkuUnicas" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Grupo</label>
+                <select class="form-select" [(ngModel)]="filtroSkuGrupo" (change)="_aplicarFiltrosSkus()">
+                  <option value="">Todos</option>
+                  <option *ngFor="let g of gruposSkuUnicos" [value]="g">{{ g }}</option>
+                </select>
+              </div>
+              <div class="col-md-3">
+                <label class="form-label">Estado Stock</label>
+                <select class="form-select" [(ngModel)]="filtroSkuStock" (change)="_aplicarFiltrosSkus()">
+                  <option value="todos">Todos</option>
+                  <option value="insuficiente">Insuficiente</option>
+                  <option value="ok">OK</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-12 text-end">
+                <button class="btn btn-secondary btn-sm" (click)="limpiarFiltrosSkus()">
+                  <i class="fas fa-eraser me-1"></i> Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla SKUs -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover table-striped mb-0 table-sm">
+                <thead class="table-dark">
+                  <tr>
+                    <th class="cursor-pointer" (click)="ordenarSkuPor('codArticulo')">
+                      Código <i [class]="iconoOrdenSku('codArticulo')"></i>
+                    </th>
+                    <th class="cursor-pointer" (click)="ordenarSkuPor('nombreArticulo')">
+                      Artículo <i [class]="iconoOrdenSku('nombreArticulo')"></i>
+                    </th>
+                    <th class="cursor-pointer" (click)="ordenarSkuPor('clase')">
+                      Clase <i [class]="iconoOrdenSku('clase')"></i>
+                    </th>
+                    <th class="cursor-pointer" (click)="ordenarSkuPor('grupo')">
+                      Grupo <i [class]="iconoOrdenSku('grupo')"></i>
+                    </th>
+                    <th class="text-center cursor-pointer" (click)="ordenarSkuPor('totalGarantia')">
+                      Garantía <i [class]="iconoOrdenSku('totalGarantia')"></i>
+                    </th>
+                    <th class="text-center cursor-pointer" (click)="ordenarSkuPor('stockActual')">
+                      Stock Actual <i [class]="iconoOrdenSku('stockActual')"></i>
+                    </th>
+                    <th class="text-center cursor-pointer" (click)="ordenarSkuPor('diferencia')">
+                      Diferencia <i [class]="iconoOrdenSku('diferencia')"></i>
+                    </th>
+                    <th class="text-center">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of skusPaginados; trackBy: trackBySku"
+                      [class.table-danger]="s.stockActual < s.totalGarantia">
+                    <td>
+                      <small class="text-muted">{{ s.codArticulo }}</small>
+                    </td>
+                    <td>
+                      <div class="text-truncate" style="max-width:200px;" [title]="s.nombreArticulo">
+                        {{ s.nombreArticulo }}
+                      </div>
+                    </td>
+                    <td><small>{{ s.clase }}</small></td>
+                    <td><small>{{ s.grupo }}</small></td>
+                    <td class="text-center fw-semibold">{{ s.totalGarantia | number:'1.0-2' }}</td>
+                    <td class="text-center fw-bold" [ngClass]="claseStockActual(s)">
+                      {{ s.stockActual | number:'1.0-2' }}
+                    </td>
+                    <td class="text-center" [ngClass]="claseDiferencia(s)">
+                      {{ diferencia(s) | number:'1.0-2' }}
+                    </td>
+                    <td class="text-center">
+                      <span class="badge"
+                            [class.bg-danger]="s.stockActual < s.totalGarantia"
+                            [class.bg-warning]="s.stockActual === s.totalGarantia"
+                            [class.text-dark]="s.stockActual === s.totalGarantia"
+                            [class.bg-success]="s.stockActual > s.totalGarantia">
+                        {{ s.stockActual < s.totalGarantia ? 'INSUFICIENTE' : s.stockActual === s.totalGarantia ? 'JUSTO' : 'OK' }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!skusPaginados.length">
+                    <td colspan="8" class="text-center py-5">
+                      <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                      <p class="text-muted mb-0">No se encontraron SKUs</p>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot class="table-dark fw-bold" *ngIf="skusFiltrados.length">
+                  <tr>
+                    <td colspan="4" class="text-end">Totales (filtrado):</td>
+                    <td class="text-center">{{ totalUnidadesGarantia | number }}</td>
+                    <td class="text-center">{{ totalStockDisponible | number }}</td>
+                    <td colspan="2"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Paginación SKUs -->
+          <div class="card-footer bg-light" *ngIf="skusFiltrados.length > itemsPorPaginaSku">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <p class="mb-0 text-muted">
+                  Mostrando
+                  {{ (paginaActualSku - 1) * itemsPorPaginaSku + 1 }} –
+                  {{ Math.min(paginaActualSku * itemsPorPaginaSku, skusFiltrados.length) }}
+                  de {{ skusFiltrados.length | number }} SKUs
+                </p>
+              </div>
+              <div class="col-md-6">
+                <nav>
+                  <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" [class.disabled]="paginaActualSku === 1">
+                      <a class="page-link" (click)="cambiarPaginaSku(1)"><i class="fas fa-angle-double-left"></i></a>
+                    </li>
+                    <li class="page-item" [class.disabled]="paginaActualSku === 1">
+                      <a class="page-link" (click)="cambiarPaginaSku(paginaActualSku - 1)"><i class="fas fa-angle-left"></i></a>
+                    </li>
+                    <li class="page-item" *ngFor="let p of paginasArraySku; trackBy: trackByNum" [class.active]="p === paginaActualSku">
+                      <a class="page-link" (click)="cambiarPaginaSku(p)">{{ p }}</a>
+                    </li>
+                    <li class="page-item" [class.disabled]="paginaActualSku === totalPaginasSku">
+                      <a class="page-link" (click)="cambiarPaginaSku(paginaActualSku + 1)"><i class="fas fa-angle-right"></i></a>
+                    </li>
+                    <li class="page-item" [class.disabled]="paginaActualSku === totalPaginasSku">
+                      <a class="page-link" (click)="cambiarPaginaSku(totalPaginasSku)"><i class="fas fa-angle-double-right"></i></a>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- ════════════════════════════════════════════════════════════
+       VISTA 2 — DETALLE VENTAS + STOCK
+  ════════════════════════════════════════════════════════════ -->
+  <ng-container *ngIf="vistaActiva === 'detalle' && !loading && lineas.length">
+
+    <!-- KPIs Detalle -->
+    <div class="row mb-4 g-3">
+      <div class="col-md-2 col-sm-6">
+        <div class="card shadow-sm border-0 bg-primary text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Precio Venta</p>
+            <h5 class="mb-0 fw-bold">{{ formatearMoneda(totalPrecioFiltrado) }}</h5>
+            <small class="opacity-75">Sin IVA</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="card shadow-sm border-0 bg-danger text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Costo Total</p>
+            <h5 class="mb-0 fw-bold">{{ formatearMoneda(totalCostoFiltrado) }}</h5>
+            <small class="opacity-75">Costo de lo vendido</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="card shadow-sm border-0 h-100"
+             [class.bg-success]="margenGlobalPct >= 30"
+             [class.bg-warning]="margenGlobalPct >= 15 && margenGlobalPct < 30"
+             [class.bg-secondary]="margenGlobalPct < 15"
+             [class.text-white]="true">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Margen Global</p>
+            <h5 class="mb-0 fw-bold">{{ margenGlobalPct | number:'1.1-1' }}%</h5>
+            <small class="opacity-75">{{ formatearMoneda(totalPrecioFiltrado - totalCostoFiltrado) }}</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="card shadow-sm border-0 bg-info text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Unidades</p>
+            <h5 class="mb-0 fw-bold">{{ totalCantidadFiltrado | number }}</h5>
+            <small class="opacity-75">{{ articulosUnicos }} artículo(s)</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="card shadow-sm border-0 bg-warning text-dark h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Descuentos</p>
+            <h5 class="mb-0 fw-bold">{{ formatearMoneda(totalDescuentoFiltrado) }}</h5>
+            <small>En {{ lineasFiltradas.length }} líneas</small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-2 col-sm-6">
+        <div class="card shadow-sm border-0 bg-dark text-white h-100">
+          <div class="card-body py-3">
+            <p class="mb-1 small opacity-75">Agencias</p>
+            <h5 class="mb-0 fw-bold">{{ resumenPorOficina.length }}</h5>
+            <small class="opacity-75">{{ facturasUnicas }} facturas</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen Tipo OT + Por Agencia -->
+    <div class="row mb-4 g-3">
+      <div class="col-md-5">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="fas fa-tags me-2 text-primary"></i>Resumen por Tipo de OT</h6>
+          </div>
+          <div class="card-body p-0">
+            <table class="table table-sm table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Tipo</th>
+                  <th class="text-center">OTs</th>
+                  <th class="text-center">Fact.</th>
+                  <th class="text-end">Precio</th>
+                  <th class="text-end">Margen</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let r of resumenPorTipoOt">
+                  <td>
+                    <span class="badge me-1" [ngClass]="badgeTipoOt(r.tipoOtId)">{{ r.tipoOtId }}</span>
+                    <small>{{ r.tipoOt }}</small>
+                  </td>
+                  <td class="text-center">{{ r.cantOt | number }}</td>
+                  <td class="text-center">{{ r.cantFacturas | number }}</td>
+                  <td class="text-end">{{ formatearMoneda(r.totalPrecio) }}</td>
+                  <td class="text-end" [ngClass]="claseMargen(r.margenPct)">{{ r.margenPct | number:'1.1-1' }}%</td>
+                </tr>
+              </tbody>
+              <tfoot class="table-light fw-bold">
+                <tr>
+                  <td>Total</td>
+                  <td colspan="2" class="text-center">{{ facturasUnicas | number }}</td>
+                  <td class="text-end">{{ formatearMoneda(totalPrecioFiltrado) }}</td>
+                  <td class="text-end" [ngClass]="claseMargen(margenGlobalPct)">{{ margenGlobalPct | number:'1.1-1' }}%</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-7">
+        <div class="card shadow-sm h-100">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="fas fa-store me-2 text-success"></i>Precio Venta por Agencia</h6>
+          </div>
+          <div class="card-body" style="overflow-y:auto; max-height:320px;">
+            <div *ngFor="let o of resumenPorOficina; let i = index" class="mb-3">
+              <div class="d-flex justify-content-between mb-1">
+                <small class="fw-semibold">
+                  <span class="badge bg-secondary me-1">{{ i + 1 }}</span>{{ o.oficina }}
+                  <span class="ms-2" [ngClass]="claseMargen(o.margenPct)">{{ o.margenPct | number:'1.1-1' }}%</span>
+                </small>
+                <small class="text-muted">{{ formatearMoneda(o.totalPrecio) }}</small>
+              </div>
+              <div class="progress" style="height:10px;">
+                <div class="progress-bar bg-success"
+                     [style.width.%]="porcentajeBarra(o.totalPrecio, maxPrecioOficina)"></div>
+              </div>
+              <small class="text-muted">{{ o.cantOt }} OTs · {{ o.cantFacturas }} facturas</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros Detalle -->
+    <div class="row mb-3">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-header bg-light">
+            <h6 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros</h6>
+          </div>
+          <div class="card-body">
+            <div class="row g-3">
+              <div class="col-md-2">
+                <label class="form-label">Agencia</label>
+                <select class="form-select" [(ngModel)]="filtroOficina" (change)="_aplicarFiltrosDetalle()">
+                  <option value="">Todas</option>
+                  <option *ngFor="let o of oficinasUnicas" [value]="o">{{ o }}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Tipo OT</label>
+                <select class="form-select" [(ngModel)]="filtroTipoOt" (change)="_aplicarFiltrosDetalle()">
+                  <option value="">Todos</option>
+                  <option *ngFor="let t of tiposOtUnicos" [value]="t.desc">{{ t.id }} — {{ t.desc }}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Clase</label>
+                <select class="form-select" [(ngModel)]="filtroClase" (change)="_aplicarFiltrosDetalle()">
+                  <option value="">Todas</option>
+                  <option *ngFor="let c of clasesUnicas" [value]="c">{{ c }}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Grupo</label>
+                <select class="form-select" [(ngModel)]="filtroGrupo" (change)="_aplicarFiltrosDetalle()">
+                  <option value="">Todos</option>
+                  <option *ngFor="let g of gruposUnicos" [value]="g">{{ g }}</option>
+                </select>
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Cliente</label>
+                <input type="text" class="form-control" [(ngModel)]="filtroCliente"
+                       (input)="_aplicarFiltrosDetalle()" placeholder="Buscar cliente...">
+              </div>
+              <div class="col-md-2">
+                <label class="form-label">Artículo / Código</label>
+                <input type="text" class="form-control" [(ngModel)]="filtroArticulo"
+                       (input)="_aplicarFiltrosDetalle()" placeholder="Nombre o código...">
+              </div>
+            </div>
+            <div class="row mt-2">
+              <div class="col-12 text-end">
+                <button class="btn btn-secondary btn-sm" (click)="limpiarFiltrosDetalle()">
+                  <i class="fas fa-eraser me-1"></i> Limpiar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla Detalle -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card shadow-sm">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover table-striped mb-0 table-sm">
+                <thead class="table-dark">
+                  <tr>
+                    <th class="cursor-pointer" (click)="ordenarPor('oficina')">Agencia <i [class]="iconoOrden('oficina')"></i></th>
+                    <th class="cursor-pointer" (click)="ordenarPor('tipoOt')">Tipo OT <i [class]="iconoOrden('tipoOt')"></i></th>
+                    <th>Orden / Fact.</th>
+                    <th class="cursor-pointer" (click)="ordenarPor('fecha')">Fecha <i [class]="iconoOrden('fecha')"></i></th>
+                    <th class="cursor-pointer" (click)="ordenarPor('cliente')">Cliente <i [class]="iconoOrden('cliente')"></i></th>
+                    <th class="cursor-pointer" (click)="ordenarPor('nombreArticulo')">Artículo <i [class]="iconoOrden('nombreArticulo')"></i></th>
+                    <th class="text-center cursor-pointer" (click)="ordenarPor('cantidad')">Cant. <i [class]="iconoOrden('cantidad')"></i></th>
+                    <th class="text-end cursor-pointer" (click)="ordenarPor('costoTotal')">Costo <i [class]="iconoOrden('costoTotal')"></i></th>
+                    <th class="text-end cursor-pointer" (click)="ordenarPor('precioTotal')">Precio <i [class]="iconoOrden('precioTotal')"></i></th>
+                    <th class="text-end cursor-pointer" (click)="ordenarPor('margen')">Margen <i [class]="iconoOrden('margen')"></i></th>
+                    <th class="text-center cursor-pointer" (click)="ordenarPor('stockActual')">
+                      <i class="fas fa-warehouse me-1"></i>Stock <i [class]="iconoOrden('stockActual')"></i>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let l of lineasPaginadas; trackBy: trackByLinea">
+                    <td>
+                      <small class="text-muted d-block">{{ l.oficinaId }}</small>
+                      <strong>{{ l.oficina }}</strong>
+                    </td>
+                    <td>
+                      <span class="badge" [ngClass]="badgeTipoOt(l.tipoOtId)">{{ l.tipoOtId }}</span>
+                    </td>
+                    <td>
+                      <span class="badge bg-primary d-block mb-1">{{ l.ordenTrabajo }}</span>
+                      <small class="badge bg-light text-dark border">{{ l.numDocumento }}</small>
+                    </td>
+                    <td>
+                      <small>{{ formatearFecha(l.fecha) }}</small>
+                      <small class="text-muted d-block">OT: {{ formatearFecha(l.fechaOt) }}</small>
+                    </td>
+                    <td>
+                      <div class="text-truncate" style="max-width:140px;" [title]="l.cliente">{{ l.cliente || '—' }}</div>
+                      <small class="text-muted">{{ l.idCliente }}</small>
+                    </td>
+                    <td>
+                      <small class="text-muted d-block">{{ l.codArticulo }}</small>
+                      <div class="text-truncate" style="max-width:160px;" [title]="l.nombreArticulo">{{ l.nombreArticulo }}</div>
+                    </td>
+                    <td class="text-center">{{ l.cantidad | number:'1.0-2' }}</td>
+                    <td class="text-end">
+                      <small class="text-muted d-block">{{ formatearMoneda(l.costoUnitario) }}/u</small>
+                      <strong>{{ formatearMoneda(l.costoTotal) }}</strong>
+                    </td>
+                    <td class="text-end">
+                      <small class="text-muted d-block">{{ formatearMoneda(l.precioUnitario) }}/u</small>
+                      <strong>{{ formatearMoneda(l.precioTotal) }}</strong>
+                    </td>
+                    <td class="text-end"
+                        [ngClass]="claseMargen(l.precioTotal > 0 ? ((l.precioTotal - l.costoTotal) / l.precioTotal) * 100 : 0)">
+                      {{ l.precioTotal > 0 ? ((l.precioTotal - l.costoTotal) / l.precioTotal * 100 | number:'1.1-1') : '0.0' }}%
+                    </td>
+                    <td class="text-center fw-bold"
+                        [class.text-danger]="l.stockActual <= 0"
+                        [class.text-warning]="l.stockActual > 0 && l.stockActual < l.cantidad"
+                        [class.text-success]="l.stockActual >= l.cantidad">
+                      {{ l.stockActual | number:'1.0-2' }}
+                    </td>
+                  </tr>
+                  <tr *ngIf="!lineasPaginadas.length">
+                    <td colspan="11" class="text-center py-5">
+                      <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                      <p class="text-muted mb-0">No se encontraron líneas de detalle</p>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot class="table-dark fw-bold" *ngIf="lineasFiltradas.length">
+                  <tr>
+                    <td colspan="7" class="text-end">Totales:</td>
+                    <td class="text-end">{{ formatearMoneda(totalCostoFiltrado) }}</td>
+                    <td class="text-end">{{ formatearMoneda(totalPrecioFiltrado) }}</td>
+                    <td class="text-end" [ngClass]="claseMargen(margenGlobalPct)">{{ margenGlobalPct | number:'1.1-1' }}%</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Paginación Detalle -->
+          <div class="card-footer bg-light" *ngIf="lineasFiltradas.length > itemsPorPagina">
+            <div class="row align-items-center">
+              <div class="col-md-6">
+                <p class="mb-0 text-muted">
+                  Mostrando
+                  {{ (paginaActual - 1) * itemsPorPagina + 1 }} –
+                  {{ Math.min(paginaActual * itemsPorPagina, lineasFiltradas.length) }}
+                  de {{ lineasFiltradas.length | number }} registros
+                </p>
+              </div>
+              <div class="col-md-6">
+                <nav>
+                  <ul class="pagination justify-content-end mb-0">
+                    <li class="page-item" [class.disabled]="paginaActual === 1">
+                      <a class="page-link" (click)="cambiarPagina(1)"><i class="fas fa-angle-double-left"></i></a>
+                    </li>
+                    <li class="page-item" [class.disabled]="paginaActual === 1">
+                      <a class="page-link" (click)="cambiarPagina(paginaActual - 1)"><i class="fas fa-angle-left"></i></a>
+                    </li>
+                    <li class="page-item" *ngFor="let p of paginasArray; trackBy: trackByNum" [class.active]="p === paginaActual">
+                      <a class="page-link" (click)="cambiarPagina(p)">{{ p }}</a>
+                    </li>
+                    <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                      <a class="page-link" (click)="cambiarPagina(paginaActual + 1)"><i class="fas fa-angle-right"></i></a>
+                    </li>
+                    <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                      <a class="page-link" (click)="cambiarPagina(totalPaginas)"><i class="fas fa-angle-double-right"></i></a>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+
+  <!-- Estado vacío inicial -->
+  <div class="row" *ngIf="!loading && !skus.length && !lineas.length && !error">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+          <i class="fas fa-shield-alt fa-4x text-muted mb-3 d-block"></i>
+          <h5 class="text-muted">Selecciona un rango de fechas y presiona Buscar</h5>
+          <p class="text-muted">Se cargarán los SKUs entregados en garantía y el detalle de ventas con stock actual.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

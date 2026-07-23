@@ -1,0 +1,861 @@
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">REPUESTOS IMPORTACIONES</div>
+        <div class="contenedor-busqueda">
+          <input
+            type="text"
+            class="busqueda"
+            placeholder="Buscar "
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Orden de Compra de Importaciones</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de las ordenes de compra</p>
+      </div>
+
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica tarjeta-primary" [ngClass]="{'activo': activeCard === 'INVOICE'}" (click)="quickFilter('TODOS')">
+            <div class="valor-estadistica">{{ totalInvoices || 0 }}</div>
+            <div class="etiqueta-estadistica">INVOICE</div>
+        </div>
+        <div class="tarjeta-estadistica tarjeta-success-dark" [ngClass]="{'activo': activeCard === 'COMPLETA'}" (click)="quickFilter('COMPLETA')">
+           <div class="valor-estadistica">{{ cantidadCompleta || 0 }}</div>
+           <div class="etiqueta-estadistica">COMPLETA</div>
+        </div>
+        <div class="tarjeta-estadistica tarjeta-warning" [ngClass]="{'activo': activeCard === 'PARCIAL'}" (click)="quickFilter('PARCIAL')">
+            <div class="valor-estadistica">{{ cantidadParcial || 0 }}</div>
+            <div class="etiqueta-estadistica">PARCIAL</div>
+        </div>
+        <div class="tarjeta-estadistica tarjeta-danger" [ngClass]="{'activo': activeCard === 'PENDIENTE'}" (click)="quickFilter('PENDIENTE')">
+            <div class="valor-estadistica">{{ cantidadPendiente || 0 }}</div>
+            <div class="etiqueta-estadistica">PENDIENTE</div>
+        </div>
+        <div class="tarjeta-estadistica tarjeta-info" [ngClass]="{'activo': activeCard === 'SIN_DATOS'}" (click)="quickFilter('SIN_DATOS')">
+            <div class="valor-estadistica">{{ cantidadSinDatos || 0 }}</div>
+            <div class="etiqueta-estadistica">SIN DATOS</div>
+        </div>
+        <div class="tarjeta-estadistica tarjeta-info tarjeta-navegable" (click)="irAHistorialBajas()" title="Ver histórico de bajas">
+            <div class="valor-estadistica">📋</div>
+            <div class="etiqueta-estadistica">H. BAJAS</div>
+        </div>
+        <div class="tarjeta-estadistica tarjeta-crear" (click)="crear()">
+           <div class="etiqueta-estadistica">CREAR</div>
+        </div>
+      </div>
+
+        <div class="opciones-tabla">
+            <div class="filtros-fecha">
+                <div class="fecha-desde">
+                  <label for="startDate">Desde:</label>
+                  <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyFilters()">
+                </div>
+                <div class="fecha-hasta">
+                  <label for="endDate">Hasta:</label>
+                  <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyFilters()">
+                </div>
+            </div>
+
+            <div class="filtro-proveedor">
+                <label for="providerFilter">Proveedor:</label>
+                <select id="providerFilter" [(ngModel)]="activeProviderFilter" (change)="applyFilters()">
+                    <option value="TODOS">Todos</option>
+                    <option *ngFor="let provider of uniqueProviders" [value]="provider">{{ provider }}</option>
+                </select>
+            </div>
+            <div class="acciones-tabla">
+            <button class="boton-secundario" (click)="downloadExcel()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-excel" viewBox="0 0 16 16">
+                <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219l-2.116-2.54z"/>
+                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+              </svg>
+              Excel
+            </button>
+            <button class="boton-secundario" (click)="downloadCSV()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-spreadsheet" viewBox="0 0 16 16">
+                <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                <path d="M3 8v1h10V8H3zm0 3v1h10v-1H3z"/>
+              </svg>
+              CSV
+            </button>
+          </div>
+        </div>
+
+        <div class="contenedor-tabla">
+            <table class="tabla-pedidos">
+                <thead>
+                    <tr>
+                       <th>Cod</th>
+                       <th>Proveedor</th>
+                       <th>Orden_Compra</th>
+                       <th>Cotizacion</th>
+                       <th>BL</th>
+                       <th>Estado</th>
+                       <th>Cumplimiento</th>
+                       <th>Valor Orden</th>
+                       <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let item of lista">
+                        <td data-label="Codigo">{{ item.ordenid }}</td>
+                        <td data-label="Proveedor">{{ item.proveedor }}</td>
+                        <td data-label="Invoice">{{ item.invoice }}</td>
+                        <td data-label="Cotizacion">{{ item.cot }}</td>
+
+                        <!-- ── Columna BL ── -->
+                        <td data-label="BL">
+                          <ng-container *ngIf="tieneBLs(item); else sinBL">
+                            <div class="bl-tags">
+                              <span class="bl-tag bl-tag-clickable"
+                                    *ngFor="let bl of item.bls"
+                                    [title]="'Ver detalles: ' + bl.nombre + ' | Estado: ' + bl.estado"
+                                    (click)="verDetalleBl(bl.id)"
+                                    style="cursor:pointer;">
+                                📦 {{ bl.nombre }}
+                              </span>
+                            </div>
+                          </ng-container>
+                          <ng-template #sinBL>
+                            <span class="text-muted sin-bl">— Sin BL</span>
+                          </ng-template>
+                        </td>
+
+                        <td data-label="Estado">
+                            <span class="estado-badge" [ngClass]="getBadgeClass(item)">
+                                {{ getEstadoOrden(item) }}
+                            </span>
+                        </td>
+
+                        <td data-label="Cumplimiento">
+                            <div class="progress-container">
+                                <div class="progress-bar" 
+                                     [ngClass]="getProgressClass(item.resumen?.porcentajeCumplimiento || 0)"
+                                     [style.width.%]="item.resumen?.porcentajeCumplimiento || 0">
+                                </div>
+                                <span class="progress-text">{{ item.resumen?.porcentajeCumplimiento || 0 }}%</span>
+                            </div>
+                        </td>
+                        <td data-label="Valor Orden">
+                          <span class="valor-orden">
+                            $ {{ (item.valorOrden || 0) | number:'1.2-2' }}
+                          </span>
+                        </td>
+                        
+                        <td data-label="Acciones">
+                          <div class="acciones-celda">
+
+                            <!-- Info / Resumen -->
+                          <!--  <button class="boton-accion accion-info" (click)="openResumenModal(item)" title="Resumen Detallado">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                              </svg>
+                            </button>-->
+
+                            <!-- ✏️ Editar — NUEVO -->
+                            <button class="boton-accion accion-editar"
+                                    [class.accion-disabled]="(item.estado || '') === 'liquidado'"
+                                    [disabled]="(item.estado || '').toLowerCase() === 'liquidado'"
+                                    (click)="openEditarModal(item)"
+                                    title="Editar Orden">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                              </svg>
+                            </button>
+
+                            <!-- Análisis -->
+                            <button class="boton-accion accion-eliminar" (click)="navigate3(item.ordenid)" title="Análisis">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                              </svg>
+                            </button>
+
+                            <!-- Dar de Baja Items -->
+                            <button class="boton-accion accion-baja"
+                                    [class.accion-disabled]="(item.estado || '').toLowerCase() === 'liquidado'"
+                                    [disabled]="(item.estado || '').toLowerCase() === 'liquidado'"
+                                    (click)="openBajaModal(item)"
+                                    [title]="(item.estado || '').toLowerCase() === 'liquidado' ? 'No disponible: orden liquidada' : 'Dar de baja items / cantidades'">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                                <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                              </svg>
+                            </button>
+
+                            <!-- Eliminar -->
+                            <button class="boton-accion accion-delete"
+                                    [class.accion-disabled]="!puedeEliminar(item)"
+                                    [disabled]="!puedeEliminar(item)"
+                                    (click)="openEliminarModal(item)"
+                                    [title]="puedeEliminar(item) ? 'Eliminar Orden' : 'No se puede eliminar: ' + getEstadoOrden(item)">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                              </svg>
+                            </button>
+
+                            <!-- 💰 Pagos / Anticipos -->
+                            <button class="boton-accion accion-pagos"
+                                    (click)="abrirModalPagos(item)"
+                                    title="Pagos / Anticipos">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                                <path d="M1 3a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H1zm0 1h14v8H1V4z"/>
+                                <path d="M8 10a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM3 6a1 1 0 0 1-1-1h1V6zm10-1a1 1 0 0 1-1 1V5h1zM3 10v-.5a1 1 0 0 0-1 1H3zm10 0h1a1 1 0 0 0-1-1v1z"/>
+                              </svg>
+                            </button>
+
+                          </div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button
+              *ngFor="let page of getPaginationArray()"
+              class="boton-pagina"
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+       
+    </section>
+    
+    <!-- ── Modal Imagen ───────────────────────────────────────────────────── -->
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+            <span class="image-modal-close" (click)="closeModal()">&times;</span>
+            <img [src]="currentImageUrl" alt="Imagen del Pedido" class="image-modal-image">
+        </div>
+    </div>
+
+    <!-- ── Modal Resumen ──────────────────────────────────────────────────── -->
+    <div class="resumen-modal-overlay" *ngIf="isResumenModalOpen" (click)="closeResumenModal()">
+        <div class="resumen-modal-content resumen-modal-wide" (click)="$event.stopPropagation()">
+            <div class="resumen-modal-header">
+                <h2>Resumen — #{{ currentResumen?.ordenid }} {{ currentResumen?.invoice }}</h2>
+                <span class="resumen-modal-close" (click)="closeResumenModal()">&times;</span>
+            </div>
+            
+            <div class="resumen-modal-body" *ngIf="currentResumen">
+
+                <div class="resumen-section">
+                    <h3>Estado General</h3>
+                    <div class="resumen-stats-grid">
+                        <div class="resumen-stat-card">
+                            <div class="stat-label">Estado</div>
+                            <div class="stat-value" [ngClass]="{
+                                'text-success': currentResumen.resumen?.estadoOrden === 'COMPLETA',
+                                'text-warning': currentResumen.resumen?.estadoOrden === 'PARCIAL',
+                                'text-danger':  currentResumen.resumen?.estadoOrden === 'PENDIENTE',
+                                'text-muted':   currentResumen.resumen?.estadoOrden === 'SIN_DATOS'
+                            }">
+                                {{ currentResumen.resumen?.estadoOrden }}
+                            </div>
+                        </div>
+                        <div class="resumen-stat-card">
+                            <div class="stat-label">Total Items</div>
+                            <div class="stat-value">{{ currentResumen.resumen?.totalItems }}</div>
+                        </div>
+                        <div class="resumen-stat-card">
+                            <div class="stat-label">Cumplimiento</div>
+                            <div class="stat-value" [ngClass]="getProgressClass(currentResumen.resumen?.porcentajeCumplimiento || 0)">
+                                {{ currentResumen.resumen?.porcentajeCumplimiento }}%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resumen-section">
+                    <h3>Cantidades</h3>
+                    <div class="resumen-stats-grid">
+                        <div class="resumen-stat-card">
+                            <div class="stat-label">Total Solicitado</div>
+                            <div class="stat-value text-primary">{{ currentResumen.resumen?.totalSolicitado }}</div>
+                        </div>
+                        <div class="resumen-stat-card">
+                            <div class="stat-label">Total Facturado</div>
+                            <div class="stat-value text-success">{{ currentResumen.resumen?.totalFacturado }}</div>
+                        </div>
+                        <div class="resumen-stat-card card-success">
+                            <div class="stat-label">Items Completos</div>
+                            <div class="stat-value">{{ currentResumen.resumen?.itemsCompletos }}</div>
+                        </div>
+                        <div class="resumen-stat-card card-warning">
+                            <div class="stat-label">Items Pendientes</div>
+                            <div class="stat-value">{{ currentResumen.resumen?.itemsPendientes }}</div>
+                        </div>
+                    </div>
+                    <div class="progress-bar-large">
+                        <div class="progress-fill"
+                             [ngClass]="getProgressClass(currentResumen.resumen?.porcentajeCumplimiento || 0)"
+                             [style.width.%]="currentResumen.resumen?.porcentajeCumplimiento || 0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resumen-section resumen-section-eco" *ngIf="currentResumen.invoicesBL?.length > 0">
+                    <h3>💰 Información Económica</h3>
+                    <div class="resumen-stats-grid">
+                        <div class="resumen-stat-card tarjeta-eco-orden">
+                            <div class="stat-label">Total Monto BL</div>
+                            <div class="stat-value eco-valor">$ {{ getTotalMontoInvoiceBL(currentResumen) | number:'1.2-2' }}</div>
+                        </div>
+                        <div class="resumen-stat-card tarjeta-eco-items">
+                            <div class="stat-label">Total Ítems BL</div>
+                            <div class="stat-value eco-valor">{{ getTotalItemsInvoiceBL(currentResumen) | number }}</div>
+                        </div>
+                        <div class="resumen-stat-card tarjeta-eco-cant">
+                            <div class="stat-label">Total Cantidad BL</div>
+                            <div class="stat-value eco-valor">{{ getTotalCantidadInvoiceBL(currentResumen) | number }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resumen-section" *ngIf="currentResumen.bls?.length > 0">
+                    <h3 class="bl-section-title">
+                        🚢 Bill of Lading (BL)
+                        <span class="bl-count-badge">{{ currentResumen.bls.length }}</span>
+                    </h3>
+                    <div class="bl-card" *ngFor="let bl of currentResumen.bls">
+                        <div class="bl-card-header">
+                            <strong class="bl-nombre">{{ bl.nombre }}</strong>
+                            <span class="bl-estado-badge" [ngClass]="getBlEstadoClass(bl.estado)">{{ bl.estado || 'Sin estado' }}</span>
+                        </div>
+                        <div class="bl-card-body">
+                            <div class="bl-dato"><span class="bl-dato-label">SC</span><span class="bl-dato-valor">{{ bl.sc || '—' }}</span></div>
+                            <div class="bl-dato"><span class="bl-dato-label">Contenedores</span><span class="bl-dato-valor">{{ bl.contenedores ?? '—' }}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resumen-section" *ngIf="currentResumen.invoicesBL?.length > 0" style="margin-top:16px">
+                    <h3 class="bl-section-title">
+                        🧾 Invoice BL
+                        <span class="bl-count-badge">{{ currentResumen.invoicesBL.length }}</span>
+                    </h3>
+                    <div class="ibl-card" *ngFor="let ibl of currentResumen.invoicesBL">
+                        <div class="bl-card-header">
+                            <strong class="bl-nombre">{{ ibl.invoicebl }}</strong>
+                            <span class="bl-estado-badge" [ngClass]="getInvoiceBLEstadoClass(ibl.estado)">{{ ibl.estado || 'Sin estado' }}</span>
+                        </div>
+                        <div class="bl-card-body">
+                            <div class="bl-dato"><span class="bl-dato-label">BL</span><span class="bl-dato-valor">{{ ibl.bl || '—' }}</span></div>
+                            <div class="bl-dato"><span class="bl-dato-label">Contenedor</span><span class="bl-dato-valor">{{ ibl.contenedor || '—' }}</span></div>
+                            <div class="bl-dato"><span class="bl-dato-label">Liquidación</span><span class="bl-dato-valor">{{ ibl.liquidacion || '—' }}</span></div>
+                            <div class="bl-dato"><span class="bl-dato-label">Items</span><span class="bl-dato-valor">{{ ibl.totalItems }}</span></div>
+                            <div class="bl-dato"><span class="bl-dato-label">Cantidad</span><span class="bl-dato-valor">{{ ibl.totalCantidad | number }}</span></div>
+                            <div class="bl-dato"><span class="bl-dato-label">Monto</span><span class="bl-dato-valor">$ {{ ibl.totalMonto | number:'1.2-2' }}</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="resumen-section" *ngIf="currentResumen.resumen?.invoicesAsociadas?.length > 0">
+                    <h3>Invoices Asociadas</h3>
+                    <div class="invoices-list">
+                        <span class="invoice-tag" *ngFor="let invoice of currentResumen.resumen?.invoicesAsociadas">
+                            {{ invoice }}
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Modal Dar de Baja ITEMS ❌ ──────────────────────────────────────── -->
+    <div class="resumen-modal-overlay" *ngIf="isBajaItemsModalOpen" (click)="closeBajaModal()">
+      <div class="resumen-modal-content modal-baja-items" (click)="$event.stopPropagation()">
+        <div class="resumen-modal-header header-baja-items">
+          <h2>❌ Dar de baja items — Orden #{{ ordenParaBajaItems?.ordenid }}</h2>
+          <span class="resumen-modal-close" (click)="closeBajaModal()">&times;</span>
+        </div>
+
+        <div class="resumen-modal-body" *ngIf="ordenParaBajaItems">
+
+          <p class="modal-descripcion">
+            Selecciona los items y las cantidades que <strong>ya no se van a enviar</strong>.
+            Proveedor: <em>{{ ordenParaBajaItems.proveedor }}</em> — Invoice: <strong>{{ ordenParaBajaItems.invoice }}</strong>
+          </p>
+
+          <!-- Cargando detalles -->
+          <div *ngIf="cargandoDetallesBaja" class="baja-cargando">
+            Cargando detalles de la orden...
+          </div>
+
+          <!-- Sin detalles -->
+          <div *ngIf="!cargandoDetallesBaja && detallesBaja.length === 0 && !bajaItemsError" class="baja-sin-datos">
+            No hay items pendientes para dar de baja en esta orden (todo lo solicitado ya fue facturado/enviado).
+          </div>
+
+          <!-- Aviso + acciones rápidas -->
+          <div class="baja-toolbar" *ngIf="!cargandoDetallesBaja && detallesBaja.length > 0">
+            <p class="baja-aviso">
+              ℹ️ Solo se listan items con cantidad <strong>pendiente</strong> (lo solicitado que aún no ha llegado).
+              La baja se limita a esa cantidad; lo ya facturado no se puede dar de baja.
+            </p>
+            <button type="button" class="boton-seleccionar-todos" (click)="toggleSeleccionarTodos()">
+              {{ todosSeleccionados ? '☑ Deseleccionar todos' : '☐ Seleccionar todos' }}
+            </button>
+          </div>
+
+          <!-- Tabla de items -->
+          <div class="baja-tabla-wrapper" *ngIf="!cargandoDetallesBaja && detallesBaja.length > 0">
+            <table class="baja-items-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;" class="text-center">
+                    <input type="checkbox"
+                           [checked]="todosSeleccionados"
+                           (change)="toggleSeleccionarTodos()"
+                           title="Seleccionar / deseleccionar todos">
+                  </th>
+                  <th>Código</th>
+                  <th>Descripción</th>
+                  <th class="text-right">Solicitada</th>
+                  <th class="text-right">Facturada</th>
+                  <th class="text-right">Pendiente</th>
+                  <th class="text-right">FOB unit.</th>
+                  <th style="width:110px;" class="text-center">Dar de baja</th>
+                  <th class="text-right">Valor FOB baja</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let d of detallesBaja" [class.fila-seleccionada]="d.seleccionado">
+                  <td class="text-center">
+                    <input type="checkbox"
+                           [(ngModel)]="d.seleccionado"
+                           (change)="toggleSeleccionBaja(d)">
+                  </td>
+                  <td><strong>{{ d.codigo }}</strong></td>
+                  <td class="celda-desc">{{ d.descripcion }}</td>
+                  <td class="text-right">{{ d.cantidadSolicitada | number }}</td>
+                  <td class="text-right">{{ d.cantidadFacturada | number }}</td>
+                  <td class="text-right"><strong class="text-naranja">{{ d.cantidadPendiente | number }}</strong></td>
+                  <td class="text-right">$ {{ d.precioUnitario | number:'1.2-2' }}</td>
+                  <td class="text-center">
+                    <input type="number"
+                           class="input-cantidad-baja"
+                           [(ngModel)]="d.cantidadBaja"
+                           (ngModelChange)="validarCantidadBaja(d)"
+                           min="0" [max]="d.cantidadPendiente">
+                  </td>
+                  <td class="text-right text-danger">
+                    $ {{ getValorFobBajaLinea(d) | number:'1.2-2' }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Motivo general -->
+          <div class="campo-estado" style="margin-top:16px;" *ngIf="!cargandoDetallesBaja && detallesBaja.length > 0">
+            <label for="motivoGeneral">Motivo (opcional, se aplica a los items sin motivo propio):</label>
+            <input id="motivoGeneral" type="text" class="input-editar"
+                   [(ngModel)]="motivoGeneralBaja"
+                   placeholder="Ej: Cancelación parcial del proveedor">
+          </div>
+
+          <!-- Resumen -->
+          <div class="baja-resumen-footer" *ngIf="itemsSeleccionadosBaja.length > 0">
+            <div class="baja-resumen-item">
+              <span class="baja-resumen-label">Items a dar de baja:</span>
+              <span class="baja-resumen-valor">{{ itemsSeleccionadosBaja.length }}</span>
+            </div>
+            <div class="baja-resumen-item">
+              <span class="baja-resumen-label">Cantidad total:</span>
+              <span class="baja-resumen-valor">{{ totalCantidadBaja | number }}</span>
+            </div>
+            <div class="baja-resumen-item">
+              <span class="baja-resumen-label">Valor FOB total:</span>
+              <span class="baja-resumen-valor text-danger">$ {{ totalValorFobBaja | number:'1.2-2' }}</span>
+            </div>
+          </div>
+
+          <div class="modal-error" *ngIf="bajaItemsError">{{ bajaItemsError }}</div>
+
+          <div class="modal-acciones">
+            <button class="boton boton-secundario" (click)="closeBajaModal()" [disabled]="bajaItemsLoading">
+              Cancelar
+            </button>
+            <button class="boton boton-baja-confirmar"
+                    (click)="confirmarBaja()"
+                    [disabled]="bajaItemsLoading || itemsSeleccionadosBaja.length === 0">
+              <span *ngIf="bajaItemsLoading">Procesando...</span>
+              <span *ngIf="!bajaItemsLoading">❌ Dar de baja ({{ itemsSeleccionadosBaja.length }})</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Modal Eliminar ─────────────────────────────────────────────────── -->
+    <div class="resumen-modal-overlay" *ngIf="isEliminarModalOpen" (click)="closeEliminarModal()">
+      <div class="resumen-modal-content modal-eliminar" (click)="$event.stopPropagation()">
+        <div class="resumen-modal-header header-eliminar">
+          <h2>🗑️ Eliminar Orden</h2>
+          <span class="resumen-modal-close" (click)="closeEliminarModal()">&times;</span>
+        </div>
+        <div class="resumen-modal-body" *ngIf="ordenParaEliminar">
+          <p class="modal-descripcion">
+            ¿Estás seguro de que deseas <strong>eliminar permanentemente</strong> la orden
+            <strong>#{{ ordenParaEliminar.ordenid }}</strong>
+            — <em>{{ ordenParaEliminar.invoice }}</em>?
+          </p>
+          <div class="modal-alerta modal-alerta-danger">
+            🚨 Esta acción es <strong>irreversible</strong>. Se eliminarán la orden y todos sus detalles de la base de datos.
+          </div>
+          <div class="modal-error" *ngIf="eliminarError">{{ eliminarError }}</div>
+          <div class="modal-acciones">
+            <button class="boton boton-secundario" (click)="closeEliminarModal()" [disabled]="eliminarLoading">Cancelar</button>
+            <button class="boton boton-danger" (click)="confirmarEliminar()" [disabled]="eliminarLoading">
+              <span *ngIf="eliminarLoading">Eliminando...</span>
+              <span *ngIf="!eliminarLoading">Sí, eliminar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Modal Editar ✏️ ────────────────────────────────────────────────── -->
+    <div class="resumen-modal-overlay" *ngIf="isEditarModalOpen" (click)="closeEditarModal()">
+      <div class="resumen-modal-content modal-editar" (click)="$event.stopPropagation()">
+        <div class="resumen-modal-header header-editar">
+          <h2>✏️ Editar Orden #{{ ordenParaEditar?.ordenid }}</h2>
+          <span class="resumen-modal-close" (click)="closeEditarModal()">&times;</span>
+        </div>
+        <div class="resumen-modal-body" *ngIf="ordenParaEditar">
+
+          <p class="modal-descripcion">
+            Modificar datos de la orden
+            <strong>#{{ ordenParaEditar.ordenid }}</strong>
+            — Proveedor: <em>{{ ordenParaEditar.proveedor }}</em>
+          </p>
+
+          <!-- Campo Invoice N -->
+          <div class="campo-estado">
+            <label for="editInvoiceN">Número de Orden (Invoice N):</label>
+            <input
+              id="editInvoiceN"
+              type="text"
+              class="input-editar"
+              [(ngModel)]="editarForm.invoiceN"
+              placeholder="Ej: INV-2024-001"
+              [class.input-error]="editarError && !editarForm.invoiceN?.trim()">
+          </div>
+
+          <!-- Campo Estado -->
+          <!--<div class="campo-estado" style="margin-top: 14px;">
+            <label for="editEstado">Estado:</label>
+            <select id="editEstado" [(ngModel)]="editarForm.estado" class="select-estado">
+              <option *ngFor="let e of editarEstadosDisponibles" [value]="e">{{ e }}</option>
+            </select>
+          </div>-->
+
+          <!-- Info de solo lectura -->
+          <div class="editar-info-readonly">
+            <div class="editar-info-item">
+              <span class="editar-info-label">Cotización:</span>
+              <span class="editar-info-valor">{{ ordenParaEditar.cot }}</span>
+            </div>
+            <div class="editar-info-item">
+              <span class="editar-info-label">Cumplimiento actual:</span>
+              <span class="editar-info-valor">{{ ordenParaEditar.resumen?.porcentajeCumplimiento || 0 }}%</span>
+            </div>
+          </div>
+
+          <div class="modal-error" *ngIf="editarError">{{ editarError }}</div>
+
+          <div class="modal-acciones">
+            <button class="boton boton-secundario" (click)="closeEditarModal()" [disabled]="editarLoading">
+              Cancelar
+            </button>
+            <button class="boton boton-editar" (click)="confirmarEditar()" [disabled]="editarLoading">
+              <span *ngIf="editarLoading">Guardando...</span>
+              <span *ngIf="!editarLoading">💾 Guardar cambios</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Modal BL / Invoice BL ─────────────────────────────────────────── -->
+    <div class="resumen-modal-overlay" *ngIf="isBlModalOpen" (click)="closeBlModal()">
+      <div class="resumen-modal-content modal-bl" (click)="$event.stopPropagation()">
+        <div class="resumen-modal-header header-bl">
+          <h2>📦 BLs e Invoice BLs — Orden #{{ currentItemBL?.ordenid }}</h2>
+          <span class="resumen-modal-close" (click)="closeBlModal()">&times;</span>
+        </div>
+        <div class="resumen-modal-body" *ngIf="currentItemBL">
+          <div class="bl-section">
+            <h3 class="bl-section-title">
+              🚢 Bill of Lading (BL)
+              <span class="bl-count-badge">{{ currentItemBL.bls?.length || 0 }}</span>
+            </h3>
+            <div *ngIf="currentItemBL.bls?.length > 0; else sinBLDetalle">
+              <div class="bl-card" *ngFor="let bl of currentItemBL.bls">
+                <div class="bl-card-header">
+                  <strong class="bl-nombre">{{ bl.nombre }}</strong>
+                  <span class="bl-estado-badge" [ngClass]="getBlEstadoClass(bl.estado)">{{ bl.estado || 'Sin estado' }}</span>
+                </div>
+                <div class="bl-card-body">
+                  <div class="bl-dato"><span class="bl-dato-label">SC</span><span class="bl-dato-valor">{{ bl.sc || '—' }}</span></div>
+                  <div class="bl-dato"><span class="bl-dato-label">Contenedores</span><span class="bl-dato-valor">{{ bl.contenedores ?? '—' }}</span></div>
+                </div>
+              </div>
+            </div>
+            <ng-template #sinBLDetalle>
+              <p class="bl-sin-datos">No hay BLs asociados a esta orden.</p>
+            </ng-template>
+          </div>
+
+          <div class="bl-section" style="margin-top:20px">
+            <h3 class="bl-section-title">
+              🧾 Invoice BL
+              <span class="bl-count-badge">{{ currentItemBL.invoicesBL?.length || 0 }}</span>
+            </h3>
+            <div *ngIf="currentItemBL.invoicesBL?.length > 0; else sinInvoiceBL">
+              <div class="ibl-card" *ngFor="let ibl of currentItemBL.invoicesBL">
+                <div class="bl-card-header">
+                  <strong class="bl-nombre">{{ ibl.invoicebl }}</strong>
+                  <span class="bl-estado-badge" [ngClass]="getInvoiceBLEstadoClass(ibl.estado)">{{ ibl.estado || 'Sin estado' }}</span>
+                </div>
+                <div class="bl-card-body">
+                  <div class="bl-dato"><span class="bl-dato-label">BL</span><span class="bl-dato-valor">{{ ibl.bl || '—' }}</span></div>
+                  <div class="bl-dato"><span class="bl-dato-label">Contenedor</span><span class="bl-dato-valor">{{ ibl.contenedor || '—' }}</span></div>
+                  <div class="bl-dato"><span class="bl-dato-label">Liquidación</span><span class="bl-dato-valor">{{ ibl.liquidacion || '—' }}</span></div>
+                  <div class="bl-dato"><span class="bl-dato-label">Items</span><span class="bl-dato-valor">{{ ibl.totalItems }}</span></div>
+                  <div class="bl-dato"><span class="bl-dato-label">Cantidad</span><span class="bl-dato-valor">{{ ibl.totalCantidad | number }}</span></div>
+                  <div class="bl-dato"><span class="bl-dato-label">Monto</span><span class="bl-dato-valor">$ {{ ibl.totalMonto | number:'1.2-2' }}</span></div>
+                </div>
+              </div>
+            </div>
+            <ng-template #sinInvoiceBL>
+              <p class="bl-sin-datos">No hay Invoice BLs registrados para esta orden.</p>
+            </ng-template>
+          </div>
+
+          <div class="modal-acciones">
+            <button class="boton boton-secundario" (click)="closeBlModal()">Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <!-- ══ Modal Pagos / Anticipos ══ -->
+  <div *ngIf="modalPagos"
+       style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:1100;display:flex;align-items:center;justify-content:center;"
+       (click)="cerrarModalPagos()">
+    <div style="background:white;border-radius:10px;width:95%;max-width:820px;max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div style="background:#27ae60;color:white;padding:14px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <div>
+          <h5 style="margin:0;font-weight:700;">💰 Pagos / Anticipos</h5>
+          <small style="opacity:0.9;">Orden <strong>#{{ ordenPagoSeleccionada?.ordenid }}</strong> — Invoice: <strong>{{ ordenPagoSeleccionada?.invoice }}</strong></small>
+        </div>
+        <button (click)="cerrarModalPagos()" style="background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+        <!-- ── Formulario nuevo pago ── -->
+        <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;">
+          <h6 style="margin:0 0 14px;font-weight:700;color:#27ae60;">➕ Registrar nuevo anticipo</h6>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Orden de compra</label>
+              <input type="text" [ngModel]="ordenPagoSeleccionada?.invoice || ('Orden #' + ordenPagoSeleccionada?.ordenid)" readonly
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;background:#e9ecef;color:#495057;cursor:not-allowed;font-weight:600;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Orden ID</label>
+              <input type="number" [ngModel]="pagoForm.ordenId" readonly
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;background:#e9ecef;color:#495057;cursor:not-allowed;font-weight:600;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Monto *</label>
+              <input type="number" [(ngModel)]="pagoForm.monto" placeholder="0.00" min="0" step="0.01"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Moneda</label>
+              <select [(ngModel)]="pagoForm.moneda"
+                      style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="CNY">CNY</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Tipo de pago</label>
+              <input type="text" value="ANTICIPO" readonly
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;background:#dbeafe;color:#1d4ed8;font-weight:700;cursor:not-allowed;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Fecha pago *</label>
+              <input type="date" [(ngModel)]="pagoForm.fechaPago"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Referencia</label>
+              <input type="text" [(ngModel)]="pagoForm.referencia" placeholder="N° transferencia / cheque"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+            <div style="grid-column:span 2;">
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Observaciones</label>
+              <input type="text" [(ngModel)]="pagoForm.observaciones" placeholder="Notas adicionales"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+          </div>
+
+          <button (click)="guardarPago()" [disabled]="guardandoPago"
+                  style="margin-top:14px;background:#27ae60;color:white;border:none;border-radius:5px;padding:8px 20px;font-weight:600;cursor:pointer;">
+            {{ guardandoPago ? '⏳ Guardando...' : '💾 Guardar anticipo' }}
+          </button>
+        </div>
+
+        <!-- ── Subir documento a pago existente ── -->
+        <div style="background:#f0f9f4;border:1px solid #b2dfdb;border-radius:8px;padding:16px;">
+          <h6 style="margin:0 0 12px;font-weight:700;color:#1a7a4c;">📎 Subir comprobante PDF / imagen</h6>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Pago ID</label>
+              <input type="number" [(ngModel)]="pagoSeleccionadoId" placeholder="ID del pago"
+                     style="width:130px;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Tipo documento</label>
+              <select [(ngModel)]="docTipo"
+                      style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+                <option value="COMPROBANTE">COMPROBANTE</option>
+                <option value="SWIFT">SWIFT</option>
+                <option value="FACTURA">FACTURA</option>
+                <option value="OTRO">OTRO</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Archivo</label>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx"
+                     (change)="onDocFileSelect($event)"
+                     style="font-size:0.82rem;">
+            </div>
+            <button (click)="subirDocumento(pagoSeleccionadoId!)" [disabled]="subiendoDoc || !docFile || !pagoSeleccionadoId"
+                    style="background:#1a7a4c;color:white;border:none;border-radius:4px;padding:7px 16px;font-size:0.85rem;cursor:pointer;">
+              {{ subiendoDoc ? '⏳ Subiendo...' : '⬆️ Subir' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Lista de pagos existentes ── -->
+        <div>
+          <h6 style="font-weight:700;color:#333;margin-bottom:10px;">
+            📋 Anticipos registrados
+            <span *ngIf="pagosCargando" style="font-size:0.8rem;color:#888;font-weight:400;"> cargando...</span>
+          </h6>
+
+          <div *ngIf="pagosData" style="margin-bottom:8px;display:flex;gap:16px;font-size:0.85rem;background:#e8f5e9;padding:8px 12px;border-radius:6px;flex-wrap:wrap;">
+            <span>Total pagos: <strong>{{ pagosData.totalPagos }}</strong></span>
+            <span>Total pagado: <strong>$ {{ pagosData.totalPagado | number:'1.2-2' }}</strong></span>
+            <span>Anticipos: <strong>$ {{ pagosData.totalAnticipo | number:'1.2-2' }}</strong></span>
+          </div>
+
+          <div *ngIf="!pagosCargando && pagosData?.pagos?.length === 0"
+               style="text-align:center;color:#888;padding:20px;">Sin pagos registrados.</div>
+
+          <div *ngFor="let pago of pagosData?.pagos"
+               style="border:1px solid #dee2e6;border-radius:6px;padding:12px;margin-bottom:10px;background:white;">
+
+            <!-- Cabecera pago -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+              <div>
+                <span style="font-weight:700;font-size:0.9rem;">ID {{ pago.id }}</span>
+                <span style="margin-left:8px;font-size:0.78rem;padding:2px 8px;border-radius:12px;"
+                      [style.background]="pago.tipoPago === 'ANTICIPO' ? '#dbeafe' : '#dcfce7'"
+                      [style.color]="pago.tipoPago === 'ANTICIPO' ? '#1d4ed8' : '#166534'">
+                  {{ pago.tipoPago }}
+                </span>
+                <span style="margin-left:6px;font-size:0.78rem;padding:2px 8px;border-radius:12px;"
+                      [style.background]="pago.estado === 'CONFIRMADO' ? '#dcfce7' : pago.estado === 'ANULADO' ? '#fee2e2' : '#fef9c3'"
+                      [style.color]="pago.estado === 'CONFIRMADO' ? '#166534' : pago.estado === 'ANULADO' ? '#991b1b' : '#854d0e'">
+                  {{ pago.estado }}
+                </span>
+              </div>
+              <strong style="font-size:1rem;color:#27ae60;">$ {{ pago.monto | number:'1.2-2' }} {{ pago.moneda }}</strong>
+            </div>
+
+            <div style="font-size:0.82rem;color:#555;margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">
+              <span>📅 {{ pago.fechaPago | date:'dd/MM/yyyy' }}</span>
+              <span *ngIf="pago.referencia">🔖 {{ pago.referencia }}</span>
+              <span *ngIf="pago.observaciones">📝 {{ pago.observaciones }}</span>
+              <span *ngIf="pago.invoiceBlNombre">Invoice: {{ pago.invoiceBlNombre }}</span>
+            </div>
+
+            <!-- Documentos del pago -->
+            <div *ngIf="pago.documentos?.length > 0" style="margin-top:8px;">
+              <small style="font-weight:600;color:#555;">Documentos:</small>
+              <div *ngFor="let doc of pago.documentos"
+                   style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:4px;padding:3px 8px;margin:3px;font-size:0.78rem;">
+                <span>📄 {{ doc.nombreArchivo }}</span>
+                <button (click)="descargarDocumento(pago.id, doc.id)"
+                        style="background:none;border:none;cursor:pointer;color:#2563eb;font-size:0.78rem;padding:0;">⬇️</button>
+                <button (click)="eliminarDocumento(pago.id, doc.id)"
+                        style="background:none;border:none;cursor:pointer;color:#dc2626;font-size:0.78rem;padding:0;">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Acciones del pago -->
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;" *ngIf="pago.estado !== 'ANULADO'">
+              <button *ngIf="pago.estado === 'REGISTRADO'"
+                      (click)="cambiarEstadoPago(pago.id, 'CONFIRMADO')"
+                      style="background:#16a34a;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:0.78rem;cursor:pointer;">
+                ✅ Confirmar
+              </button>
+              <button *ngIf="pago.estado !== 'ANULADO'"
+                      (click)="cambiarEstadoPago(pago.id, 'ANULADO')"
+                      style="background:#dc2626;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:0.78rem;cursor:pointer;">
+                ❌ Anular
+              </button>
+              <button *ngIf="pago.estado === 'REGISTRADO'"
+                      (click)="eliminarPago(pago.id)"
+                      style="background:#6b7280;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:0.78rem;cursor:pointer;">
+                🗑️ Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  </main>

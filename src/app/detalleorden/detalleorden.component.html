@@ -1,0 +1,151 @@
+<!-- dashboard.component.html -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Importaciones</div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            placeholder="Buscar por Proforma, BL, Invoice..."
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+        
+      </div>
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Importaciones</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de sus importaciones automotrices</p>
+      </div>
+      
+         
+  <!--    <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Importaciones Recientes</div>
+          <div class="acciones-tabla">
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <button class="boton boton-contorno" (click)="exportData()">Exportar</button>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Proforma</th>
+              <th>Invoice No.</th>
+              <th>BL</th>
+              <th>Contenedor</th>
+              <th>Fecha Embarque</th>
+              <th>Fecha Llegada</th>
+              <th>Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista" (click)="viewDetails(item.id)">
+              <td>{{ item.codigocot }}</td>
+              <td>{{ item.invoicen }}</td>
+              <td>{{ item.bl }}</td>
+              <td>{{ item.contenedor || '-' }}</td>
+              <td>{{ item.fechaEmbarque || '-' }}</td>
+              <td>{{ item.fechaLlegada || '-' }}</td>
+              <td>
+                <span class="estado" [ngClass]="'estado-' + item.liquidacion.toLowerCase().replace(' ', '-')">
+                  {{ item.liquidacion }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="pie-tabla">
+          <div>Mostrando {{ itemsPerPage }} de {{ stats.totalImportaciones }} importaciones</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of [1, 2, 3]" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              {{ page }}
+            </button>
+            <button class="boton-pagina" *ngIf="totalPages > 3">...</button>
+            <button 
+              *ngIf="totalPages > 3" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': totalPages === currentPage}"
+              (click)="changePage(totalPages)">
+              {{ totalPages }}
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>-->
+   
+   
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Importaciones Recientes</div>
+          <div class="acciones-tabla">
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Invoicebl</th>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+              
+               
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista; let i = index" class="fila-datos">
+                <td data-label="Item">{{ i + 1 }}</td>
+                <td data-label="Invoice bl">{{ item.invoicebl }}</td> 
+                <td data-label="Codigo">{{ item.codigo }}</td>
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ itemsPerPage }} de  importaciones</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+   
+    </section>
+  </main>
+ 
+  

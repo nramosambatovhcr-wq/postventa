@@ -1,0 +1,133 @@
+<div class="campanas-container">
+
+  <div class="campanas-header">
+    <div>
+      <h2>Campañas de Inventario</h2>
+      <p class="subtitulo">Crea, edita, activa y cierra las campañas de conteo.</p>
+    </div>
+    <button class="btn btn-primary" (click)="abrirCrear()">
+      + Nueva Campaña
+    </button>
+  </div>
+
+  <div *ngIf="error" class="alerta alerta-error">{{ error }}</div>
+
+  <div *ngIf="cargando" class="cargando">Cargando campañas...</div>
+
+  <table class="tabla-campanas" *ngIf="!cargando && campanas.length">
+    <thead>
+      <tr>
+        <th>Nombre</th>
+        <th>Tipo</th>
+        <th>Inicio</th>
+        <th>Fin</th>
+        <th>Estado</th>
+        <th>Activa</th>
+        <th class="col-acciones">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let c of campanas" [class.fila-activa]="esActiva(c)">
+        <td>
+          <strong>{{ c.nombre }}</strong>
+          <div class="descripcion-mini" *ngIf="c.descripcion">{{ c.descripcion }}</div>
+        </td>
+        <td>{{ c.tipo_inventario || '—' }}</td>
+        <td>{{ c.fecha_inicio | date:'dd/MM/yyyy' }}</td>
+        <td>{{ c.fecha_fin | date:'dd/MM/yyyy' }}</td>
+        <td>
+          <span class="badge" [ngClass]="getBadgeClass(c.estado)">{{ c.estado }}</span>
+        </td>
+        <td>
+          <span *ngIf="esActiva(c)" class="badge badge-activa">● Activa</span>
+          <span *ngIf="!esActiva(c)" class="sin-activa">—</span>
+        </td>
+        <td class="col-acciones">
+          <button class="btn-icono" title="Editar" (click)="abrirEditar(c)">✏️</button>
+          <button
+            class="btn-icono"
+            title="Activar"
+            [disabled]="esActiva(c)"
+            (click)="activar(c)">▶️</button>
+          <button
+            class="btn-icono"
+            title="Cerrar campaña"
+            [disabled]="estaCerrada(c)"
+            (click)="cerrar(c)">🔒</button>
+          <button class="btn-icono btn-peligro" title="Eliminar" (click)="eliminar(c)">🗑️</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div *ngIf="!cargando && !campanas.length" class="vacio">
+    No hay campañas creadas todavía.
+  </div>
+
+  <!-- ── Modal: crear / editar ─────────────────────────── -->
+  <div class="modal-overlay" *ngIf="mostrarFormulario" (click)="cerrarFormulario()">
+    <div class="modal-form" (click)="$event.stopPropagation()">
+      <h3>{{ modoEdicion ? 'Editar Campaña' : 'Nueva Campaña' }}</h3>
+
+      <div class="campo">
+        <label>Nombre *</label>
+        <input type="text" [(ngModel)]="form.nombre" name="nombre" placeholder="Ej. Conteo Q3 2026">
+      </div>
+
+      <div class="campo">
+        <label>Descripción</label>
+        <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2"></textarea>
+      </div>
+
+      <div class="campo-fila">
+        <div class="campo">
+          <label>Fecha inicio *</label>
+          <input type="date" [(ngModel)]="form.fecha_inicio" name="fecha_inicio">
+        </div>
+        <div class="campo">
+          <label>Fecha fin *</label>
+          <input type="date" [(ngModel)]="form.fecha_fin" name="fecha_fin">
+        </div>
+      </div>
+
+      <div class="campo-fila">
+        <div class="campo">
+          <label>Tipo de inventario</label>
+          <input type="text" [(ngModel)]="form.tipo_inventario" name="tipo_inventario" placeholder="Ej. General">
+        </div>
+        <div class="campo">
+          <label>Estado</label>
+          <select [(ngModel)]="form.estado" name="estado">
+            <option value="inactiva">Inactiva</option>
+            <option value="activa">Activa</option>
+            <option value="cerrada">Cerrada</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Agencias incluidas</label>
+        <div class="agencias-multiselect">
+          <label class="agencia-check" *ngFor="let a of agenciasOpciones">
+            <input type="checkbox" [(ngModel)]="a.seleccionada" [name]="'agencia-' + a.id">
+            {{ a.nombre }}
+          </label>
+          <div *ngIf="!agenciasOpciones.length" class="sin-datos">Cargando agencias...</div>
+        </div>
+      </div>
+
+      <div class="campo">
+        <label>Observaciones</label>
+        <textarea [(ngModel)]="form.observaciones" name="observaciones" rows="2"></textarea>
+      </div>
+
+      <div class="modal-acciones">
+        <button class="btn btn-secundario" (click)="cerrarFormulario()" [disabled]="guardando">Cancelar</button>
+        <button class="btn btn-primary" (click)="guardar()" [disabled]="guardando">
+          {{ guardando ? 'Guardando...' : (modoEdicion ? 'Guardar cambios' : 'Crear campaña') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

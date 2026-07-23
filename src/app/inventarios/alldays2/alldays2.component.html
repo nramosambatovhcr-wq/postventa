@@ -1,0 +1,2669 @@
+<div class="container-fluid p-0">
+  <!-- ========================================
+       HEADER PRINCIPAL CON DISEÑO MODERNO
+       ======================================== -->
+  <div class="main-header">
+    <div class="header-content">
+      <div class="header-title-section">
+        <h1 class="header-title">
+          <i class="bi bi-clipboard-data me-3"></i>
+          Análisis de Inventario Físico
+        </h1>
+        <p class="header-subtitle">Sistema de Control y Conciliación - VEHICENTRO S.A.</p>
+        <div class="header-info">
+          <span class="info-badge">
+            <i class="bi bi-building"></i> Bodega: SAMBORONDON
+          </span>
+          <span class="info-badge">
+            <i class="bi bi-calendar3"></i> Fecha: {{ obtenerFechaActual() }}
+          </span>
+          <span class="info-badge">
+            <i class="bi bi-box-seam"></i> Artículos: {{ articulosDiarios.length }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Botones de Exportación -->
+      <!-- ============================================================ -->
+<!-- UBICACIÓN: Busca en tu archivo alldays.component.html la sección -->
+<!-- que empieza con <div class="main-header"> -->
+<!-- Dentro de esa sección, encontrarás <div class="export-buttons-group"> -->
+<!-- REEMPLAZA TODO desde <div class="export-buttons-group"> hasta su </div> -->
+<!-- ============================================================ -->
+
+<!-- 
+CONTEXTO COMPLETO - Así debería verse tu header:
+
+<div class="main-header">
+  <div class="header-content">
+    <div class="header-title-section">
+      <h1 class="header-title">
+        <i class="bi bi-clipboard-data me-3"></i>
+        Análisis de Inventario Físico
+      </h1>
+      ...
+    </div>
+
+    👉 AQUÍ VA LA SECCIÓN DE BOTONES 👈
+-->
+
+<div class="export-buttons-group">
+  <!-- NUEVOS BOTONES PDF Y HTML -->
+  
+  <!-- Botón: Exportar a PDF -->
+  <button class="btn-export btn-export-danger" 
+          (click)="exportarPDF()" 
+          [disabled]="loading"
+          title="Exportar informe completo a PDF">
+    <i class="bi bi-file-earmark-pdf-fill"></i>
+    <span>PDF Completo</span>
+  </button>
+  
+  <!-- Botón: Exportar a HTML Interactivo -->
+  <button class="btn-export btn-export-info" 
+          (click)="exportarHTML()" 
+          [disabled]="loading"
+          title="Exportar informe a HTML con todos los estilos">
+    <i class="bi bi-filetype-html"></i>
+    <span>HTML Interactivo</span>
+  </button>
+  
+  <!-- Botón: Exportar a HTML Portable -->
+  <button class="btn-export btn-export-purple" 
+          (click)="exportarHTMLPortable()" 
+          [disabled]="loading"
+          title="Exportar HTML portable con estilos embebidos">
+    <i class="bi bi-file-code-fill"></i>
+    <span>HTML Portable</span>
+  </button>
+
+  <!-- BOTONES EXISTENTES (mantener) -->
+<!--  
+  <button class="btn-export btn-export-success" 
+          (click)="exportarExcel()" 
+          [disabled]="loading"
+          title="Exportar detalle completo">
+    <i class="bi bi-file-earmark-excel-fill"></i>
+    <span>Excel Detallado</span>
+  </button>
+  
+  <button class="btn-export btn-export-primary" 
+          (click)="exportarExcel1()" 
+          [disabled]="loading"
+          title="Exportar agrupado por fechas">
+    <i class="bi bi-calendar-range"></i>
+    <span>Excel por Fechas</span>
+  </button>
+  
+  <button class="btn-export btn-export-info" 
+          (click)="exportarExcelAgrupado()" 
+          [disabled]="loading"
+          title="Exportar resumen agrupado">
+    <i class="bi bi-collection"></i>
+    <span>Excel Agrupado</span>
+  </button>
+  
+  <button class="btn-export btn-export-warning" 
+          (click)="exportarAnalisisVarianzas()" 
+          [disabled]="loading || analisisVarianzas.length === 0"
+          title="Análisis de varianzas detallado">
+    <i class="bi bi-graph-up-arrow"></i>
+    <span>Análisis Varianzas</span>
+  </button>
+  
+  <button class="btn-export btn-export-secondary" 
+          (click)="exportarExcelDiario8()" 
+          [disabled]="loading"
+          title="Exportar con API mejorada">
+    <i class="bi bi-star-fill"></i>
+    <span>Excel Diario (API)</span>
+  </button>-->
+</div>
+
+<!-- 
+  </div> ← Cierre de header-content
+</div> ← Cierre de main-header
+-->
+    </div>
+  </div>
+
+  <!-- ========================================
+       INFORMACIÓN GENERAL DEL INVENTARIO
+       ======================================== -->
+  <div *ngIf="!loading" class="content-section">
+    <div class="section-card info-general-inventario">
+      <div class="titulo-documento">
+        <h1 class="titulo-principal">INFORME EJECUTIVO DE INVENTARIO FÍSICO</h1>
+        <p class="subtitulo-documento">Análisis Integral y Recomendaciones Estratégicas</p>
+        <p class="descripcion-documento">Documento para Presentación a CEO y Alta Gerencia</p>
+      </div>
+
+      <div class="tabla-info-general">
+        <table class="table-info-documento">
+          <tbody>
+            <tr>
+              <td class="label-info">Empresa</td>
+              <td class="value-info" colspan="3"><strong>VEHICENTRO S.A.</strong></td>
+              <td class="label-info">Bodega</td>
+              <td class="value-info"><strong>{{ getNombreBodega() }}</strong></td>
+            </tr>
+            <tr>
+              <td class="label-info">Código de Inventario</td>
+              <td class="value-info"><strong>{{ getCodigoInventario() }}</strong></td>
+              <td class="label-info" style="width: 180px;">Fecha de Análisis</td>
+              <td class="value-info"><strong>{{ getFechaAnalisis() }}</strong></td>
+              <td class="label-info">Días de Conteo</td>
+              <td class="value-info"><strong>{{ getDiasConteo() }}</strong></td>
+            </tr>
+            <tr>
+              <td class="label-info">Período Fiscal</td>
+              <td class="value-info"><strong>{{ getPeriodoFiscal() }}</strong></td>
+              <td class="label-info">Rango de Conteo</td>
+              <td class="value-info" colspan="3"><strong>{{ getRangoDiasConteo() }} de {{ getPeriodoFiscal() }}</strong></td>
+            </tr>
+            <tr>
+              <td class="label-info">Método de Conteo</td>
+              <td class="value-info" colspan="5">
+                <strong>{{ getMetodoConteo() }}</strong>
+              </td>
+            </tr>
+            <tr>
+              <td class="label-info">Responsables del Conteo</td>
+              <td class="value-info" colspan="5">
+                {{ getResponsablesConteo() }}
+              </td>
+            </tr>
+            <tr>
+              <td class="label-info">Elaborado por</td>
+              <td class="value-info"><strong>Sistema de Análisis de Inventario v3.0</strong></td>
+              <td class="label-info" colspan="2">Aprobación Pendiente</td>
+              <td class="value-info" colspan="2"><strong>CEO / Gerencia General</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+<!-- Métricas Principales -->
+  
+      <div class="metrics-dashboard">
+
+         <div class="metric-card-large metric-total" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+          <div class="metric-icon-large">
+            <i class="bi bi-stack"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Total Inventario</span>
+            <span class="metric-value-large">{{ getValorTotalCompleto() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">{{ getStockTotalUnidades() | number:'1.0-0' }} unidades totales</span>
+          </div>
+        </div>
+        
+        <div class="metric-card-large metric-sistema">
+          <div class="metric-icon-large">
+            <i class="bi bi-database-fill"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Stock Disponible</span>
+            <span class="metric-value-large">{{ getValorTotalSistema() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">{{ getStockDisponibleUnidades() | number:'1.0-0' }} unidades disponibles</span>
+          </div>
+        </div>
+
+        <div class="metric-card-large metric-reservado" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <div class="metric-icon-large">
+            <i class="bi bi-lock-fill"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Stock Reservado</span>
+            <span class="metric-value-large">{{ getValorTotalStockReservado() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">{{ getStockReservadoUnidades() | number:'1.0-0' }} unidades reservadas ({{ getPorcentajeStockReservado() | number:'1.1-1' }}%)</span>
+          </div>
+        </div>
+
+      
+
+        <div class="metric-card-large metric-fisico">
+          <div class="metric-icon-large">
+            <i class="bi bi-box-seam-fill"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Físico Verificado</span>
+            <span class="metric-value-large">{{ getValorFisicoVerificado() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">Conteo real del disponible</span>
+          </div>
+        </div>
+
+        <div class="metric-card-large metric-diferencia">
+          <div class="metric-icon-large">
+            <i class="bi bi-graph-down-arrow"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Diferencia Neta</span>
+            <span class="metric-value-large text-danger">{{ getDiferenciaNeta() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">Pérdida en disponible</span>
+          </div>
+        </div>
+
+        <div class="metric-card-large metric-precision">
+          <div class="metric-icon-large">
+            <i class="bi bi-bullseye"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Precisión Global</span>
+            <span class="metric-value-large" [ngClass]="{
+              'text-success': getPrecisionGlobal() >= 98,
+              'text-warning': getPrecisionGlobal() >= 85 && getPrecisionGlobal() < 98,
+              'text-danger': getPrecisionGlobal() < 85
+            }">{{ getPrecisionGlobal() | number:'1.1-1' }}%</span>
+            <span class="metric-sublabel">Meta: ≥98%</span>
+          </div>
+        </div>
+      </div>
+      <div class="alert-modern alert-info mt-3">
+        <div class="alert-icon">
+          <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>📋 Sobre este Informe:</strong>
+          <p>Este documento presenta el análisis completo del inventario físico realizado en <strong>{{ getNombreBodega() }}</strong> durante {{ getRangoDiasConteo() }}. 
+          Incluye varianzas detalladas de <strong>{{ analisisVarianzas.length }} artículos</strong>, análisis financiero de 
+          <strong>{{ getValorTotalSistema() | currency:'USD':'symbol':'1.0-0' }}</strong>, causas raíz identificadas y plan de acción correctivo con ROI estimado.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       SPINNER DE CARGA
+       ======================================== -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner-modern">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando datos...</span>
+      </div>
+      <p class="loading-text">Procesando inventario...</p>
+    </div>
+  </div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: RESUMEN EJECUTIVO
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card executive-summary">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-file-earmark-text text-primary"></i>
+            RESUMEN EJECUTIVO
+          </h2>
+          <p class="section-description">
+            Análisis Integral del Inventario Físico
+          </p>
+        </div>
+      </div>
+<!-- Métricas Principales -->
+ 
+      <!-- Semáforo de Estado -->
+      <div class="semaforo-container" [ngClass]="getSemaforoEstado().clase">
+        <div class="semaforo-icon">
+          <i class="bi" [ngClass]="{
+            'bi-exclamation-triangle-fill': getSemaforoEstado().clase === 'critico',
+            'bi-exclamation-circle-fill': getSemaforoEstado().clase === 'alerta',
+            'bi-check-circle-fill': getSemaforoEstado().clase === 'bueno'
+          }"></i>
+        </div>
+        <div class="semaforo-content">
+          <h3>{{ getSemaforoEstado().nivel }}</h3>
+          <p>{{ getSemaforoEstado().mensaje }}</p>
+          <div class="semaforo-metrics">
+            <span>Varianza Neta: {{ getPorcentajeVariacion() | number:'1.2-2' }}%</span>
+            <span>|</span>
+            <span>Precisión: {{ getPrecisionGlobal() | number:'1.1-1' }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Métricas Principales -->
+        <div class="metrics-dashboard">
+        <!-- PRIMERA FILA: Stock Disponible y Reservado -->
+         <div class="metric-card-large metric-total" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+          <div class="metric-icon-large">
+            <i class="bi bi-stack"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Total Inventario</span>
+            <span class="metric-value-large">{{ getValorTotalCompleto() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">{{ getStockTotalUnidades() | number:'1.0-0' }} unidades totales</span>
+          </div>
+        </div>
+        <div class="metric-card-large metric-sistema">
+          <div class="metric-icon-large">
+            <i class="bi bi-database-fill"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Stock Disponible</span>
+            <span class="metric-value-large">{{ getValorTotalSistema() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">{{ getStockDisponibleUnidades() | number:'1.0-0' }} unidades disponibles</span>
+          </div>
+        </div>
+
+        <div class="metric-card-large metric-reservado" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+          <div class="metric-icon-large">
+            <i class="bi bi-lock-fill"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Stock Reservado</span>
+            <span class="metric-value-large">{{ getValorTotalStockReservado() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">{{ getStockReservadoUnidades() | number:'1.0-0' }} unidades reservadas ({{ getPorcentajeStockReservado() | number:'1.1-1' }}%)</span>
+          </div>
+        </div>
+
+        
+
+        <!-- SEGUNDA FILA: Análisis de Conteo -->
+        <div class="metric-card-large metric-fisico">
+          <div class="metric-icon-large">
+            <i class="bi bi-box-seam-fill"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Valor Físico Verificado</span>
+            <span class="metric-value-large">{{ getValorFisicoVerificado() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">Conteo real del disponible</span>
+          </div>
+        </div>
+
+        <div class="metric-card-large metric-diferencia">
+          <div class="metric-icon-large">
+            <i class="bi bi-graph-down-arrow"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Diferencia Neta</span>
+            <span class="metric-value-large text-danger">{{ getDiferenciaNeta() | currency:'USD':'symbol':'1.0-0' }}</span>
+            <span class="metric-sublabel">Pérdida en disponible</span>
+          </div>
+        </div>
+
+        <div class="metric-card-large metric-precision">
+          <div class="metric-icon-large">
+            <i class="bi bi-bullseye"></i>
+          </div>
+          <div class="metric-content-large">
+            <span class="metric-label-large">Precisión Global</span>
+            <span class="metric-value-large" [ngClass]="{
+              'text-success': getPrecisionGlobal() >= 98,
+              'text-warning': getPrecisionGlobal() >= 85 && getPrecisionGlobal() < 98,
+              'text-danger': getPrecisionGlobal() < 85
+            }">{{ getPrecisionGlobal() | number:'1.1-1' }}%</span>
+            <span class="metric-sublabel">Meta: ≥98%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerta de Situación Crítica (si aplica) -->
+      <div *ngIf="getPrecisionGlobal() < 85 || Math.abs(getPorcentajeVariacion()) > 3" class="alert-modern alert-danger">
+        <div class="alert-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>🚨 SITUACIÓN CRÍTICA DETECTADA</strong>
+          <ul>
+            <li><strong>Pérdidas totales:</strong> {{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }} en {{ getArticulosFaltantes().length }} artículos faltantes</li>
+            <li><strong>Diferencia neta:</strong> {{ getDiferenciaNeta() | currency:'USD':'symbol':'1.2-2' }} ({{ getPorcentajeVariacion() | number:'1.2-2' }}% del inventario total)</li>
+            <li><strong>Precisión crítica:</strong> Solo {{ getPrecisionGlobal() | number:'1.1-1' }}% de coincidencia exacta (META: ≥98%)</li>
+          </ul>
+          <strong>Recomendación:</strong> Implementación inmediata de medidas correctivas y auditoría exhaustiva.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: ANÁLISIS FINANCIERO
+       ======================================== -->
+
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-currency-dollar text-success"></i>
+          ANÁLISIS FINANCIERO CONSOLIDADO
+        </h2>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">Resultado Global del Inventario</h3>
+    <div class="financial-grid financial-grid-extended"> 
+
+      <div class="financial-card">
+        <div class="financial-icon">📊</div>
+        <div class="financial-label">Valor Total Inventario</div>
+        <div class="financial-value text-primary">{{ getValorTotalCompleto() | currency:'USD':'symbol':'1.2-2' }}</div>
+        <div class="financial-sublabel">Valor contable registrado</div>
+      </div>
+
+      <div class="financial-card">
+        <div class="financial-icon">📦</div>
+        <div class="financial-label">Valor Físico Verificado</div>
+        <div class="financial-value">{{ getValorFisicoVerificado() | currency:'USD':'symbol':'1.2-2' }}</div>
+        <div class="financial-sublabel">Valor real contado</div>
+      </div>
+
+      <div class="financial-card">
+        <div class="financial-icon">🛒</div>
+        <div class="financial-label">Valor Disponible (Venta)</div>
+        <div class="financial-value text-success">{{ getValorStockDisponible() | currency:'USD':'symbol':'1.2-2' }}</div>
+        <div class="financial-sublabel">Valor listo para transacciones</div>
+      </div>
+
+      <div class="financial-card">
+        <div class="financial-icon">🔒</div>
+        <div class="financial-label">Valor Reservado (Comprometido)</div>
+        <div class="financial-value text-warning">{{ getValorStockReservado() | currency:'USD':'symbol':'1.2-2' }}</div>
+        <div class="financial-sublabel">Valor ya comprometido</div>
+      </div>
+    
+
+     <!-- <div class="financial-card highlight-info">
+        <div class="financial-icon">🔍</div>
+        <div class="financial-label">Valor Fuera de Inventario</div>
+        <div class="financial-value text-info">{{ getValorTotalFueraDeInventario() | currency:'USD':'symbol':'1.2-2' }}</div>
+        <div class="financial-sublabel">Artículos contados no registrados</div>
+      </div>-->
+
+      <div class="financial-card highlight-danger">
+        <div class="financial-icon">📉</div>
+        <div class="financial-label">Diferencia Absoluta</div>
+        <div class="financial-value text-danger">{{ getDiferenciaNeta() | currency:'USD':'symbol':'1.2-2' }}</div>
+        <div class="financial-sublabel">Pérdida neta identificada</div>
+      </div>
+
+      <div class="financial-card">
+        <div class="financial-icon">📈</div>
+        <div class="financial-label">Variación Porcentual</div>
+        <div class="financial-value" [ngClass]="{
+          'text-danger': getPorcentajeVariacion() < 0,
+          'text-success': getPorcentajeVariacion() >= 0
+        }">{{ getPorcentajeVariacion() | number:'1.2-2' }}%</div>
+        <div class="financial-sublabel">Desviación del inventario</div>
+      </div>
+    </div>
+
+    <h3 class="subsection-title mt-4">Análisis de Diferencias (Sin Compensación)</h3>
+    <div class="alert-modern alert-warning mb-3">
+      <div class="alert-icon">
+        <i class="bi bi-info-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <strong>⚠️ IMPORTANTE:</strong> Los valores de FALTANTES y SOBRANTES no se compensan entre sí. 
+        Representan pérdidas y excedentes reales que requieren gestión independiente según las políticas contables aplicables.
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table class="table-modern table-financial">
+        <thead>
+          <tr>
+            <th>Categoría</th>
+            <th class="text-center">Artículos</th>
+            <th class="text-center">Unidades</th>
+            <th class="text-end">Valor USD</th>
+            <th class="text-center">% del Total</th>
+            <th class="text-center">Impacto</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-faltantes">
+            <td><strong>FALTANTES</strong></td>
+            <td class="text-center">{{ getArticulosFaltantes().length }}</td>
+            <td class="text-center text-danger">{{ calcularTotalFaltantes() | number:'1.0-0' }}</td>
+            <td class="text-end text-danger"><strong>-{{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            <td class="text-center text-danger">{{ (getValorTotalFaltantes() / getValorTotalSistema() * 100) | number:'1.2-2' }}%</td>
+            <td class="text-center"><span class="badge badge-danger">CRÍTICO</span></td>
+          </tr>
+          <tr class="row-sobrantes">
+            <td><strong>SOBRANTES (Artículos Registrados)</strong></td>
+            <td class="text-center">{{ getArticulosSobrantesConteo().length }}</td>
+            <td class="text-center text-success">+{{ calcularTotalSobrantesConteo() | number:'1.0-0' }}</td>
+            <td class="text-end text-success"><strong>+{{ getValorTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            <td class="text-center text-success">+{{ (getValorTotalSobrantes() / getValorTotalSistema() * 100) | number:'1.2-2' }}%</td>
+            <td class="text-center"><span class="badge badge-success">POSITIVO</span></td>
+          </tr>
+          
+          <tr class="row-fuera-inventario">
+            <td><strong>FUERA DE INVENTARIO (No Registrado)</strong></td>
+            <td class="text-center">{{ getArticulosSobrantesFueraInventario().length }}</td>
+            <td class="text-center text-info">+{{ calcularTotalSobrantesFueraInventario() | number:'1.0-0' }}</td>
+            <td class="text-end text-info"><strong>+{{ calcularTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            <td class="text-center text-info">+{{ (getValorTotalFueraDeInventario() / getValorTotalSistema() * 100) | number:'1.2-2' }}%</td>
+            <td class="text-center"><span class="badge badge-info">ALTA</span></td>
+          </tr>
+          
+          <tr class="row-conciliados">
+            <td><strong>COINCIDENCIAS EXACTAS</strong></td>
+            <td class="text-center">{{ calcularConciliados() }}</td>
+            <td class="text-center">0</td>
+            <td class="text-end">$0.00</td>
+            <td class="text-center">{{ getPrecisionGlobal() | number:'1.1-1' }}%</td>
+            <td class="text-center"><span class="badge badge-info">CORRECTO</span></td>
+          </tr>
+          <tr class="row-total">
+            <td><strong>IMPACTO NETO FINAL</strong></td>
+            <td class="text-center">{{ analisisVarianzas.length }}</td>
+            <td class="text-center" [ngClass]="{
+              'text-danger': (calcularTotalSobrantes() - Math.abs(calcularTotalFaltantes())) < 0,
+              'text-success': (calcularTotalSobrantes() - Math.abs(calcularTotalFaltantes())) > 0
+            }">{{ (calcularTotalSobrantes() - Math.abs(calcularTotalFaltantes())) | number:'1.0-0' }}</td>
+            <td class="text-end" [ngClass]="{
+              'text-danger': getDiferenciaNeta() < 0,
+              'text-success': getDiferenciaNeta() >= 0
+            }"><strong>{{ getDiferenciaNeta() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            <td class="text-center" [ngClass]="{
+              'text-danger': getPorcentajeVariacion() < 0,
+              'text-success': getPorcentajeVariacion() >= 0
+            }">{{ getPorcentajeVariacion() | number:'1.2-2' }}%</td>
+            <td class="text-center">
+              <span class="badge" [ngClass]="{
+                'badge-danger': getDiferenciaNeta() < 0,
+                'badge-success': getDiferenciaNeta() >= 0
+              }">{{ getDiferenciaNeta() < 0 ? 'PÉRDIDA' : 'GANANCIA' }}</span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: TOP FALTANTES
+       ======================================== -->
+  <div *ngIf="!loading && getArticulosFaltantes().length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-arrow-down-circle text-danger"></i>
+            ANÁLISIS DETALLADO DE FALTANTES
+          </h2>
+        </div>
+      </div>
+
+      <div class="alert-modern alert-danger">
+        <div class="alert-icon">
+          <i class="bi bi-exclamation-octagon-fill"></i>
+        </div>
+        <div class="alert-content">
+          <h4 style="margin-top: 0;">💰 PÉRDIDA TOTAL POR FALTANTES: {{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}</h4>
+          <p>{{ getArticulosFaltantes().length }} artículos | {{ Math.abs(calcularTotalFaltantes()) | number:'1.0-0' }} unidades faltantes</p>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Top 15 Faltantes Críticos por Valor</h3>
+      <div class="table-container">
+        <table class="table-modern table-small">
+          <thead>
+            <tr>
+              <th style="width: 15%;">Código</th>
+              <th style="width: 30%;">Artículo</th>
+              <th class="text-center">Sistema</th>
+              <th class="text-center">Físico</th>
+              <th class="text-center">Dif.</th>
+              <th class="text-end">Costo Unit.</th>
+              <th class="text-end">Pérdida Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getTopFaltantes(15); let i = index" [class.bg-light]="i % 2 === 1">
+              <td><span class="codigo-badge-sm">{{ item.codigo_articulo }}</span></td>
+              <td class="text-truncate">{{ item.nombre_articulo }}</td>
+              <td class="text-center">{{ item.stock_disponible | number:'1.0-0' }}</td>
+              <td class="text-center">{{ item.conteoFinalAceptado | number:'1.0-0' }}</td>
+              <td class="text-center text-danger"><strong>{{ item.diferenciaFinal | number:'1.0-0' }}</strong></td>
+              <td class="text-end">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td class="text-end text-danger"><strong>{{ item.costoTotalFaltante | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Análisis por Grupo -->
+      <h3 class="subsection-title mt-4">Análisis de Faltantes por Grupo de Producto</h3>
+      <div class="table-container">
+        <table class="table-modern">
+          <thead>
+            <tr>
+              <th>Grupo</th>
+              <th class="text-center">Artículos</th>
+              <th class="text-center">Unidades</th>
+              <th class="text-end">Valor Faltante</th>
+              <th class="text-center">% del Total</th>
+              <th class="text-center">Criticidad</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let grupo of getAnalisisPorGrupo().slice(0, 10); let i = index" [class.bg-light]="i % 2 === 1">
+              <td><strong>{{ grupo.grupo }}</strong></td>
+              <td class="text-center">{{ grupo.articulosFaltantes }}</td>
+              <td class="text-center text-danger">-{{ grupo.unidadesFaltantes | number:'1.0-0' }}</td>
+              <td class="text-end text-danger"><strong>-{{ grupo.valorFaltantes | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td class="text-center text-danger">{{ (grupo.valorFaltantes / getValorTotalFaltantes() * 100) | number:'1.1-1' }}%</td>
+              <td class="text-center">
+                <span class="badge" [ngClass]="{
+                  'badge-danger': (grupo.valorFaltantes / getValorTotalFaltantes() * 100) > 20,
+                  'badge-warning': (grupo.valorFaltantes / getValorTotalFaltantes() * 100) > 10 && (grupo.valorFaltantes / getValorTotalFaltantes() * 100) <= 20,
+                  'badge-info': (grupo.valorFaltantes / getValorTotalFaltantes() * 100) <= 10
+                }">
+                  {{ (grupo.valorFaltantes / getValorTotalFaltantes() * 100) > 20 ? 'CRÍTICO' : 
+                     (grupo.valorFaltantes / getValorTotalFaltantes() * 100) > 10 ? 'ALTO' : 'MEDIO' }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: TOP SOBRANTES
+       ======================================== -->
+  <div *ngIf="!loading && getArticulosSobrantes().length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-arrow-up-circle text-success"></i>
+            ANÁLISIS DE SOBRANTES
+          </h2>
+        </div>
+      </div>
+
+      <div class="alert-modern alert-success">
+        <div class="alert-icon">
+          <i class="bi bi-check-circle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <h4 style="margin-top: 0;">💹 SOBRANTES IDENTIFICADOS: {{ getValorTotalSobrantes() | currency:'USD':'symbol':'1.2-2' }}</h4>
+          <p>{{ getArticulosSobrantes().length }} artículos | {{ calcularTotalSobrantes() | number:'1.0-0' }} unidades adicionales encontradas | Requieren regularización contable</p>
+        </div>
+      </div>
+
+      <h3 class="subsection-title">Top 10 Sobrantes por Valor</h3>
+      <div class="table-container">
+        <table class="table-modern table-small">
+          <thead>
+            <tr>
+              <th style="width: 15%;">Código</th>
+              <th style="width: 30%;">Artículo</th>
+              <th class="text-center">Sistema</th>
+              <th class="text-center">Físico</th>
+              <th class="text-center">Dif.</th>
+              <th class="text-end">Costo Unit.</th>
+              <th class="text-end">Valor Extra</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getTopSobrantes(10); let i = index" [class.bg-light]="i % 2 === 1">
+              <td><span class="codigo-badge-sm">{{ item.codigo_articulo }}</span></td>
+              <td class="text-truncate">{{ item.nombre_articulo }}</td>
+              <td class="text-center">{{ item.stock_disponible | number:'1.0-0' }}</td>
+              <td class="text-center">{{ item.conteoFinalAceptado | number:'1.0-0' }}</td>
+              <td class="text-center text-success"><strong>+{{ item.diferenciaFinal | number:'1.0-0' }}</strong></td>
+              <td class="text-end">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td class="text-end text-success"><strong>+{{ item.costoTotalSobrante | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Distribución de Sobrantes por Grupo -->
+      <h3 class="subsection-title mt-4">Distribución de Sobrantes por Grupo</h3>
+      <div class="table-container">
+        <table class="table-modern">
+          <thead>
+            <tr>
+              <th>Grupo</th>
+              <th class="text-center">Artículos</th>
+              <th class="text-center">Unidades</th>
+              <th class="text-end">Valor Sobrante</th>
+              <th class="text-center">% del Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let grupo of gruposSobrantesTop10; let i = index" [class.bg-light]="i % 2 === 1">
+              <td><strong>{{ grupo.grupo }}</strong></td>
+              <td class="text-center">{{ grupo.articulosSobrantes }}</td>
+              <td class="text-center text-success">+{{ grupo.unidadesSobrantes | number:'1.0-0' }}</td>
+              <td class="text-end text-success"><strong>+{{ grupo.valorSobrantes | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td class="text-center">{{ (grupo.valorSobrantes / getValorTotalSobrantes() * 100) | number:'1.1-1' }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+     REEMPLAZAR LA SECCIÓN DE SOBRANTES EXISTENTE CON ESTAS DOS NUEVAS SECCIONES
+     ======================================== -->
+
+<!-- SECCIÓN 1: SOBRANTES DE CONTEO (Artículos registrados con excedentes) -->
+<div *ngIf="!loading && getArticulosSobrantesConteo().length > 0" class="content-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-arrow-up-circle text-success"></i>
+          ANÁLISIS DE SOBRANTES - CONTEO REGULAR
+        </h2>
+        <p class="section-description">
+          Artículos registrados en sistema con excedentes físicos detectados
+        </p>
+      </div>
+    </div>
+
+    <div class="alert-modern alert-success">
+      <div class="alert-icon">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4 style="margin-top: 0;">💹 SOBRANTES DE CONTEO: {{ getValorTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}</h4>
+        <p>{{ getArticulosSobrantesConteo().length }} artículos | {{ calcularTotalSobrantesConteo() | number:'1.0-0' }} unidades adicionales | Artículos YA registrados en sistema</p>
+        <p class="mt-2"><strong>Nota:</strong> Estos sobrantes corresponden a artículos que están en el sistema, pero se encontró mayor cantidad física de la esperada. Requieren ajuste de inventario positivo.</p>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">Top 10 Sobrantes de Conteo por Valor</h3>
+    <div class="table-container">
+      <table class="table-modern table-small">
+        <thead>
+          <tr>
+            <th style="width: 15%;">Código</th>
+            <th style="width: 30%;">Artículo</th>
+            <th class="text-center">Sistema</th>
+            <th class="text-center">Físico</th>
+            <th class="text-center">Dif.</th>
+            <th class="text-end">Costo Unit.</th>
+            <th class="text-end">Valor Extra</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getTopSobrantesConteo(10); let i = index" [class.bg-light]="i % 2 === 1">
+            <td><span class="codigo-badge-sm">{{ item.codigo_articulo }}</span></td>
+            <td class="text-truncate">{{ item.nombre_articulo }}</td>
+            <td class="text-center">{{ item.stock_disponible | number:'1.0-0' }}</td>
+            <td class="text-center">{{ item.conteoFinalAceptado | number:'1.0-0' }}</td>
+            <td class="text-center text-success"><strong>+{{ item.diferenciaFinal | number:'1.0-0' }}</strong></td>
+            <td class="text-end">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</td>
+            <td class="text-end text-success"><strong>+{{ item.costoTotalSobrante | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Distribución de Sobrantes de Conteo por Grupo -->
+    <h3 class="subsection-title mt-4">Distribución de Sobrantes de Conteo por Grupo</h3>
+    <div class="table-container">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Grupo</th>
+            <th class="text-center">Artículos</th>
+            <th class="text-center">Unidades</th>
+            <th class="text-end">Valor Sobrante</th>
+            <th class="text-center">% del Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let grupo of gruposSobrantesConteoTop10; let i = index" [class.bg-light]="i % 2 === 1">
+            <td><strong>{{ grupo.grupo }}</strong></td>
+            <td class="text-center">{{ grupo.articulosSobrantes }}</td>
+            <td class="text-center text-success">+{{ grupo.unidadesSobrantes | number:'1.0-0' }}</td>
+            <td class="text-end text-success"><strong>+{{ grupo.valorSobrantes | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            <td class="text-center">{{ (grupo.valorSobrantes / getValorTotalSobrantesConteo() * 100) | number:'1.1-1' }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SECCIÓN 2: SOBRANTES FUERA DE INVENTARIO (Artículos NO registrados) -->
+<div *ngIf="!loading && getArticulosSobrantesFueraInventario().length > 0" class="content-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-box-seam text-warning"></i>
+          ANÁLISIS DE SOBRANTES - FUERA DE INVENTARIO
+        </h2>
+        <p class="section-description">
+          Artículos encontrados físicamente pero NO registrados en el sistema (Stock Sistema = 0)
+        </p>
+      </div>
+    </div>
+
+    <div class="alert-modern alert-warning">
+      <div class="alert-icon">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4 style="margin-top: 0;">📦 SOBRANTES FUERA DE INVENTARIO: {{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}</h4>
+        <p>{{ getArticulosSobrantesFueraInventario().length }} artículos | {{ calcularTotalSobrantesFueraInventario() | number:'1.0-0' }} unidades encontradas | <strong>NO estaban registrados en sistema</strong></p>
+        <p class="mt-2"><strong>⚠️ CRÍTICO:</strong> Estos artículos tienen stock_disponible = 0 en el sistema pero fueron encontrados físicamente. Pueden ser:</p>
+        <ul style="margin: 5px 0;">
+          <li>Devoluciones de clientes no procesadas</li>
+          <li>Recepciones de compras no registradas</li>
+          <li>Artículos descontinuados con stock residual</li>
+          <li>Inventario heredado sin catalogar</li>
+          <li>Posibles errores de sistema o fraude</li>
+        </ul>
+        <p class="mt-2"><strong>Acción requerida:</strong> Registro inmediato en sistema y ajuste de inventario</p>
+      </div>
+    </div>
+
+    <h3 class="subsection-title">Top 10 Sobrantes Fuera de Inventario por Valor</h3>
+    <div class="table-container">
+      <table class="table-modern table-small">
+        <thead>
+          <tr>
+            <th style="width: 15%;">Código</th>
+            <th style="width: 30%;">Artículo</th>
+            <th class="text-center">Sistema</th>
+            <th class="text-center">Físico Encontrado</th>
+            <th class="text-center">Diferencia</th>
+            <th class="text-end">Costo Unit.</th>
+            <th class="text-end">Valor Total No Registrado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getTopSobrantesFueraInventario(10); let i = index" [class.bg-light]="i % 2 === 1">
+            <td><span class="codigo-badge-sm bg-warning text-dark">{{ item.codigo_articulo }}</span></td>
+            <td class="text-truncate">{{ item.nombre_articulo }}</td>
+            <td class="text-center text-muted"><strong>0</strong></td>
+            <td class="text-center text-warning"><strong>{{ item.conteoFinalAceptado | number:'1.0-0' }}</strong></td>
+            <td class="text-center text-warning"><strong>+{{ item.conteoFinalAceptado | number:'1.0-0' }}</strong></td>
+            <td class="text-end">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</td>
+            <td class="text-end text-warning"><strong>+{{ (item.conteoFinalAceptado * item.costo_promedio) | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Distribución de Sobrantes Fuera de Inventario por Grupo -->
+    <h3 class="subsection-title mt-4">Distribución Fuera de Inventario por Grupo</h3>
+    <div class="table-container">
+      <table class="table-modern">
+        <thead>
+          <tr>
+            <th>Grupo</th>
+            <th class="text-center">Artículos</th>
+            <th class="text-center">Unidades</th>
+            <th class="text-end">Valor No Registrado</th>
+            <th class="text-center">% del Total</th>
+            <th class="text-center">Prioridad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let grupo of gruposSobrantesFueraInventarioTop10; let i = index" [class.bg-light]="i % 2 === 1">
+            <td><strong>{{ grupo.grupo }}</strong></td>
+            <td class="text-center">{{ grupo.articulosSobrantes }}</td>
+            <td class="text-center text-warning">+{{ grupo.unidadesSobrantes | number:'1.0-0' }}</td>
+            <td class="text-end text-warning"><strong>+{{ grupo.valorSobrantes | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+            <td class="text-center">{{ (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) | number:'1.1-1' }}%</td>
+            <td class="text-center">
+              <span class="badge" [ngClass]="{
+                'badge-danger': (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) > 20,
+                'badge-warning': (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) > 10 && (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) <= 20,
+                'badge-info': (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) <= 10
+              }">
+                {{ (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) > 20 ? 'URGENTE' : 
+                   (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) > 10 ? 'ALTA' : 'MEDIA' }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tabla comparativa resumen -->
+    <div class="alert-modern alert-info mt-4">
+      <div class="alert-icon">
+        <i class="bi bi-info-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4>📊 COMPARATIVA DE SOBRANTES</h4>
+        <table class="table table-sm table-bordered mt-2" style="background: white;">
+          <thead>
+            <tr>
+              <th>Tipo</th>
+              <th class="text-center">Artículos</th>
+              <th class="text-center">Unidades</th>
+              <th class="text-end">Valor USD</th>
+              <th class="text-center">% del Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Sobrantes de Conteo</strong></td>
+              <td class="text-center">{{ getArticulosSobrantesConteo().length }}</td>
+              <td class="text-center">{{ calcularTotalSobrantesConteo() | number:'1.0-0' }}</td>
+              <td class="text-end">{{ getValorTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td class="text-center">{{ (getValorTotalSobrantesConteo() / getValorTotalSobrantes() * 100) | number:'1.1-1' }}%</td>
+            </tr>
+            <tr>
+              <td><strong>Sobrantes Fuera de Inventario</strong></td>
+              <td class="text-center">{{ getArticulosSobrantesFueraInventario().length }}</td>
+              <td class="text-center">{{ calcularTotalSobrantesFueraInventario() | number:'1.0-0' }}</td>
+              <td class="text-end">{{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}</td>
+              <td class="text-center">{{ (getValorTotalSobrantesFueraInventario() / getValorTotalSobrantes() * 100) | number:'1.1-1' }}%</td>
+            </tr>
+            <tr class="table-active">
+              <td><strong>TOTAL SOBRANTES</strong></td>
+              <td class="text-center"><strong>{{ getArticulosSobrantes().length }}</strong></td>
+              <td class="text-center"><strong>{{ calcularTotalSobrantes() | number:'1.0-0' }}</strong></td>
+              <td class="text-end"><strong>{{ getValorTotalSobrantes() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td class="text-center"><strong>100%</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mensaje si no hay sobrantes -->
+<div *ngIf="!loading && getArticulosSobrantes().length === 0" class="content-section">
+  <div class="alert-modern alert-info">
+    <div class="alert-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div class="alert-content">
+      <strong>✅ Sin Sobrantes Detectados</strong>
+      <p>No se encontraron artículos con cantidades físicas mayores al stock registrado en sistema.</p>
+    </div>
+  </div>
+</div>
+  <!-- ========================================
+       NUEVA SECCIÓN: KPIs
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-speedometer2 text-info"></i>
+            INDICADORES CLAVE DE DESEMPEÑO (KPIs)
+          </h2>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="table-modern table-kpi">
+          <thead>
+            <tr>
+              <th style="width: 35%;">Indicador</th>
+              <th class="text-center" style="width: 15%;">Resultado Actual</th>
+              <th class="text-center" style="width: 15%;">Meta Ideal</th>
+              <th class="text-center" style="width: 15%;">Brecha</th>
+              <th class="text-center" style="width: 10%;">Estado</th>
+              <th class="text-center" style="width: 10%;">Tendencia</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let kpi of getKPIs()">
+              <td><strong>{{ kpi.indicador }}</strong></td>
+              <td class="text-center"><strong>{{ kpi.actual }}</strong></td>
+              <td class="text-center">{{ kpi.meta }}</td>
+              <td class="text-center" [ngClass]="{
+                'text-danger': kpi.brecha.includes('-'),
+                'text-warning': kpi.brecha.includes('+')
+              }">{{ kpi.brecha }}</td>
+              <td class="text-center" style="font-size: 24px;">{{ kpi.estado }}</td>
+              <td class="text-center"><strong>{{ kpi.tendencia }}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="alert-modern alert-info mt-3">
+        <div class="alert-icon">
+          <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>Interpretación de Indicadores:</strong>
+          🔴 Crítico (Requiere acción inmediata) | 
+          🟠 Alto riesgo (Acción prioritaria) | 
+          🟡 Medio (Monitoreo cercano) | 
+          🟢 Óptimo (Mantener) |
+          Tendencias: ↑ Empeorando | → Estable | ↓ Mejorando
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: ANÁLISIS DE CAUSAS RAÍZ
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-diagram-3 text-warning"></i>
+            ANÁLISIS DE CAUSAS RAÍZ
+          </h2>
+          <p class="section-description">
+            Identificación de problemas y causas probables
+          </p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="table-modern table-causas-raiz">
+          <thead>
+            <tr>
+              <th style="width: 30%;">Problema Identificado</th>
+              <th style="width: 45%;">Causas Probables</th>
+              <th style="width: 25%;">Impacto Estimado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Problema 1: Alta concentración de faltantes -->
+            <tr>
+              <td>
+                <strong>Alta concentración de faltantes en TRN/MTR ({{ getConcentracionTopGrupos() | number:'1.1-1' }}%)</strong>
+              </td>
+              <td>
+                <ul class="causa-list">
+                  <li>Salida de componentes sin registro adecuado</li>
+                  <li>Uso en reparaciones no documentadas</li>
+                  <li>Posible sustracción no autorizada</li>
+                  <li>Falta de control en componentes de alto valor</li>
+                </ul>
+              </td>
+              <td class="text-center">
+                <div class="impacto-badge impacto-critico">
+                  <div class="impacto-valor">{{ getValorTopGruposFaltantes() | currency:'USD':'symbol':'1.2-2' }}</div>
+                  <div class="impacto-label">({{ getConcentracionTopGrupos() | number:'1.1-1' }}% de pérdidas)</div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Problema 2: Lubricantes con faltantes y sobrantes -->
+            <tr class="bg-light">
+              <td>
+                <strong>Lubricantes con faltantes Y sobrantes simultáneos</strong>
+              </td>
+              <td>
+                <ul class="causa-list">
+                  <li>Control inadecuado de productos líquidos</li>
+                  <li>Múltiples puntos de almacenamiento</li>
+                  <li>Falta de sistema de medición volumétrica</li>
+                  <li>Registros manuales propensos a error</li>
+                </ul>
+              </td>
+              <td class="text-center">
+                <div class="impacto-badge impacto-alto">
+                  <div class="impacto-valor">{{ getValorLubricantes() | currency:'USD':'symbol':'1.2-2' }}</div>
+                  <div class="impacto-label">(Diferencia neta)</div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Problema 3: Artículos no registrados -->
+            <tr>
+              <td>
+                <strong>{{ getArticulosNoRegistrados() }} artículos no registrados en sistema</strong>
+              </td>
+              <td>
+                <ul class="causa-list">
+                  <li>Devoluciones de clientes no procesadas</li>
+                  <li>Reparaciones entrantes sin registro</li>
+                  <li>Inventario heredado sin catalogar</li>
+                  <li>Falta de proceso de recepción estándar</li>
+                </ul>
+              </td>
+              <td class="text-center">
+                <div class="impacto-badge impacto-medio">
+                  <div class="impacto-valor">{{ getValorNoRegistrados() | currency:'USD':'symbol':'1.2-2' }}</div>
+                  <div class="impacto-label">(Activos ocultos)</div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Problema 4: Baja precisión general -->
+            <tr class="bg-light">
+              <td>
+                <strong>Baja precisión general ({{ getPrecisionGlobal() | number:'1.1-1' }}%)</strong>
+              </td>
+              <td>
+                <ul class="causa-list">
+                  <li>Sistema ERP no actualizado en tiempo real</li>
+                  <li>Movimientos internos sin documentación</li>
+                  <li>Falta de capacitación del personal</li>
+                  <li>Ausencia de controles sistemáticos</li>
+                </ul>
+              </td>
+              <td class="text-center">
+                <div class="impacto-badge impacto-critico">
+                  <div class="impacto-valor">{{ (98 - getPrecisionGlobal()) | number:'1.1-1' }}% bajo meta</div>
+                  <div class="impacto-label">(Riesgo operacional)</div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Problema 5: Tiempo excesivo de conteo -->
+            <tr>
+              <td>
+                <strong>Tiempo excesivo de conteo (72 horas)</strong>
+              </td>
+              <td>
+                <ul class="causa-list">
+                  <li>Falta de organización física del almacén</li>
+                  <li>Ausencia de códigos de ubicación claros</li>
+                  <li>Personal insuficiente o no capacitado</li>
+                  <li>Falta de tecnología de apoyo (scanner, RFID)</li>
+                </ul>
+              </td>
+              <td class="text-center">
+                <div class="impacto-badge impacto-alto">
+                  <div class="impacto-valor">50% sobre meta</div>
+                  <div class="impacto-label">(Costo operativo)</div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Recomendaciones Inmediatas -->
+      <div class="alert-modern alert-warning mt-4">
+        <div class="alert-icon">
+          <i class="bi bi-lightbulb-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>💡 ACCIONES CORRECTIVAS PRIORITARIAS:</strong>
+          <ul style="margin: 10px 0 5px 0;">
+            <li>Implementar auditoría forense inmediata en componentes TRN/MTR</li>
+            <li>Establecer sistema de doble verificación para artículos de alto valor</li>
+            <li>Registrar todos los artículos no catalogados en las próximas 48 horas</li>
+            <li>Revisar y actualizar procedimientos de control de lubricantes</li>
+            <li>Capacitar al personal en uso del sistema ERP y mejores prácticas</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+<!-- ========================================
+       NUEVA SECCIÃ"N: CONCLUSIONES EJECUTIVAS
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-file-text text-danger"></i>
+            8. CONCLUSIONES EJECUTIVAS
+          </h2>
+        </div>
+      </div>
+
+      <!-- 8.1 Situación General -->
+      <h3 class="subsection-title">8.1 Situación General</h3>
+      <div class="alert-modern alert-danger mb-4">
+        <div class="alert-content">
+          <p>
+            El inventario físico de <strong>SAMBORONDON</strong> presenta una situación que requiere 
+            <strong class="text-danger">ATENCIÓN URGENTE</strong> de la alta dirección. Con una precisión de apenas 
+            <strong>{{ getPrecisionGlobal() | number:'1.1-1' }}%</strong> y pérdidas netas de 
+            <strong class="text-danger">{{ Math.abs(getDiferenciaNeta()) | currency:'USD':'symbol':'1.2-2' }}</strong>, 
+            el sistema de control actual es claramente insuficiente y representa un riesgo material para la operación y los estados financieros.
+          </p>
+        </div>
+      </div>
+
+      <!-- 8.2 Hallazgos Principales -->
+      <h3 class="subsection-title">8.2 Hallazgos Principales</h3>
+      <div class="row mb-4">
+        <div class="col-md-4">
+          <div class="hallazgo-card hallazgo-critico">
+            <div class="hallazgo-header">
+              <i class="bi bi-x-circle-fill"></i>
+              <h4>ASPECTOS CRÍTICOS</h4>
+            </div>
+            <ul class="hallazgo-list">
+              <li>Pérdidas por faltantes: <strong>{{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}</strong></li>
+              <li>{{ getArticulosFaltantes().length }} artículos faltantes ({{ (getArticulosFaltantes().length / analisisVarianzas.length * 100) | number:'1.1-1' }}% del total)</li>
+              <li>Concentración en TRN/MTR: {{ getConcentracionTopGrupos() | number:'1.1-1' }}%</li>
+              <li>Precisión muy por debajo del estándar</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="hallazgo-card hallazgo-riesgo">
+            <div class="hallazgo-header">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <h4>RIESGOS IDENTIFICADOS</h4>
+            </div>
+            <ul class="hallazgo-list">
+              <li>{{ getArticulosSobrantesFueraInventario().length }} artículos sin registro contable</li>
+              <li>Control deficiente de lubricantes</li>
+              <li>Procesos manuales propensos a error</li>
+              <li>Falta de tecnología de apoyo</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="hallazgo-card hallazgo-oportunidad">
+            <div class="hallazgo-header">
+              <i class="bi bi-check-circle-fill"></i>
+              <h4>OPORTUNIDADES</h4>
+            </div>
+            <ul class="hallazgo-list">
+              <li>Recuperación potencial: <strong>{{ getValorTotalSobrantes() | currency:'USD':'symbol':'1.2-2' }}</strong></li>
+              <li>{{ getArticulosSobrantes().length }} artículos con sobrantes identificados</li>
+              <li>Personal comprometido con el proceso</li>
+              <li>Base para implementar mejoras</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: RECOMENDACIONES ESTRATÉGICAS
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-lightbulb text-warning"></i>
+            9. RECOMENDACIONES ESTRATÉGICAS
+          </h2>
+        </div>
+      </div>
+
+      <!-- 9.1 Plan de Acción Inmediato -->
+      <h3 class="subsection-title">9.1 Plan de Acción Inmediato (1-7 días)</h3>
+      <div class="table-container mb-4">
+        <table class="table-modern table-recomendaciones">
+          <thead>
+            <tr>
+              <th style="width: 5%;">Prioridad</th>
+              <th style="width: 35%;">Acción Requerida</th>
+              <th style="width: 25%;">Responsable</th>
+              <th style="width: 15%;">Plazo</th>
+              <th style="width: 20%;">Impacto Esperado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="prioridad-1">
+              <td class="text-center"><span class="badge-prioridad prioridad-1">1</span></td>
+              <td><strong>Auditoría forense de componentes TRN/MTR faltantes</strong></td>
+              <td>Auditoría Interna + Seguridad</td>
+              <td>24 horas</td>
+              <td>Recuperar 20-30%</td>
+            </tr>
+            <tr class="prioridad-2">
+              <td class="text-center"><span class="badge-prioridad prioridad-2">2</span></td>
+              <td><strong>Registro inmediato de {{ getArticulosSobrantesFueraInventario().length }} artículos no catalogados</strong></td>
+              <td>Contabilidad + Sistemas</td>
+              <td>48 horas</td>
+              <td>+{{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}</td>
+            </tr>
+            <tr class="prioridad-3">
+              <td class="text-center"><span class="badge-prioridad prioridad-3">3</span></td>
+              <td><strong>Bloqueo de movimientos para artículos críticos</strong></td>
+              <td>Gerencia de Operaciones</td>
+              <td>Inmediato</td>
+              <td>Prevenir pérdidas</td>
+            </tr>
+            <tr class="prioridad-4">
+              <td class="text-center"><span class="badge-prioridad prioridad-4">4</span></td>
+              <td><strong>Investigación de causas en Top 20 faltantes</strong></td>
+              <td>Jefe de Bodega</td>
+              <td>72 horas</td>
+              <td>Identificar patrones</td>
+            </tr>
+            <tr class="prioridad-5">
+              <td class="text-center"><span class="badge-prioridad prioridad-5">5</span></td>
+              <td><strong>Reunión de crisis con CEO y directorio</strong></td>
+              <td>Gerencia General</td>
+              <td>48 horas</td>
+              <td>Alineación estratégica</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+
+    </div>
+  </div>
+
+  <!-- ========================================
+       NUEVA SECCIÓN: IMPACTO FINANCIERO Y CONTABLE
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-cash-coin text-success"></i>
+            10. IMPACTO FINANCIERO Y CONTABLE
+          </h2>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="table-modern table-impacto-financiero">
+          <thead>
+            <tr>
+              <th style="width: 35%;">Concepto</th>
+              <th style="width: 25%;" class="text-end">Valor USD</th>
+              <th style="width: 40%;">Tratamiento Contable Recomendado</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="row-faltantes-confirmados">
+              <td><strong>Faltantes Confirmados</strong></td>
+              <td class="text-end text-danger"><strong>-{{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td>Ajuste negativo a inventario / Pérdida del periodo 2025</td>
+            </tr>
+            <tr class="row-sobrantes-identificados">
+              <td><strong>Sobrantes Identificados</strong></td>
+              <td class="text-end text-success"><strong>+{{ getValorTotalSobrantes() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td>Ajuste positivo a inventario / Regularización contable</td>
+            </tr>
+            <tr class="row-activos-no-registrados">
+              <td><strong>Activos No Registrados</strong></td>
+              <td class="text-end text-warning"><strong>+{{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td>Alta de inventario / Ajuste por corrección de error</td>
+            </tr>
+            <tr class="row-ajuste-neto bg-danger-light">
+              <td><strong>AJUSTE NETO AL INVENTARIO</strong></td>
+              <td class="text-end text-danger"><strong>{{ getDiferenciaNeta() | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td><strong>Impacto directo en resultado del ejercicio 2025</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Alerta Financiera Crítica -->
+      <div class="alert-modern alert-danger mt-4">
+        <div class="alert-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <h4 style="margin-top: 0;"><strong>⚠️ ALERTA FINANCIERA CRÍTICA</strong></h4>
+          
+          <p>El ajuste neto de <strong class="text-danger">{{ getDiferenciaNeta() | currency:'USD':'symbol':'1.2-2' }}</strong> representa una pérdida material que debe ser:</p>
+          
+          <ul style="margin: 10px 0;">
+            <li><strong>Reportada inmediatamente</strong> al CEO y Consejo de Administración</li>
+            <li><strong>Registrada en los estados financieros</strong> del Q4 2025</li>
+            <li><strong>Comunicada a auditoría externa</strong> (si aplica)</li>
+            <li><strong>Considerada para ajuste de presupuestos</strong> y proyecciones 2025-2026</li>
+            <li><strong>Evaluada para posibles implicaciones fiscales</strong></li>
+            <li><strong>Analizada para determinar</strong> si requiere nota explicativa en estados financieros</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================
+     SECCIÓN 11: FIRMAS Y APROBACIONES
+     ======================================== -->
+<div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section firmas-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-pen text-primary"></i>
+          FIRMAS Y APROBACIONES
+        </h2>
+      </div>
+    </div>
+    <div class="firmas-grid">
+      <div class="firma-card">
+        <div class="firma-header">INFORME ELABORADO POR:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Julio Lascano</div>
+        <div class="firma-cargo">Responsable de Análisis</div>
+        <div class="firma-fecha">Fecha 21/10/2023</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">VERIFICADOR FÍSICO:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Carlos Martínez</div>
+        <div class="firma-cargo">Verificador de Centro</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">JEFE DE BODEGA:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Henry Barrionuevo</div>
+        <div class="firma-cargo">Jefe de Bodega Samborondon</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">JEFE DE BODEGA:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Nexar Zambrano</div>
+        <div class="firma-cargo">Jefe de Bodega Samborondon</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">JEFE DE BODEGA:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Yeliberth Alvarado</div>
+        <div class="firma-cargo">Jefe de Bodega Samborondon</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">AUXILIAR DE BODEGA:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Miguel Carranza</div>
+        <div class="firma-cargo">Auxiliar de Bodega Samborondon</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">APROBADO POR:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">David Jaramillo</div>
+        <div class="firma-cargo">Jefe de Bodegas</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card">
+        <div class="firma-header">RECIBIDO POR CONTABILIDAD:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Vanessa Mena</div>
+        <div class="firma-cargo">Contador General</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+      <div class="firma-card full-width">
+        <div class="firma-header">RECIBIDO POR GERENCIA GENERAL:</div>
+        <div class="firma-linea"></div>
+        <div class="firma-nombre">Jeanneth Vascones</div>
+        <div class="firma-cargo">Gerente General</div>
+        <div class="firma-fecha">Fecha: __/__/____</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="documento-confidencial">
+  <p>DOCUMENTO CONFIDENCIAL</p>
+  <p>Uso exclusivo de VEHICENTRO S.A.</p>
+  <p>© 2025 VEHICENTRO S.A. - Todos los derechos reservados</p>
+</div>
+<!-- ========================================
+     SECCIÓN: ANEXOS Y DOCUMENTACIÓN DE SOPORTE
+     ======================================== -->
+<div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section anexos-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-paperclip text-info"></i>
+          ANEXOS Y DOCUMENTACIÓN DE SOPORTE
+        </h2>
+        <p class="section-description">
+          Archivos y documentos complementarios del análisis de inventario
+        </p>
+      </div>
+    </div>
+
+    <table class="anexos-table">
+      <thead>
+        <tr>
+          <th style="width: 8%;">Anexo</th>
+          <th style="width: 52%;">Descripción</th>
+          <th style="width: 15%;">Formato</th>
+          <th style="width: 25%;">Disponibilidad</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="anexo-letra">A</td>
+          <td class="anexo-descripcion">Detalle completo de inventario ({{ analisisVarianzas.length }} artículos)</td>
+          <td class="anexo-formato">Excel (.xlsx)</td>
+          <td class="anexo-disponibilidad">
+            <span class="badge-disponible">✓ Adjunto</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="anexo-letra">B</td>
+          <td class="anexo-descripcion">Conteo 1 - Verificación principal</td>
+          <td class="anexo-formato">Excel (.xlsx)</td>
+          <td class="anexo-disponibilidad">
+            <span class="badge-disponible">✓ Adjunto</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="anexo-letra">C</td>
+          <td class="anexo-descripcion">Conteo 2 - Artículos no registrados ({{ getArticulosSobrantesFueraInventario().length }} ítems)</td>
+          <td class="anexo-formato">Excel (.xlsx)</td>
+          <td class="anexo-disponibilidad">
+            <span class="badge-disponible">✓ Adjunto</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="anexo-letra">D</td>
+          <td class="anexo-descripcion">Conteo 3 - Artículos adicionales (17 ítems)</td>
+          <td class="anexo-formato">Excel (.xlsx)</td>
+          <td class="anexo-disponibilidad">
+            <span class="badge-disponible">✓ Adjunto</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="anexo-letra">E</td>
+          <td class="anexo-descripcion">Análisis estadístico y gráficos</td>
+          <td class="anexo-formato">PDF</td>
+          <td class="anexo-disponibilidad">
+            <span class="badge-pendiente">⚠ Por generar</span>
+          </td>
+        </tr>
+        <tr>
+          <td class="anexo-letra">F</td>
+          <td class="anexo-descripcion">Fotografías de evidencia</td>
+          <td class="anexo-formato">JPG/PNG</td>
+          <td class="anexo-disponibilidad">
+            <span class="badge-pendiente">⚠ Por solicitar</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="alert-modern alert-info mt-4">
+      <div class="alert-icon">
+        <i class="bi bi-info-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <strong>📎 Nota sobre Anexos:</strong>
+        <p>Los anexos marcados como "✓ Adjunto" están disponibles para descarga mediante los botones de exportación en la parte superior del informe. Los anexos pendientes se generarán bajo solicitud específica del equipo directivo.</p>
+      </div>
+    </div>
+  </div>
+</div>
+  <!-- Separador -->
+  <div class="section-divider"></div>
+      
+ 
+      
+  <!-- ========================================
+       SECCIÓN 1: ANÁLISIS DE VARIANZAS
+       ======================================== -->
+  <div *ngIf="!loading && analisisVarianzas.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-bar-chart-line-fill text-primary"></i>
+            Análisis de Varianza por Días
+          </h2>
+          <p class="section-description">
+            Comparación detallada entre conteos físicos y stock del sistema
+          </p>
+        </div>
+        
+        <!-- Resumen de Métricas -->
+        <div class="metrics-summary">
+          <div class="metric-card metric-total">
+            <div class="metric-icon">
+              <i class="bi bi-boxes"></i>
+            </div>
+            <div class="metric-content">
+              <span class="metric-label">Total Artículos</span>
+              <span class="metric-value">{{ analisisVarianzas.length | number:'1.0-0' }}</span>
+            </div>
+          </div>
+          
+          <div class="metric-card metric-faltantes">
+            <div class="metric-icon">
+              <i class="bi bi-arrow-down-circle-fill"></i>
+            </div>
+            <div class="metric-content">
+              <span class="metric-label">Faltantes</span>
+              <span class="metric-value">{{ calcularTotalFaltantes() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+          
+          <div class="metric-card metric-sobrantes">
+            <div class="metric-icon">
+              <i class="bi bi-arrow-up-circle-fill"></i>
+            </div>
+            <div class="metric-content">
+              <span class="metric-label">Sobrantes</span>
+              <span class="metric-value">{{ calcularTotalSobrantes() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+          
+          <div class="metric-card metric-conciliados">
+            <div class="metric-icon">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <div class="metric-content">
+              <span class="metric-label">Conciliados</span>
+              <span class="metric-value">{{ calcularConciliados() | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Alerta Informativa -->
+      <div class="alert-modern alert-info">
+        <div class="alert-icon">
+          <i class="bi bi-info-circle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>Metodología de Análisis:</strong>
+          <p>Esta tabla presenta el análisis comparativo entre los conteos físicos realizados en diferentes días y el stock registrado en el sistema. Los datos se agrupan en tres períodos: Días 6-9 (conteo inicial), Día 10 (primer reconteo) y Día 11 (segundo reconteo).</p>
+        </div>
+      </div>
+
+      <!-- Tabla de Análisis de Varianzas -->
+      <div class="table-container">
+        <div class="table-wrapper">
+          <table class="table-modern table-varianzas">
+            <thead class="table-header-sticky">
+              <tr class="header-row-1">
+                <th colspan="4" class="header-group header-articulos">
+                  <i class="bi bi-box-seam me-2"></i>DATOS DEL ARTÍCULO
+                </th>
+                
+                <ng-container *ngFor="let grupo of gruposAnalisis">
+                  <th colspan="4" class="header-group header-conteos">
+                    <i class="bi bi-calendar-check me-2"></i>{{ grupo.nombre }}
+                  </th>
+                </ng-container>
+                
+                <th colspan="7" class="header-group header-resumen">
+                  <i class="bi bi-calculator me-2"></i>RESUMEN FINAL (CONCILIACIÓN)
+                </th>
+              </tr>
+
+              <tr class="header-row-2">
+                <th class="col-codigo">CÓDIGO</th>
+                <th class="col-articulo">ARTÍCULO</th>
+                <th class="col-stock text-center">STOCK DISP.</th>
+                <th class="col-costo text-end">COSTO PROM.</th>
+                
+                <ng-container *ngFor="let grupo of gruposAnalisis">
+                  <th class="text-center">Dif. vs Stock</th>
+                  <th class="text-center text-danger-custom">Faltante</th>
+                  <th class="text-center text-success-custom">Sobrante</th>
+                  <th class="text-center">Total Contado</th>
+                </ng-container>
+
+                <th class="text-center bg-success-light">Conteo Final</th>
+                <th class="text-center bg-success-light">Dif. Final</th>
+                <th class="text-center bg-danger-light">Faltante Total</th>
+                <th class="text-center bg-danger-light">Costo Faltante</th>
+                <th class="text-center bg-info-light">Sobrante Total</th>
+                <th class="text-center bg-info-light">Costo Sobrante</th>
+                <th class="text-center bg-warning-light">ESTADO</th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              <tr *ngFor="let item of analisisVarianzas; let i = index" 
+                  class="data-row"
+                  [ngClass]="{
+                      'row-no-contado': item.tipo === 'No Contado',
+                      'row-fuera-inventario': item.tipo === 'Fuera de Inventario',
+                      'row-pendiente': item.estado.includes('Pendiente')
+                  }">
+                
+                <td class="col-codigo">
+                  <span class="codigo-badge">{{ item.codigo_articulo }}</span>
+                </td>
+                <td class="col-articulo">
+                  <div class="articulo-info">
+                    <span class="articulo-nombre">{{ item.nombre_articulo }}</span>
+                  </div>
+                </td>
+                <td class="text-center col-stock">
+                  <span class="stock-value">{{ item.stock_disponible | number:'1.0-0' }}</span>
+                </td>
+                <td class="text-end col-costo">
+                  <span class="costo-value">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</span>
+                </td>
+                
+                <ng-container *ngFor="let grupo of gruposAnalisis">
+                  <td class="text-center" 
+                      [ngClass]="{
+                        'value-negative': item[grupo.prop].diferenciaTotal < 0, 
+                        'value-positive': item[grupo.prop].diferenciaTotal > 0,
+                        'value-zero': item[grupo.prop].diferenciaTotal === 0
+                      }">
+                    <span class="diferencia-badge">
+                      {{ item[grupo.prop].diferenciaTotal | number:'1.0-0' }}
+                    </span>
+                  </td>
+                  <td class="text-center text-danger-custom">
+                    <strong>{{ item[grupo.prop].faltante | number:'1.0-0' }}</strong>
+                  </td>
+                  <td class="text-center text-success-custom">
+                    <strong>{{ item[grupo.prop].sobrante | number:'1.0-0' }}</strong>
+                  </td>
+                  <td class="text-center">
+                    {{ item[grupo.prop].totalContado | number:'1.0-0' }}
+                  </td>
+                </ng-container>
+
+                <td class="text-center bg-success-light">
+                  <strong class="conteo-final">{{ item.conteoFinalAceptado | number:'1.0-0' }}</strong>
+                </td>
+                <td class="text-center" 
+                    [ngClass]="{
+                      'value-negative': item.diferenciaFinal < 0, 
+                      'value-positive': item.diferenciaFinal > 0,
+                      'value-zero': item.diferenciaFinal === 0
+                    }">
+                  <span class="diferencia-final-badge">
+                    {{ item.diferenciaFinal | number:'1.0-0' }}
+                  </span>
+                </td>
+                <td class="text-center bg-danger-light">
+                  <strong class="text-danger-custom">{{ item.cantidadFaltanteTotal | number:'1.0-0' }}</strong>
+                </td>
+                <td class="text-end bg-danger-light">
+                  <strong class="text-danger-custom">{{ item.costoTotalFaltante | currency:'USD':'symbol':'1.2-2' }}</strong>
+                </td>
+                <td class="text-center bg-info-light">
+                  <strong class="text-success-custom">{{ item.cantidadSobranteTotal | number:'1.0-0' }}</strong>
+                </td>
+                <td class="text-end bg-info-light">
+                  <strong class="text-success-custom">{{ item.costoTotalSobrante | currency:'USD':'symbol':'1.2-2' }}</strong>
+                </td>
+                
+                <td class="text-center bg-warning-light">
+                  <span class="estado-badge" 
+                        [ngClass]="{
+                          'estado-conciliado': item.estado.includes('Conciliado'),
+                          'estado-faltante': item.estado.includes('Faltante'),
+                          'estado-sobrante': item.estado.includes('Sobrante'),
+                          'estado-fuera': item.estado.includes('Fuera')
+                        }">
+                    {{ item.estado }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && analisisVarianzas.length === 0" class="alert-modern alert-warning">
+        <div class="alert-icon">
+          <i class="bi bi-exclamation-triangle-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>Sin Datos:</strong>
+          <p>No se encontraron datos de análisis de varianzas.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Separador -->
+  <div class="section-divider"></div>
+      
+  <!-- ========================================
+       SECCIÓN 2: VISTA DÍA A DÍA
+       ======================================== -->
+  <div *ngIf="!loading && articulosDiarios.length > 0" class="content-section">
+    <div class="section-card">
+      <div class="section-header">
+        <div class="section-title-wrapper">
+          <h2 class="section-title">
+            <i class="bi bi-calendar-week text-primary"></i>
+            Vista Día a Día - Conteos Detallados
+          </h2>
+          <p class="section-description">
+            Registro cronológico de todos los conteos realizados con análisis final integrado
+          </p>
+        </div>
+      </div>
+        
+      <div class="alert-modern alert-info">
+        <div class="alert-icon">
+          <i class="bi bi-lightbulb-fill"></i>
+        </div>
+        <div class="alert-content">
+          <strong>Información de la Tabla:</strong>
+          <p>Esta vista muestra todos los conteos realizados agrupados por día, incluyendo fecha/hora, usuario responsable, ubicación y observaciones. La sección de resumen integra los resultados de la <strong>API Mejorada</strong> con el conteo final aceptado y el estado de conciliación.</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <div class="table-wrapper">
+          <table class="table-modern table-diaria">
+            <thead class="table-header-sticky">
+              <tr class="header-row-1">
+                <th rowspan="3" class="col-item">Item</th>
+                <th rowspan="3" class="col-codigo">Código</th>
+                <th rowspan="3" class="col-articulo">Artículo</th>
+                <th rowspan="3" class="col-descripcion">Descripción</th>
+                <th rowspan="3" class="col-stock text-end">Stock Sistema</th>
+                <th rowspan="3" class="col-unidad text-center">Unidad</th>
+                <th rowspan="3" class="col-costo text-end">Costo Prom.</th>
+                
+                <th colspan="5" class="header-group header-resumen">
+                  <i class="bi bi-check2-square me-2"></i>Análisis Final (API Mejorada)
+                </th>
+
+                <th [attr.colspan]="fechasUnicas.length" class="header-group header-conteos">
+                  <i class="bi bi-calendar-event me-2"></i>Conteos por Día
+                </th>
+              </tr>
+              <tr class="header-row-2">
+                <th rowspan="2" class="text-end bg-success-light">Conteo Días 6-9</th>
+                <th rowspan="2" class="text-end bg-success-light">Dif. Días 6-9</th>
+                <th rowspan="2" class="text-end bg-info-light">Conteo Final</th>
+                <th rowspan="2" class="text-end bg-info-light">Dif. Final</th>
+                <th rowspan="2" class="text-center bg-info-light">Estado</th>
+
+                <th *ngFor="let fecha of fechasUnicas" class="header-fecha">
+                  <i class="bi bi-calendar3"></i> {{ formatearFechaCorta(fecha) }}
+                </th>
+              </tr>
+              <tr class="header-row-3">
+                <th *ngFor="let fecha of fechasUnicas" class="header-dia">
+                  Día {{ fecha.split('-')[2] }}
+                </th>
+              </tr>
+            </thead>
+            
+            <tbody>
+              <tr *ngFor="let articulo of articulosDiarios; let i = index" class="data-row">
+                <ng-container *ngIf="articulo.stock_disponible as stockDisponible">
+                  <ng-container *ngIf="{ 
+                      dias6_9: ['6', '7', '8', '9'], 
+                      dias10: ['10'], 
+                      dias11: ['11'] 
+                    } as periods">
+                    
+                    <ng-container *ngIf="{
+                        tiene6_9: tieneConteoEnDias(articulo, periods.dias6_9),
+                        tiene10: tieneConteoEnDias(articulo, periods.dias10),
+                        tiene11: tieneConteoEnDias(articulo, periods.dias11)
+                    } as checks">
+                      
+                      <ng-container *ngIf="{
+                          conteo6_9: checks.tiene6_9 ? getSumaConteosPorDias(articulo, periods.dias6_9) : 0,
+                          reconteo10: checks.tiene10 ? getSumaReconteosPorDias(articulo, periods.dias10) : 0,
+                          reconteo11: checks.tiene11 ? getSumaReconteosPorDias(articulo, periods.dias11) : 0
+                      } as sums">
+
+                        <ng-container *ngIf="{
+                            dif6_9: sums.conteo6_9 - stockDisponible,
+                            conteoFinal: determinarConteoFinal(sums.conteo6_9, sums.reconteo10, sums.reconteo11, stockDisponible),
+                            difFinal: determinarConteoFinal(sums.conteo6_9, sums.reconteo10, sums.reconteo11, stockDisponible) - stockDisponible 
+                        } as analysis">
+
+                          <ng-container *ngIf="{
+                              estado: determinarEstado(
+                                analysis.difFinal, 
+                                stockDisponible, 
+                                analysis.difFinal < 0 ? (0 - analysis.difFinal) : 0,
+                                analysis.difFinal > 0 ? analysis.difFinal : 0
+                              )
+                          } as finalAnalysis">
+
+                            <td class="col-item text-center">
+                              <span class="item-badge">{{ i + 1 }}</span>
+                            </td>
+                            <td class="col-codigo">
+                              <span class="codigo-badge">{{ articulo.codigo_articulo }}</span>
+                            </td>
+                            <td class="col-articulo">
+                              <span class="articulo-nombre">{{ articulo.nombre_articulo }}</span>
+                            </td>
+                            <td class="col-descripcion">
+                              <span class="descripcion-text">{{ articulo.descripcion }}</span>
+                            </td>
+                            <td class="col-stock text-end">
+                              <span class="stock-value">{{ stockDisponible | number:'1.2-2' }}</span>
+                            </td>
+                            <td class="col-unidad text-center">
+                              <span class="unidad-badge">{{ articulo.unidad }}</span>
+                            </td>
+                            <td class="col-costo text-end">
+                              <span class="costo-value">{{ articulo.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</span>
+                            </td>
+
+                            <td class="text-end bg-success-light"
+                                [ngClass]="{
+                                  'value-zero': analysis.dif6_9 === 0, 
+                                  'value-negative': analysis.dif6_9 !== 0
+                                }">
+                                <strong>{{ sums.conteo6_9 | number:'1.2-2' }}</strong>
+                            </td>
+                            <td class="text-end bg-success-light"
+                                [ngClass]="{
+                                  'value-zero': analysis.dif6_9 === 0, 
+                                  'value-negative': analysis.dif6_9 < 0, 
+                                  'value-positive': analysis.dif6_9 > 0
+                                }">
+                                <strong>{{ analysis.dif6_9 | number:'1.2-2' }}</strong>
+                            </td>
+                            <td class="text-end bg-info-light"
+                                [ngClass]="{
+                                  'highlight-success': analysis.difFinal === 0, 
+                                  'highlight-danger': analysis.difFinal !== 0
+                                }">
+                                <strong>{{ analysis.conteoFinal | number:'1.2-2' }}</strong>
+                            </td>
+                            <td class="text-end bg-info-light"
+                                [ngClass]="{
+                                  'value-zero': analysis.difFinal === 0, 
+                                  'value-negative': analysis.difFinal < 0, 
+                                  'value-positive': analysis.difFinal > 0
+                                }">
+                                <strong>{{ analysis.difFinal | number:'1.2-2' }}</strong>
+                            </td>
+                            <td class="text-center bg-info-light">
+                                <span class="estado-badge-small"
+                                      [ngClass]="{
+                                        'estado-conciliado': finalAnalysis.estado.includes('Conciliado'),
+                                        'estado-ajuste': finalAnalysis.estado.includes('Ajuste')
+                                      }">
+                                  {{ finalAnalysis.estado }}
+                                </span>
+                            </td>
+                            
+                            <td *ngFor="let fecha of fechasUnicas" class="col-conteo-diario">
+                              <div class="conteos-wrapper">
+                                <div *ngFor="let conteo of getConteosDiariosPorFecha(articulo, fecha); let idx = index" 
+                                     class="conteo-card"
+                                     [ngClass]="{
+                                       'conteo-success': conteo.diferencia === 0, 
+                                       'conteo-danger': conteo.diferencia < 0, 
+                                       'conteo-warning': conteo.diferencia > 0 
+                                     }">
+                                  
+                                  <div class="conteo-header">
+                                    <span class="conteo-numero">
+                                      <i class="bi bi-hash"></i>{{ idx + 1 }}
+                                    </span>
+                                    <i class="bi bi-clock-history"></i>
+                                  </div>
+                                  
+                                  <div class="conteo-fecha">
+                                    <i class="bi bi-calendar-event"></i>
+                                    <span>{{ formatearFechaHora(conteo.fechaHora) }}</span>
+                                  </div>
+                                  
+                                  <div class="conteo-datos">
+                                    <div class="dato-row">
+                                      <span class="dato-label">Cantidad:</span>
+                                      <span class="dato-value">{{ conteo.cantidad_contada | number:'1.2-2' }}</span>
+                                    </div>
+                                    
+                                    <div class="dato-row">
+                                      <span class="dato-label">Diferencia:</span>
+                                      <span class="dato-value" 
+                                            [ngClass]="{ 
+                                              'value-zero': conteo.diferencia === 0, 
+                                              'value-negative': conteo.diferencia < 0, 
+                                              'value-positive': conteo.diferencia > 0 
+                                            }">
+                                        {{ conteo.diferencia | number:'1.2-2' }}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div class="conteo-footer">
+                                    <div class="footer-item">
+                                      <i class="bi bi-person-fill"></i>
+                                      <span>{{ conteo.usuario_contador }}</span>
+                                    </div>
+                                    <div class="footer-item">
+                                      <i class="bi bi-geo-alt-fill"></i>
+                                      <span>{{ conteo.ubicacionconteo }}</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div class="conteo-observaciones" *ngIf="conteo.observaciones && conteo.observaciones !== 'Sin observaciones'">
+                                    <i class="bi bi-chat-left-text"></i>
+                                    <span>{{ conteo.observaciones }}</span>
+                                  </div>
+                                </div>
+
+                                <div *ngIf="getConteosDiariosPorFecha(articulo, fecha).length === 0" class="sin-conteo">
+                                  <i class="bi bi-x-circle"></i>
+                                  <span>Sin conteo</span>
+                                </div>
+                              </div>
+                            </td>
+                            
+                          </ng-container>
+                        </ng-container>
+                      </ng-container>
+                    </ng-container>
+                  </ng-container>
+                </ng-container>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+      
+  <div *ngIf="!loading && articulosDiarios.length === 0" class="content-section">
+    <div class="alert-modern alert-warning">
+      <div class="alert-icon">
+        <i class="bi bi-inbox"></i>
+      </div>
+      <div class="alert-content">
+        <strong>Sin Datos:</strong>
+        <p>No se encontraron datos de conteos diarios.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje si no hay sobrantes -->
+<div *ngIf="!loading && getArticulosSobrantes().length === 0" class="content-section">
+  <div class="alert-modern alert-info">
+    <div class="alert-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div class="alert-content">
+      <strong>✅ Sin Sobrantes Detectados</strong>
+      <p>No se encontraron artículos con cantidades físicas mayores al stock registrado en sistema.</p>
+    </div>
+  </div>
+</div>
+
+
+<!-- Mensaje si no hay sobrantes -->
+<div *ngIf="!loading && getArticulosSobrantes().length === 0" class="content-section">
+  <div class="alert-modern alert-info">
+    <div class="alert-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div class="alert-content">
+      <strong>✅ Sin Sobrantes Detectados</strong>
+      <p>No se encontraron artículos con cantidades físicas mayores al stock registrado en sistema.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
+     SECCIÓN: LISTADO COMPLETO FUERA DE INVENTARIO
+     ======================================== -->
+<div *ngIf="!loading && getArticulosSobrantesFueraInventario().length > 0" class="content-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-list-check text-danger"></i>
+          LISTADO COMPLETO - ARTÍCULOS FUERA DE INVENTARIO
+        </h2>
+        <p class="section-description">
+          Registro detallado de todos los artículos encontrados físicamente sin registro en sistema
+        </p>
+      </div>
+       <div class="mt-3 mb-3">
+        <button class="btn btn-success btn-lg" 
+                (click)="exportarExcelFueraInventario()" 
+                [disabled]="loading"
+                style="box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
+          <i class="bi bi-file-earmark-excel-fill me-2"></i>
+          <span>Descargar Excel - Fuera de Inventario</span>
+          <span class="badge bg-white text-success ms-2">
+            {{ getArticulosSobrantesFueraInventario().length }} artículos
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- En la sección de resumen FDI -->
+<div class="alert-modern alert-warning">
+  <div class="alert-icon">
+    <i class="bi bi-exclamation-triangle-fill"></i>
+  </div>
+  <div class="alert-content">
+    <h4 style="margin-top: 0;">📦 RESUMEN TOTAL FUERA DE INVENTARIO</h4>
+    <div class="row mt-3">
+      <div class="col-md-4">
+        <strong>Total Artículos:</strong> {{ getArticulosSobrantesFueraInventario().length }}
+      </div>
+      <div class="col-md-4">
+        <strong>Total Unidades:</strong> {{ calcularTotalSobrantesFueraInventario() | number:'1.0-0' }}
+      </div>
+      <div class="col-md-4">
+        <strong>Valor Total:</strong> {{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}
+      </div>
+    </div>
+    
+    <!-- Estadísticas de valoración -->
+    <div *ngIf="!todosFDITienenCosto()" class="row mt-3 pt-3 border-top">
+      <div class="col-12">
+        <ng-container *ngIf="getEstadisticasValoracionFDI() as stats">
+          <h5>📊 Estado de Valoración:</h5>
+          <div class="row mt-2">
+            <div class="col-md-3">
+              <span class="badge bg-success">✓ Con Costo: {{ stats.conCosto }}</span>
+            </div>
+            <div class="col-md-3">
+              <span class="badge bg-danger">✗ Sin Costo: {{ stats.sinCosto }}</span>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted">Valor Valorado: {{ stats.valorValorado | currency:'USD':'symbol':'1.2-2' }}</small>
+            </div>
+            <div class="col-md-3">
+              <small class="text-muted">Unidades Pendientes: {{ stats.unidadesSinValorar }}</small>
+            </div>
+          </div>
+        </ng-container>
+      </div>
+    </div>
+    
+    <!-- Advertencia si hay artículos sin costo -->
+    <div *ngIf="getCantidadArticulosFDISinValorar() > 0" 
+         class="alert alert-warning mt-3 mb-0" 
+         style="border-left: 4px solid #ff9800;">
+      <i class="bi bi-exclamation-triangle-fill"></i> {{ getMensajeAdvertenciaFDI() }}
+      
+      <!-- Mostrar códigos de artículos sin costo (útil para seguimiento) -->
+      <details class="mt-2" *ngIf="getCodigosArticulosFDISinCosto().length > 0">
+        <summary style="cursor: pointer; font-weight: 600;">
+          Ver códigos de artículos sin costo ({{ getCodigosArticulosFDISinCosto().length }})
+        </summary>
+        <div class="mt-2 p-2 bg-light rounded">
+          <code>{{ getCodigosArticulosFDISinCosto().join(', ') }}</code>
+        </div>
+      </details>
+    </div>
+    
+    <p class="mt-3 mb-0">
+      <strong>⚠️ ACCIÓN REQUERIDA:</strong> 
+      Todos estos artículos requieren alta inmediata en sistema con su respectivo ajuste contable.
+    </p>
+  </div>
+</div>
+
+    <div class="table-container">
+      <table class="table-modern table-small">
+        <thead>
+          <tr>
+            <th style="width: 5%;" class="text-center">#</th>
+            <th style="width: 12%;">Código</th>
+            <th style="width: 28%;">Artículo</th>
+            <th style="width: 10%;" class="text-center">Stock Sistema</th>
+            <th style="width: 10%;" class="text-center">Cantidad Encontrada</th>
+            <th style="width: 10%;" class="text-end">Costo Unitario</th>
+            <th style="width: 12%;" class="text-end">Valor Total</th>
+            <th style="width: 8%;" class="text-center">Unidad</th>
+            <th style="width: 5%;" class="text-center">Estado</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getArticulosSobrantesFueraInventario(); let i = index" 
+              [class.bg-light]="i % 2 === 1"
+              class="row-fuera-inventario">
+            <td class="text-center">
+              <span class="item-badge bg-warning text-dark">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <span class="codigo-badge bg-warning text-dark">{{ item.codigo_articulo }}</span>
+            </td>
+            <td>
+              <div class="articulo-info">
+                <span class="articulo-nombre">{{ item.nombre_articulo }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-secondary">0</span>
+            </td>
+            <td class="text-center">
+              <strong class="text-warning" style="font-size: 1.1em;">{{ item.conteoFinalAceptado | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-end">
+              <ng-container *ngIf="tieneConstoValido(item); else sinCostoTemplate">
+                <span class="costo-value" [title]="'Costo Promedio Registrado'">
+                  {{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}
+                </span>
+              </ng-container>
+              <ng-template #sinCostoTemplate>
+                <ng-container *ngIf="getCostoConFallback(item.codigo_articulo) > 0; else noCostoTemplate">
+                  <span class="costo-value text-warning" 
+                        [title]="'Costo estimado desde: ' + getOrigenCosto(item.codigo_articulo)">
+                    {{ getCostoConFallback(item.codigo_articulo) | currency:'USD':'symbol':'1.2-2' }}
+                    <i class="bi bi-exclamation-circle-fill" style="font-size: 0.8em;"></i>
+                  </span>
+                </ng-container>
+                <ng-template #noCostoTemplate>
+                  <span class="text-danger fw-bold" [title]="'Requiere valoración manual'">
+                    SIN COSTO
+                  </span>
+                </ng-template>
+              </ng-template>
+            </td>
+            <td class="text-end">
+              <ng-container *ngIf="tieneConstoValido(item) || getCostoConFallback(item.codigo_articulo) > 0">
+                <strong class="text-warning" 
+                        [ngClass]="{'text-warning-emphasis': !tieneConstoValido(item)}"
+                        [title]="!tieneConstoValido(item) ? 'Valor estimado - Verificar' : 'Valor calculado'">
+                  {{ (item.conteoFinalAceptado * (tieneConstoValido(item) ? item.costo_promedio : getCostoConFallback(item.codigo_articulo))) | currency:'USD':'symbol':'1.2-2' }}
+                  <span *ngIf="!tieneConstoValido(item)">*</span>
+                </strong>
+              </ng-container>
+              <ng-container *ngIf="!tieneConstoValido(item) && getCostoConFallback(item.codigo_articulo) === 0">
+                <strong class="text-danger fw-bold">PENDIENTE</strong>
+              </ng-container>
+            </td>
+            <td class="text-center">
+              <span class="unidad-badge">{{ item.unidad }}</span>
+            </td>
+            <td class="text-center">
+              <span class="badge bg-warning text-dark" style="font-size: 0.75rem;">
+                <i class="bi bi-exclamation-triangle-fill"></i> SIN REGISTRO
+              </span>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="table-active" style="font-weight: 700; border-top: 3px solid #ffc107;">
+            <td colspan="4" class="text-end" style="font-size: 1.1em;">
+              <strong>TOTAL FUERA DE INVENTARIO:</strong>
+            </td>
+            <td class="text-center" style="font-size: 1.1em;">
+              <strong class="text-warning">{{ calcularTotalSobrantesFueraInventario() | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-end"></td>
+            <td class="text-end" style="font-size: 1.1em;">
+              <strong class="text-warning">{{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </td>
+            <td colspan="2"></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- ========================================
+     SECCIÓN: LISTADO COMPLETO DE FALTANTES
+     ======================================== -->
+<div *ngIf="!loading && getArticulosFaltantes().length > 0" class="content-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-list-ul text-danger"></i>
+          LISTADO COMPLETO DE ARTÍCULOS FALTANTES
+        </h2>
+        <p class="section-description">
+          Registro detallado de todos los artículos con diferencia negativa
+        </p>
+      </div>
+      <div class="mt-3 mb-3">
+        <button class="btn btn-danger btn-lg" 
+                (click)="exportarExcelFaltantes()" 
+                [disabled]="loading"
+                style="box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);">
+          <i class="bi bi-file-earmark-excel-fill me-2"></i>
+          <span>Descargar Excel - Faltantes</span>
+          <span class="badge bg-white text-danger ms-2">
+            {{ getArticulosFaltantes().length }} artículos
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Resumen de Faltantes -->
+    <div class="alert-modern alert-danger">
+      <div class="alert-icon">
+        <i class="bi bi-exclamation-octagon-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4 style="margin-top: 0;">💰 RESUMEN TOTAL DE FALTANTES</h4>
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <strong>Total Artículos Faltantes:</strong> {{ getArticulosFaltantes().length }}
+          </div>
+          <div class="col-md-4">
+            <strong>Total Unidades Faltantes:</strong> {{ Math.abs(calcularTotalFaltantes()) | number:'1.0-0' }}
+          </div>
+          <div class="col-md-4">
+            <strong>Valor Total Pérdida:</strong> {{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}
+          </div>
+        </div>
+        <p class="mt-3 mb-0">
+          <strong>⚠️ IMPACTO FINANCIERO:</strong> 
+          Las pérdidas representan el {{ (getValorTotalFaltantes() / getValorTotalSistema() * 100) | number:'1.2-2' }}% del inventario total valorado.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tabla Completa de Faltantes -->
+    <div class="table-container">
+      <table class="table-modern table-small">
+        <thead>
+          <tr>
+            <th style="width: 5%;" class="text-center">#</th>
+            <th style="width: 12%;">Código</th>
+            <th style="width: 30%;">Artículo</th>
+            <th style="width: 10%;" class="text-center">Stock Sistema</th>
+            <th style="width: 10%;" class="text-center">Conteo Final</th>
+            <th style="width: 8%;" class="text-center">Diferencia</th>
+            <th style="width: 10%;" class="text-end">Costo Unit.</th>
+            <th style="width: 10%;" class="text-end">Pérdida Total</th>
+            <th style="width: 5%;" class="text-center">Unidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getArticulosFaltantes(); let i = index" 
+              [class.bg-light]="i % 2 === 1"
+              class="row-faltantes">
+            <td class="text-center">
+              <span class="item-badge bg-danger text-white">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <span class="codigo-badge bg-danger text-white">{{ item.codigo_articulo }}</span>
+            </td>
+            <td>
+              <div class="articulo-info">
+                <span class="articulo-nombre">{{ item.nombre_articulo }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <strong>{{ item.stock_disponible | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-center">
+              <strong class="text-warning">{{ item.conteoFinalAceptado | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-center">
+              <strong class="text-danger" style="font-size: 1.1em;">{{ item.diferenciaFinal | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-end">
+              <span class="costo-value">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</span>
+            </td>
+            <td class="text-end">
+              <strong class="text-danger">{{ item.costoTotalFaltante | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </td>
+            <td class="text-center">
+              <span class="unidad-badge">{{ item.unidad }}</span>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="table-active" style="font-weight: 700; border-top: 3px solid #dc3545;">
+            <td colspan="4" class="text-end" style="font-size: 1.1em;">
+              <strong>TOTAL FALTANTES:</strong>
+            </td>
+            <td class="text-center"></td>
+            <td class="text-center" style="font-size: 1.1em;">
+              <strong class="text-danger">{{ Math.abs(calcularTotalFaltantes()) | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-end"></td>
+            <td class="text-end" style="font-size: 1.1em;">
+              <strong class="text-danger">{{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="alert-modern alert-warning mt-4">
+      <div class="alert-icon">
+        <i class="bi bi-info-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4>📋 INSTRUCCIONES PARA GESTIÓN DE FALTANTES</h4>
+        <ol style="margin: 10px 0 5px 20px; padding-left: 0;">
+          <li><strong>Investigación inmediata:</strong> Determinar causa raíz de cada faltante</li>
+          <li><strong>Documentación:</strong> Adjuntar evidencia y justificación formal</li>
+          <li><strong>Ajuste contable:</strong> Generar asiento de baja por {{ getValorTotalFaltantes() | currency:'USD':'symbol':'1.2-2' }}</li>
+          <li><strong>Medidas correctivas:</strong> Implementar controles para prevenir recurrencia</li>
+          <li><strong>Aprobación gerencial:</strong> Solicitar autorización formal antes del ajuste</li>
+          <li><strong>Reporte a auditoría:</strong> Comunicar hallazgos según políticas internas</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mensaje si no hay faltantes -->
+<div *ngIf="!loading && getArticulosFaltantes().length === 0" class="content-section">
+  <div class="alert-modern alert-success">
+    <div class="alert-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div class="alert-content">
+      <strong>✅ Sin Faltantes Detectados</strong>
+      <p>No se encontraron artículos con cantidades físicas menores al stock registrado en sistema.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========================================
+     SECCIÓN: LISTADO COMPLETO DE SOBRANTES
+     ======================================== -->
+<div *ngIf="!loading && getArticulosSobrantesConteo().length > 0" class="content-section">
+  <div class="section-card">
+    <div class="section-header">
+      <div class="section-title-wrapper">
+        <h2 class="section-title">
+          <i class="bi bi-list-check text-success"></i>
+          LISTADO COMPLETO DE ARTÍCULOS SOBRANTES (CONTEO)
+        </h2>
+        <p class="section-description">
+          Registro detallado de todos los artículos registrados con excedentes físicos
+        </p>
+      </div>
+      <div class="mt-3 mb-3">
+        <button class="btn btn-success btn-lg" 
+                (click)="exportarExcelSobrantes()" 
+                [disabled]="loading"
+                style="box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);">
+          <i class="bi bi-file-earmark-excel-fill me-2"></i>
+          <span>Descargar Excel - Sobrantes</span>
+          <span class="badge bg-white text-success ms-2">
+            {{ getArticulosSobrantesConteo().length }} artículos
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Resumen de Sobrantes -->
+    <div class="alert-modern alert-success">
+      <div class="alert-icon">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4 style="margin-top: 0;">💹 RESUMEN TOTAL DE SOBRANTES</h4>
+        <div class="row mt-3">
+          <div class="col-md-4">
+            <strong>Total Artículos Sobrantes:</strong> {{ getArticulosSobrantesConteo().length }}
+          </div>
+          <div class="col-md-4">
+            <strong>Total Unidades Sobrantes:</strong> {{ calcularTotalSobrantesConteo() | number:'1.0-0' }}
+          </div>
+          <div class="col-md-4">
+            <strong>Valor Total Sobrante:</strong> {{ getValorTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}
+          </div>
+        </div>
+        <p class="mt-3 mb-0">
+          <strong>📊 NOTA:</strong> 
+          Estos sobrantes corresponden a artículos YA registrados en sistema donde se encontró mayor cantidad física de la esperada. Requieren ajuste de inventario positivo y verificación de origen.
+        </p>
+      </div>
+    </div>
+
+    <!-- Tabla Completa de Sobrantes -->
+    <div class="table-container">
+      <table class="table-modern table-small">
+        <thead>
+          <tr>
+            <th style="width: 5%;" class="text-center">#</th>
+            <th style="width: 12%;">Código</th>
+            <th style="width: 30%;">Artículo</th>
+            <th style="width: 10%;" class="text-center">Stock Sistema</th>
+            <th style="width: 10%;" class="text-center">Conteo Final</th>
+            <th style="width: 8%;" class="text-center">Diferencia</th>
+            <th style="width: 10%;" class="text-end">Costo Unit.</th>
+            <th style="width: 10%;" class="text-end">Valor Extra</th>
+            <th style="width: 5%;" class="text-center">Unidad</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of getArticulosSobrantesConteo(); let i = index" 
+              [class.bg-light]="i % 2 === 1"
+              class="row-sobrantes">
+            <td class="text-center">
+              <span class="item-badge bg-success text-white">{{ i + 1 }}</span>
+            </td>
+            <td>
+              <span class="codigo-badge bg-success text-white">{{ item.codigo_articulo }}</span>
+            </td>
+            <td>
+              <div class="articulo-info">
+                <span class="articulo-nombre">{{ item.nombre_articulo }}</span>
+              </div>
+            </td>
+            <td class="text-center">
+              <strong>{{ item.stock_disponible | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-center">
+              <strong class="text-info">{{ item.conteoFinalAceptado | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-center">
+              <strong class="text-success" style="font-size: 1.1em;">+{{ item.diferenciaFinal | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-end">
+              <span class="costo-value">{{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}</span>
+            </td>
+            <td class="text-end">
+              <strong class="text-success">{{ item.costoTotalSobrante | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </td>
+            <td class="text-center">
+              <span class="unidad-badge">{{ item.unidad }}</span>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr class="table-active" style="font-weight: 700; border-top: 3px solid #28a745;">
+            <td colspan="4" class="text-end" style="font-size: 1.1em;">
+              <strong>TOTAL SOBRANTES:</strong>
+            </td>
+            <td class="text-center"></td>
+            <td class="text-center" style="font-size: 1.1em;">
+              <strong class="text-success">+{{ calcularTotalSobrantesConteo() | number:'1.0-0' }}</strong>
+            </td>
+            <td class="text-end"></td>
+            <td class="text-end" style="font-size: 1.1em;">
+              <strong class="text-success">{{ getValorTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}</strong>
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Información adicional -->
+    <div class="alert-modern alert-info mt-4">
+      <div class="alert-icon">
+        <i class="bi bi-info-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4>📋 INSTRUCCIONES PARA GESTIÓN DE SOBRANTES</h4>
+        <ol style="margin: 10px 0 5px 20px; padding-left: 0;">
+          <li><strong>Verificación física:</strong> Confirmar nuevamente existencia y estado de cada artículo</li>
+          <li><strong>Investigación de origen:</strong> Determinar causa del excedente (devolución, error de registro, etc.)</li>
+          <li><strong>Documentación:</strong> Adjuntar evidencia fotográfica y justificación del hallazgo</li>
+          <li><strong>Ajuste contable:</strong> Generar asiento de regularización por {{ getValorTotalSobrantesConteo() | currency:'USD':'symbol':'1.2-2' }}</li>
+          <li><strong>Actualización de sistema:</strong> Registrar ajuste positivo en ERP</li>
+          <li><strong>Aprobación gerencial:</strong> Solicitar autorización formal antes del registro</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mensaje si no hay sobrantes -->
+<div *ngIf="!loading && getArticulosSobrantesConteo().length === 0" class="content-section">
+  <div class="alert-modern alert-info">
+    <div class="alert-icon">
+      <i class="bi bi-check-circle-fill"></i>
+    </div>
+    <div class="alert-content">
+      <strong>✅ Sin Sobrantes de Conteo Detectados</strong>
+      <p>No se encontraron artículos registrados con cantidades físicas mayores al stock en sistema.</p>
+    </div>
+  </div>
+</div>
+
+    <!-- Información adicional y recomendaciones -->
+    <div class="alert-modern alert-info mt-4">
+      <div class="alert-icon">
+        <i class="bi bi-info-circle-fill"></i>
+      </div>
+      <div class="alert-content">
+        <h4>📌 INSTRUCCIONES PARA REGULARIZACIÓN</h4>
+        
+        <!-- Leyenda de costos -->
+        <div class="alert alert-light mb-3" style="border-left: 4px solid #17a2b8;">
+          <strong>📋 Leyenda de Costos:</strong>
+          <ul style="margin: 8px 0 0 15px; font-size: 0.9em;">
+            <li><strong>Costo normal:</strong> Valor registrado en catálogo de artículos</li>
+            <li><strong>Costo con <i class="bi bi-exclamation-circle-fill text-warning"></i>:</strong> Valor estimado desde otra fuente (FOB, costo unitario)</li>
+            <li><strong>Valor con (*):</strong> Requiere verificación - costo no confirmado</li>
+            <li><strong class="text-danger">SIN COSTO / PENDIENTE:</strong> Artículo requiere valoración manual urgente</li>
+          </ul>
+        </div>
+        
+        <ol style="margin: 10px 0 5px 20px; padding-left: 0;">
+          <li><strong>Verificación física:</strong> Confirmar existencia y estado de cada artículo</li>
+          <li><strong>Validación de costos:</strong> 
+            <span class="text-danger fw-bold">CRÍTICO - {{ getCantidadArticulosFDISinValorar() }} artículo(s) sin costo</span> 
+            - Consultar con proveedores o usar precio de mercado
+          </li>
+          <li><strong>Alta en sistema:</strong> Registrar cada artículo con su código, descripción y ubicación</li>
+          <li><strong>Ajuste contable:</strong> Generar asiento de regularización por {{ getValorTotalSobrantesFueraInventario() | currency:'USD':'symbol':'1.2-2' }}</li>
+          <li><strong>Documentación:</strong> Adjuntar evidencia fotográfica y justificación del origen</li>
+          <li><strong>Aprobación gerencial:</strong> Solicitar autorización formal antes del registro</li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- Análisis por grupo -->
+    <div *ngIf="gruposSobrantesFueraInventarioTop10.length > 0" class="mt-4">
+      <h3 class="subsection-title">Distribución por Grupo de Producto</h3>
+      <div class="table-container">
+        <table class="table-modern">
+          <thead>
+            <tr>
+              <th>Grupo</th>
+              <th class="text-center">Artículos</th>
+              <th class="text-center">Unidades</th>
+              <th class="text-end">Valor Total</th>
+              <th class="text-center">% del Total FDI</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let grupo of gruposSobrantesFueraInventarioTop10; let i = index" [class.bg-light]="i % 2 === 1">
+              <td><strong>{{ grupo.grupo }}</strong></td>
+              <td class="text-center">{{ grupo.articulosSobrantes }}</td>
+              <td class="text-center text-warning">{{ grupo.unidadesSobrantes | number:'1.0-0' }}</td>
+              <td class="text-end text-warning"><strong>{{ grupo.valorSobrantes | currency:'USD':'symbol':'1.2-2' }}</strong></td>
+              <td class="text-center">{{ (grupo.valorSobrantes / getValorTotalSobrantesFueraInventario() * 100) | number:'1.1-1' }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+      
+</div>

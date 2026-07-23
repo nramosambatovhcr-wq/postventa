@@ -1,0 +1,80 @@
+<!-- app-checklist-tarea-item -->
+<div class="tarea-item"
+     [class.completada]="registro.completado"
+     [class.en-confirmacion]="enEdicion">
+
+  <!-- ── Fila principal: checkbox + descripción + botón editar ── -->
+  <div class="tarea-row">
+
+    <div class="tarea-checkbox">
+      <input type="checkbox"
+             [id]="'tp-' + registro.tareaId"
+             [checked]="registro.completado"
+             (change)="onToggle()">
+      <label [for]="'tp-' + registro.tareaId"></label>
+    </div>
+
+    <div class="tarea-info">
+      <span class="tarea-numero">{{ registro.ordenTarea }}</span>
+      <span class="tarea-descripcion">{{ registro.descripcionTarea }}</span>
+    </div>
+
+    <button *ngIf="registro.completado && !enEdicion"
+            class="btn-editar-detalle"
+            (click)="onEditOpen()"
+            title="Editar detalles">
+      <i class="icon-edit-2"></i>
+    </button>
+
+  </div>
+
+  <!-- ── Meta: quién / cuándo (solo si está completada y no en edición) ── -->
+  <div class="tarea-meta" *ngIf="registro.completado && !enEdicion">
+    <span class="tarea-realizador" *ngIf="registro.realizadoPor">
+      <i class="icon-user"></i> {{ registro.realizadoPor }}
+    </span>
+    <span class="tarea-fecha" *ngIf="registro.fechaRealizacion">
+      <i class="icon-calendar"></i> {{ formatDate(registro.fechaRealizacion) }}
+    </span>
+    <span *ngIf="!registro.realizadoPor && !registro.fechaRealizacion"
+          class="tarea-sin-detalle">
+      Sin detalles — <a (click)="onEditOpen()">agregar</a>
+    </span>
+  </div>
+
+  <div class="tarea-observacion"
+       *ngIf="registro.observaciones && !enEdicion">
+    <small><i class="icon-message-square"></i> {{ registro.observaciones }}</small>
+  </div>
+
+  <!-- ── Panel de detalles opcionales (inline form) ── -->
+  <div class="tarea-confirm-form" *ngIf="enEdicion">
+    <div class="confirm-header">
+      <i class="icon-check-circle" style="color:var(--success)"></i>
+      <span>Detalles opcionales</span>
+      <button class="confirm-close" (click)="onCancel()">×</button>
+    </div>
+    <div class="confirm-fields">
+      <input type="text"
+             class="form-control form-control-sm"
+             placeholder="¿Quién realizó esta tarea?"
+             [(ngModel)]="localRealizadoPor"
+             [ngModelOptions]="{standalone: true}"
+             (keyup.enter)="onSave()">
+      <input type="text"
+             class="form-control form-control-sm"
+             placeholder="Observaciones"
+             [(ngModel)]="localObservaciones"
+             [ngModelOptions]="{standalone: true}">
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-xs btn-success" (click)="onSave()">
+        <i class="icon-save"></i> Guardar detalles
+      </button>
+      <button class="btn btn-xs btn-secondary" (click)="onCancel()">
+        Omitir
+      </button>
+    </div>
+  </div>
+
+</div>

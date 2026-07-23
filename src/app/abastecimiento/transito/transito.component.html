@@ -1,0 +1,195 @@
+<div class="transito-container">
+
+  <!-- ══════════════════════════════════════════════════════════
+       ENCABEZADO
+  ══════════════════════════════════════════════════════════ -->
+  <div class="page-header">
+    <div class="header-left">
+      <h2>
+        <span class="icon">🚢</span>
+        Órdenes pendientes de arribo
+      </h2>
+      <p class="subtitle">Ítems con cantidades aún no recibidas en bodega</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn-excel" (click)="descargarExcel()" [disabled]="cargando || filtradas.length === 0">
+        ⬇ Descargar Excel
+      </button>
+      <button class="btn-refresh" (click)="cargarPendientes()" [disabled]="cargando">
+        <span *ngIf="!cargando">↻ Actualizar</span>
+        <span *ngIf="cargando" class="spinner-text">Cargando...</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TARJETAS RESUMEN
+  ══════════════════════════════════════════════════════════ -->
+  <div class="summary-cards" *ngIf="!cargando && !error">
+    <div class="card-summary">
+      <span class="card-label">Ítems encontrados</span>
+      <span class="card-value">{{ totalItems }}</span>
+    </div>
+    <div class="card-summary warning">
+      <span class="card-label">Unidades pendientes</span>
+      <span class="card-value">{{ totalPendiente }}</span>
+    </div>
+    <div class="card-summary info">
+      <span class="card-label">Unidades en tránsito</span>
+      <span class="card-value">{{ totalTransito }}</span>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       FILTROS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="filtros-bar" *ngIf="!cargando && !error">
+
+    <input
+      class="filtro-input"
+      type="text"
+      placeholder="Buscar por orden, código, descripción..."
+      [(ngModel)]="filtroBusqueda"
+      (ngModelChange)="aplicarFiltros()"
+    />
+
+    <select class="filtro-select" [(ngModel)]="filtroProveedor" (ngModelChange)="aplicarFiltros()">
+      <option value="">Todos los proveedores</option>
+      <!-- MEJORA 2: proveedores ahora es propiedad, no getter -->
+      <option *ngFor="let prov of proveedores" [value]="prov">{{ prov }}</option>
+    </select>
+
+    <select class="filtro-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
+      <option value="todos">Todos los estados</option>
+      <option value="en_transito">Con BL en tránsito</option>
+      <option value="sin_transito">Sin tránsito asignado</option>
+    </select>
+
+    <button class="btn-limpiar" (click)="limpiarFiltros()" *ngIf="filtroBusqueda || filtroProveedor || filtroEstado !== 'todos'">
+      ✕ Limpiar
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ESTADO: CARGANDO
+  ══════════════════════════════════════════════════════════ -->
+  <div class="estado-cargando" *ngIf="cargando">
+    <div class="spinner"></div>
+    <p>Cargando órdenes en tránsito...</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       ESTADO: ERROR
+  ══════════════════════════════════════════════════════════ -->
+  <div class="estado-error" *ngIf="error && !cargando">
+    <span class="error-icon">⚠️</span>
+    <p>{{ error }}</p>
+    <button class="btn-refresh" (click)="cargarPendientes()">Reintentar</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       SIN RESULTADOS
+  ══════════════════════════════════════════════════════════ -->
+  <div class="estado-vacio" *ngIf="!cargando && !error && filtradas.length === 0">
+    <span>📦</span>
+    <p>No se encontraron ítems con los filtros aplicados.</p>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════
+       TABLA PRINCIPAL
+  ══════════════════════════════════════════════════════════ -->
+  <div class="table-wrapper" *ngIf="!cargando && !error && filtradas.length > 0">
+    <table class="tabla-transito">
+      <thead>
+        <tr>
+          <th>Orden</th>
+          <th>Fecha</th>
+          <th class="col-dias">Días</th>
+          <th>Proveedor</th>
+          <th>Código</th>
+          <th>Descripción</th>
+          <th class="col-num">Solicitado</th>
+          <th class="col-num">Enviado</th>
+          <th class="col-num">Pendiente</th>
+          <th class="col-num">Tránsito</th>
+          <th>En tránsito 🚢</th>
+          <th>Arribados ✅</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- MEJORA 5: trackBy evita re-render de filas que no cambiaron -->
+        <tr *ngFor="let item of filtradas; trackBy: trackByOrdenCodigo">
+
+          <!-- Orden de compra -->
+          <td class="td-orden">{{ item.orden }}</td>
+
+          <!-- Fecha -->
+          <td class="td-fecha">{{ item.date_invoice | date:'dd/MM/yyyy' }}</td>
+
+          <!-- Días transcurridos con semáforo -->
+          <td class="td-dias">
+            <span class="dias-badge" [ngClass]="getDiasClass(item.dias_pasados)">
+              {{ item.dias_pasados }}d
+            </span>
+          </td>
+
+          <!-- Proveedor -->
+          <td class="td-proveedor">{{ item.proveedor }}</td>
+
+          <!-- Código -->
+          <td class="td-codigo">
+            <code>{{ item.codigo }}</code>
+          </td>
+
+          <!-- Descripción -->
+          <td class="td-descripcion" [title]="item.descripcion">{{ item.descripcion }}</td>
+
+          <!-- Cantidades -->
+          <td class="td-num">{{ item.solicitado }}</td>
+          <td class="td-num">{{ item.enviado }}</td>
+          <td class="td-num pendiente">{{ item.cantidad_activa }}</td>
+          <td class="td-num transito">{{ item.cantidad_transito }}</td>
+
+          <!-- BLs en tránsito -->
+          <td class="td-bls">
+            <div class="bls-info">
+              <span *ngIf="item.bls_en_transito !== '—'" class="bl-chip transito-chip" [title]="item.bls_en_transito">
+                🚢 {{ item.bls_en_transito }}
+              </span>
+              <span *ngIf="item.invoicebl_por_arribar !== '—'" class="bl-chip invoice-chip" [title]="item.invoicebl_por_arribar">
+                📄 {{ item.invoicebl_por_arribar }}
+              </span>
+              <span *ngIf="item.bls_en_transito === '—' && item.invoicebl_por_arribar === '—'" class="sin-bl">
+                —
+              </span>
+            </div>
+          </td>
+
+          <!-- BLs arribados -->
+          <td class="td-bls">
+            <div class="bls-info">
+              <span *ngIf="item.bls_arribados !== '—'" class="bl-chip arribado-chip" [title]="item.bls_arribados">
+                ✅ {{ item.bls_arribados }}
+              </span>
+              <span *ngIf="item.bls_arribados === '—'" class="sin-bl">
+                —
+              </span>
+            </div>
+          </td>
+
+          <!-- MEJORA 4: badge unificado con ng-container, una sola llamada a getBadge() -->
+          <td class="td-estado">
+            <ng-container *ngIf="getBadge(item) as badge">
+              <span class="estado-badge" [ngClass]="badge.clase">
+                {{ badge.label }}
+              </span>
+            </ng-container>
+          </td>
+
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>

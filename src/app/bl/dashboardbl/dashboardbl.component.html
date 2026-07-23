@@ -1,0 +1,759 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">REPUESTOS IMPORTACIONES</div>
+      <div class="contenedor-busqueda">
+        <input
+          type="text"
+          class="busqueda"
+          placeholder="Buscar general..."
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Invoice-Bl de Importaciones</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de las Invoice-BL</p>
+    </div>
+
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica tarjeta-bl" 
+           [class.activa]="currentRoute === 'dashboardbl'" 
+           (click)="bl()">
+          <div class="icono-tarjeta">📦</div>
+          <div class="valor-estadistica">BL</div>
+      </div>
+      <div class="tarjeta-estadistica tarjeta-excel" 
+           [class.activa]="currentRoute === 'dashboardblexcel'" 
+           (click)="excel()" *ngIf="rolusuario !='paqtana'">
+          <div class="icono-tarjeta">📊</div>
+          <div class="valor-estadistica">SUBIR DETALLE</div>
+      </div>
+      <div class="tarjeta-estadistica tarjeta-transito" 
+           [class.activa]="currentRoute === 'dashboardrev'" 
+           (click)="revi()">
+          <div class="icono-tarjeta">🚢</div>
+          <div class="valor-estadistica">TRANSITO</div>
+      </div>
+    </div>
+
+    <div class="panel-contenido">
+      
+      <!-- FILTROS AVANZADOS -->
+      <div class="filtros-avanzados">
+        <h3 style="margin-bottom: 10px; color: #333;">Filtros Avanzados</h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+          
+          <div class="filtro-item">
+            <label for="filterBl">BL:</label>
+            <input 
+              type="text" 
+              id="filterBl" 
+              [(ngModel)]="filterBl" 
+              (input)="applyFilters()"
+              placeholder="Ej: DHL688511730"
+              class="input-filtro">
+          </div>
+
+          <div class="filtro-item">
+            <label for="filterProveedor">Proveedor:</label>
+            <select 
+              id="filterProveedor" 
+              [(ngModel)]="filterProveedor" 
+              (change)="applyFilters()"
+              class="select-filtro">
+              <option value="">Todos</option>
+              <option *ngFor="let proveedor of uniqueProveedores" [value]="proveedor">
+                {{ proveedor }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filtro-item">
+            <label for="filterEstado">Estado:</label>
+            <select 
+              id="filterEstado" 
+              [(ngModel)]="filterEstado" 
+              (change)="applyFilters()"
+              class="select-filtro">
+              <option value="">Todos</option>
+              <option *ngFor="let estado of uniqueEstados" [value]="estado">
+                {{ estado }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filtro-item">
+            <label for="filterInvoice">Orden de Compra:</label>
+            <input 
+              type="text" 
+              id="filterInvoice" 
+              [(ngModel)]="filterInvoice" 
+              (input)="applyFilters()"
+              placeholder="Ej: MCV251005"
+              class="input-filtro">
+          </div>
+
+        </div>
+
+        <div class="filtros-fecha">
+          <div class="fecha-desde">
+            <label for="startDate">Desde:</label>
+            <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyFilters()">
+          </div>
+          <div class="fecha-hasta">
+            <label for="endDate">Hasta:</label>
+            <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyFilters()">
+          </div>
+          <button class="boton-limpiar" (click)="clearAllFilters()" style="background-color: #b3362a; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+            Limpiar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Opciones de tabla (Excel y CSV) -->
+      <div class="opciones-tabla">
+        <div class="acciones-tabla">
+          <button class="boton-secundario" (click)="downloadExcel()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-excel" viewBox="0 0 16 16">
+              <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219l-2.116-2.54z"/>
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            </svg>
+            Excel
+          </button>
+          <button class="boton-secundario" (click)="downloadCSV()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-spreadsheet" viewBox="0 0 16 16">
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+              <path d="M3 8v1h10V8H3zm0 3v1h10v-1H3z"/>
+            </svg>
+            CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla de datos -->
+      <div class="contenedor-tabla">
+        <table class="tabla-pedidos">
+          <thead>
+            <tr>
+              <th>Cod</th>
+              <th>INVOICE-BL</th>
+              <th>ORDEN COMPRA</th>
+              <th>PROVEEDOR</th>
+             <!-- <th>VALOR (USD)</th>-->
+              <th>Estado</th>
+              <th>Fecha Arribo</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of bls; let i = index"
+                [style.background-color]="item.porCargar ? '#faf3dd' : ''"
+                [style.border-left]="item.porCargar ? '4px solid #3a7bd5' : ''">
+              <!-- COD -->
+              <td data-label="Codigo">{{ item.id }}</td>
+
+              <!-- INVOICE-BL -->
+              <td data-label="BL">
+                <span class="bl-number">{{ item.nombre }}</span>
+              <!--  <span *ngIf="item.porCargar"
+                      class="badge ms-1"
+                      style="background-color:#3a7bd5; color:white; font-size:0.65rem; padding:2px 6px; border-radius:4px;"
+                      title="Existe en Oracle pero aún no tiene órdenes de compra registradas">
+                  <i class="fas fa-clock me-1"></i>POR CARGAR
+                </span>-->
+                <small *ngIf="item.porCargar && item.fechaEmbarque"
+                       class="d-block text-muted" style="font-size:0.7rem;">
+                  Embarque: {{ item.fechaEmbarque | date:'dd/MM/yyyy' }}
+                </small>
+              </td>
+
+              <!-- INVOICES (nueva columna inline) -->
+              <td data-label="Invoices" class="col-invoices">
+                <div class="invoices-inline" *ngIf="item.invoiceBlItems && item.invoiceBlItems.length > 0; else sinInvoices">
+                  <span 
+                    *ngFor="let inv of item.invoiceBlItems"
+                    class="invoice-chip"
+                    [ngClass]="{
+                      'chip-pendiente':   inv.status === 'PENDIENTE',
+                      'chip-transito':    inv.status === 'TRANSITO',
+                      'chip-activa':      inv.status === 'ESPERANDO CONTENEDOR',
+                      'chip-embarque':    inv.status === 'EMBARQUE',
+                      'chip-aduana':      inv.status === 'ADUANA',
+                      'chip-liquidado':   inv.status === 'LIQUIDADO',
+                      'chip-aprobada':    inv.status === 'APROBADA',
+                      'chip-revision':    inv.status === 'REVISION',
+                      'chip-entregada':   inv.status === 'ENTREGADA',
+                      'chip-anulada':     inv.status === 'ANULADA'
+                    }"
+                    [title]="inv.invoiceNumber + ' — ' + inv.status + (inv.valorInvoice ? ' — $ ' + (inv.valorInvoice | number:'1.2-2') : '')"
+                  >
+                    {{ inv.invoiceNumber || ('ID:' + inv.id) }}
+                  </span>
+                </div>
+                <ng-template #sinInvoices>
+                  <span class="sin-invoices">—</span>
+                </ng-template>
+              </td>
+
+              <!-- PROVEEDOR -->
+              <td data-label="Proveedor">
+                <strong class="badge-proveedor">{{ item.proveedor || 'N/A' }}</strong>
+              </td>
+
+              <!-- VALOR BL (FOB total de todos sus invoices) -->
+             <!-- <td data-label="Valor USD">
+                <span *ngIf="item.valorBl != null && item.valorBl > 0; else sinValor"
+                      style="font-weight:700; color:#1e6e3a; font-variant-numeric:tabular-nums; white-space:nowrap;"
+                      [title]="(item.itemsBl || 0) + ' ítems · ' + (item.unidadesBl || 0) + ' unidades facturadas'">
+                  $ {{ item.valorBl | number:'1.2-2' }}
+                </span>
+                <ng-template #sinValor>
+                  <span style="color:#aaa;">—</span>
+                </ng-template>
+              </td>-->
+
+              <!-- ESTADO -->
+              <td data-label="Estado">
+                <span class="estado" [ngClass]="{
+                  'pendiente': item.estado === 'PENDIENTE',
+                  'transito':  item.estado === 'TRANSITO',
+                  'activa':    item.estado === 'ESPERANDO CONTENEDOR',
+                  'embarque':  item.estado === 'EMBARQUE',
+                  'aduana':    item.estado === 'ADUANA',
+                  'liquidado': item.estado === 'LIQUIDADO'
+                }"
+                [style.background-color]="item.porCargar ? '#eaf1fb' : ''"
+                [style.color]="item.porCargar ? '#1c1c1e' : ''">
+                  {{ item.estado }}
+                </span>
+              </td>
+
+              <!-- FECHA ARRIBO -->
+              <td data-label="Fecha Arribo">
+                <span class="fecha-arribo" [ngClass]="{
+                  'pendiente':  getArriboStatus(item.fechaArribo) === 'pendiente',
+                  'arribado':   getArriboStatus(item.fechaArribo) === 'arribado',
+                  'programado': getArriboStatus(item.fechaArribo) === 'programado'
+                }">
+                  {{ formatFechaArribo(item.fechaArribo) }}
+                </span>
+              </td>
+
+              <!-- ACCIONES -->
+              <td>
+                <div class="acciones-fila" *ngIf="!item.porCargar; else sinAcciones">
+                  <div class="details-icon" (click)="openDetailsModal(item.id)" title="Ver detalles" style="color: black;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+                      <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                    </svg>
+                  </div>
+                  <div class="details-icon" (click)="verBl(item.id)" title="Agregar / Ver BL">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-circle" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4"/>
+                    </svg>
+                  </div>
+                  <!-- Botón Pagos -->
+                  <div class="details-icon" (click)="abrirModalPagos(item)" title="Pagos / Anticipos"
+                       style="color:#1e6e3a;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-cash-coin" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M11 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8m5-4a5 5 0 1 1-10 0 5 5 0 0 1 10 0"/>
+                      <path d="M9.438 11.944c.047.596.518 1.06 1.363 1.116v.44h.375v-.443c.875-.061 1.386-.529 1.386-1.207 0-.618-.39-.936-1.09-1.1l-.296-.07v-1.2c.376.043.614.248.671.532h.658c-.047-.575-.54-1.024-1.329-1.073V9.5h-.375v.45c-.747.073-1.255.522-1.255 1.158 0 .562.378.92 1.007 1.066l.248.061v1.272c-.384-.058-.639-.27-.696-.563h-.668zm1.36-1.354c-.369-.085-.569-.26-.569-.522 0-.294.216-.514.572-.578v1.1zm.432.746c.449.104.655.272.655.569 0 .339-.257.571-.709.614v-1.195z"/>
+                      <path d="M1 0a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h4.083q.088-.517.258-1H3a2 2 0 0 0-2-2V3a2 2 0 0 0 2-2h10a2 2 0 0 0 2 2v3.528c.38.34.717.728 1 1.154V1a1 1 0 0 0-1-1z"/>
+                      <path d="M9.998 5.083 10 5a2 2 0 1 0-3.132 1.65 5.6 5.6 0 0 1 3.13-1.567"/>
+                    </svg>
+                  </div>
+                </div>
+                <ng-template #sinAcciones>
+                  <button
+                    (click)="abrirModalCargarExcel(item)"
+                    style="background:#3a7bd5;color:white;border:none;border-radius:4px;padding:4px 10px;font-size:0.75rem;cursor:pointer;"
+                    title="Cargar Excel de detalle para este BL">
+                    <i class="fas fa-file-excel me-1"></i>Cargar Excel
+                  </button>
+                </ng-template>
+              </td>
+            </tr>
+
+            <!-- Sin resultados -->
+            <tr *ngIf="bls.length === 0">
+              <td colspan="8" style="text-align:center; padding: 20px; color: #888;">
+                No se encontraron registros.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pie de tabla con paginación -->
+      <div class="pie-tabla">
+        <div class="items-count">
+          Mostrando {{ bls?.length || 0 }} de {{ filteredData?.length || 0 }} registros
+          <span *ngIf="filteredData?.length !== allData?.length" class="text-muted" style="font-size:0.85rem;">
+            ({{ allData?.length || 0 }} total)
+          </span>
+        </div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button
+            *ngFor="let page of getPaginationArray()"
+            class="boton-pagina"
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ Modal Cargar Excel BL por cargar ══ -->
+  <div *ngIf="modalCargarExcel"
+       style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1050;display:flex;align-items:center;justify-content:center;"
+       (click)="cerrarModalCargarExcel()">
+    <div style="background:white;border-radius:8px;width:90%;max-width:700px;max-height:92vh;overflow-y:auto;"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div style="background:#3a7bd5;color:white;padding:14px 20px;border-radius:8px 8px 0 0;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <h5 style="margin:0;font-weight:700;"><i class="fas fa-file-excel me-2"></i>Cargar Detalle Excel</h5>
+          <small style="opacity:0.9;">BL: <strong>{{ blParaCargar?.nombre }}</strong></small>
+        </div>
+        <button (click)="cerrarModalCargarExcel()" style="background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;line-height:1;">&times;</button>
+      </div>
+
+      <!-- Steps -->
+      <div style="display:flex;padding:14px 20px;border-bottom:1px solid #eee;gap:8px;">
+        <div *ngFor="let s of [1,2,3]" style="flex:1;text-align:center;font-size:0.8rem;"
+             [style.font-weight]="excelCargarStep === s ? '700' : '400'"
+             [style.color]="excelCargarStep >= s ? '#3a7bd5' : '#aaa'">
+          <span style="display:inline-block;width:24px;height:24px;border-radius:50%;line-height:24px;margin-right:4px;"
+                [style.background]="excelCargarStep >= s ? '#3a7bd5' : '#eee'"
+                [style.color]="excelCargarStep >= s ? 'white' : '#aaa'">{{ s }}</span>
+          {{ s === 1 ? 'Seleccionar' : s === 2 ? 'Vista previa' : 'Importar' }}
+        </div>
+      </div>
+
+      <div style="padding:20px;">
+
+        <!-- PASO 1 -->
+        <div *ngIf="excelCargarStep === 1">
+
+          <!-- Aviso BL -->
+          <div style="background:#faf3dd;border:1px solid #e8d9a8;border-radius:6px;padding:10px 12px;margin-bottom:14px;font-size:0.85rem;">
+            <i class="fas fa-info-circle me-1" style="color:#3a7bd5;"></i>
+            El BL (<strong>{{ blParaCargar?.nombre }}</strong>) se inyectará automáticamente en la columna <strong>BL</strong> de cada fila.
+          </div>
+
+          <!-- Instrucciones -->
+          <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:6px;padding:14px;margin-bottom:14px;">
+            <p style="font-weight:700;margin:0 0 8px;font-size:0.88rem;color:#333;">
+              <i class="fas fa-list-ul me-1" style="color:#3a7bd5;"></i>Instrucciones
+            </p>
+            <ol style="margin:0;padding-left:18px;font-size:0.82rem;line-height:1.9;color:#444;">
+              <li>Descargue la <strong>plantilla</strong> con el botón verde de abajo.</li>
+              <li>Complete los datos en la hoja <strong>"Detalle Invoice BL"</strong>.</li>
+              <li>Columnas <strong>obligatorias</strong>:
+                <span style="background:#b3362a;color:white;border-radius:3px;padding:1px 5px;font-size:0.74rem;margin:0 2px;">CODIGO</span>
+                <span style="background:#b3362a;color:white;border-radius:3px;padding:1px 5px;font-size:0.74rem;margin:0 2px;">DESCRIPCION ESPAÑOL</span>
+                <span style="background:#b3362a;color:white;border-radius:3px;padding:1px 5px;font-size:0.74rem;margin:0 2px;">QTY</span>
+                <span style="background:#b3362a;color:white;border-radius:3px;padding:1px 5px;font-size:0.74rem;margin:0 2px;">UNIT_FOB</span>
+              </li>
+              <li>Columnas opcionales: ITEM, LINE, CHINO, UNIT, TOTAL_FOB, ORDEN, REF, CODE_NEW, CODIGOVHCR.</li>
+              <li>La columna <strong>BL</strong> se llenará automáticamente — no es necesario completarla.</li>
+              <li>Guarde el archivo como <strong>.xlsx</strong> antes de subirlo.</li>
+              <li><strong>No modifique</strong> los nombres de las columnas.</li>
+            </ol>
+          </div>
+
+          <!-- Botón plantilla -->
+          <div style="margin-bottom:16px;">
+            <button (click)="descargarPlantillaCargar()"
+                    style="background:#1e6e3a;color:white;border:none;border-radius:4px;padding:8px 16px;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;">
+              <i class="fas fa-file-excel"></i> Descargar Plantilla Excel
+            </button>
+            <small style="display:block;margin-top:5px;color:#666;font-size:0.78rem;">
+              Incluye filas de ejemplo con el BL <strong>{{ blParaCargar?.nombre }}</strong> precargado.
+            </small>
+          </div>
+
+          <hr style="border-color:#eee;margin:0 0 14px;">
+
+          <!-- Input archivo -->
+          <label style="display:block;margin-bottom:8px;font-weight:600;font-size:0.9rem;">
+            <i class="fas fa-upload me-1" style="color:#3a7bd5;"></i>Seleccionar archivo Excel (.xlsx)
+          </label>
+          <input type="file" accept=".xlsx,.xls" (change)="onExcelCargarSelect($event)"
+                 style="border:1px solid #ddd;border-radius:4px;padding:8px;width:100%;box-sizing:border-box;">
+
+          <div *ngIf="excelCargarNombre" style="margin-top:8px;font-size:0.85rem;color:#555;">
+            <i class="fas fa-file-excel me-1" style="color:#1e6e3a;"></i>{{ excelCargarNombre }}
+          </div>
+          <div *ngFor="let err of excelCargarErrores"
+               style="background:#fdecea;color:#b3362a;padding:8px;border-radius:4px;font-size:0.85rem;margin-top:6px;">
+            <i class="fas fa-exclamation-circle me-1"></i>{{ err }}
+          </div>
+        </div>
+
+        <!-- PASO 2: Vista previa -->
+        <div *ngIf="excelCargarStep === 2">
+          <div style="background:#e6f4ec;border:1px solid #bcdccb;border-radius:6px;padding:10px;margin-bottom:14px;font-size:0.85rem;">
+            <i class="fas fa-check-circle me-1" style="color:#1e6e3a;"></i>
+            Vista previa (primeras 10 filas). Columna <strong>BL</strong> = <strong>{{ blParaCargar?.nombre }}</strong>.
+          </div>
+          <div style="overflow-x:auto;max-height:260px;overflow-y:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+              <thead>
+                <tr style="background:#3a7bd5;color:white;position:sticky;top:0;">
+                  <th *ngFor="let col of excelCargarPreview[0] | keyvalue"
+                      style="padding:6px 8px;text-align:left;white-space:nowrap;">{{ col.key }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of excelCargarPreview; let i = index"
+                    [style.background]="i % 2 === 0 ? '#fff' : '#fafafa'">
+                  <td *ngFor="let col of row | keyvalue"
+                      style="padding:5px 8px;border-bottom:1px solid #eee;white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;">
+                    {{ col.value }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end;">
+            <button (click)="excelCargarStep = 1"
+                    style="padding:8px 16px;border:1px solid #ddd;border-radius:4px;background:white;cursor:pointer;">
+              ← Volver
+            </button>
+            <button (click)="importarExcelCargar()"
+                    style="padding:8px 20px;background:#3a7bd5;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:600;">
+              <i class="fas fa-upload me-1"></i>Importar
+            </button>
+          </div>
+        </div>
+
+        <!-- PASO 3: Resultado / progreso -->
+        <div *ngIf="excelCargarStep === 3 || excelCargarImportando">
+          <div *ngIf="excelCargarImportando" style="text-align:center;padding:24px 0;">
+            <div style="background:#eee;border-radius:20px;height:12px;margin-bottom:12px;">
+              <div [style.width]="excelCargarProgreso + '%'"
+                   style="background:#3a7bd5;height:100%;border-radius:20px;transition:width 0.3s;"></div>
+            </div>
+            <p style="color:#555;font-size:0.9rem;">Importando... {{ excelCargarProgreso }}%</p>
+          </div>
+
+          <div *ngIf="excelCargarCompletado && !excelCargarImportando" style="text-align:center;padding:16px 0 0;">
+            <i class="fas fa-check-circle" style="font-size:2.6rem;color:#1e6e3a;"></i>
+            <p style="margin-top:10px;font-weight:600;color:#1e6e3a;">{{ excelCargarMensaje }}</p>
+          </div>
+
+          <!-- Tabla de validación de códigos contra el maestro de partes (Oracle) -->
+          <div *ngIf="excelCargarCompletado && !excelCargarImportando && excelCargarResultados.length"
+               style="margin-top:10px;">
+
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+              <small style="color:#555;">
+                <i class="fas fa-info-circle me-1" style="color:#3a7bd5;"></i>
+                Detalle por fila. <strong>✗</strong> indica un código no encontrado en el maestro de partes (VW_MAESTRO_PARTES).
+              </small>
+              <label style="font-size:0.8rem;color:#444;display:flex;align-items:center;gap:6px;cursor:pointer;">
+                <input type="checkbox" [checked]="excelCargarSoloNoValidados" (change)="toggleSoloNoValidados()">
+                Ver solo filas con códigos no validados
+              </label>
+            </div>
+
+            <div style="overflow-x:auto;max-height:260px;overflow-y:auto;border:1px solid #eee;border-radius:6px;">
+              <table style="width:100%;border-collapse:collapse;font-size:0.78rem;">
+                <thead>
+                  <tr style="background:#343a40;color:white;position:sticky;top:0;">
+                    <th style="padding:6px 8px;text-align:left;">Fila</th>
+                    <th style="padding:6px 8px;text-align:left;">Estado</th>
+                    <th style="padding:6px 8px;text-align:left;">CODIGO</th>
+                    <th style="padding:6px 8px;text-align:center;">Validado</th>
+                    <th style="padding:6px 8px;text-align:left;">CODE_NEW</th>
+                    <th style="padding:6px 8px;text-align:center;">Validado</th>
+                    <th style="padding:6px 8px;text-align:left;">CODIGOVHCR</th>
+                    <th style="padding:6px 8px;text-align:center;">Validado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let r of excelCargarResultadosFiltrados; let i = index"
+                      [style.background]="filaTieneCodigoNoValidado(r) ? '#faf3dd' : (i % 2 === 0 ? '#fff' : '#fafafa')">
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;">{{ r.row }}</td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;">
+                      <span *ngIf="r.status === 'success'" style="color:#1e6e3a;"><i class="fas fa-check"></i></span>
+                      <span *ngIf="r.status === 'error'" style="color:#b3362a;" [title]="r.message"><i class="fas fa-times"></i> error</span>
+                    </td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;">{{ r.codigo || '—' }}</td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:center;">
+                      <span *ngIf="r.codigo" [style.color]="r.codigoValidado ? '#1e6e3a' : '#b3362a'">
+                        <i class="fas" [class.fa-check]="r.codigoValidado" [class.fa-times]="!r.codigoValidado"></i>
+                      </span>
+                      <span *ngIf="!r.codigo">—</span>
+                    </td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;">{{ r.codeNew || '—' }}</td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:center;">
+                      <span *ngIf="r.codeNew" [style.color]="r.codeNewValidado ? '#1e6e3a' : '#b3362a'">
+                        <i class="fas" [class.fa-check]="r.codeNewValidado" [class.fa-times]="!r.codeNewValidado"></i>
+                      </span>
+                      <span *ngIf="!r.codeNew">—</span>
+                    </td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;">{{ r.codigoVhcr || '—' }}</td>
+                    <td style="padding:5px 8px;border-bottom:1px solid #eee;text-align:center;">
+                      <span *ngIf="r.codigoVhcr" [style.color]="r.codigoVhcrValidado ? '#1e6e3a' : '#b3362a'">
+                        <i class="fas" [class.fa-check]="r.codigoVhcrValidado" [class.fa-times]="!r.codigoVhcrValidado"></i>
+                      </span>
+                      <span *ngIf="!r.codigoVhcr">—</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+              <button (click)="cerrarYRecargar()"
+                      style="padding:8px 20px;background:#3a7bd5;color:white;border:none;border-radius:4px;cursor:pointer;font-weight:600;">
+                Cerrar
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="excelCargarFallado && !excelCargarImportando" style="text-align:center;padding:20px 0;">
+            <i class="fas fa-times-circle" style="font-size:3rem;color:#b3362a;"></i>
+            <p style="margin-top:12px;color:#b3362a;">{{ excelCargarMensaje }}</p>
+            <button (click)="excelCargarStep = 2; excelCargarFallado = false;"
+                    style="padding:8px 16px;background:#3a7bd5;color:white;border:none;border-radius:4px;cursor:pointer;margin-top:8px;">
+              Reintentar
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Modal Pagos / Anticipos ══ -->
+  <div *ngIf="modalPagos"
+       style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.55);z-index:1100;display:flex;align-items:center;justify-content:center;"
+       (click)="cerrarModalPagos()">
+    <div style="background:white;border-radius:10px;width:95%;max-width:800px;max-height:94vh;overflow-y:auto;display:flex;flex-direction:column;"
+         (click)="$event.stopPropagation()">
+
+      <!-- Header -->
+      <div style="background:#1e6e3a;color:white;padding:14px 20px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;">
+        <div>
+          <h5 style="margin:0;font-weight:700;">💰 Pagos de la orden</h5>
+          <small style="opacity:0.9;">BL: <strong>{{ blPagoSeleccionado?.nombre }}</strong><span *ngIf="pagoForm.ordenId"> — Orden <strong>#{{ pagoForm.ordenId }}</strong></span></small>
+        </div>
+        <button (click)="cerrarModalPagos()" style="background:none;border:none;color:white;font-size:1.5rem;cursor:pointer;">&times;</button>
+      </div>
+
+      <div style="padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+        <!-- ── Formulario nuevo pago ── -->
+        <div style="background:#f8f9fa;border:1px solid #dee2e6;border-radius:8px;padding:16px;">
+          <h6 style="margin:0 0 14px;font-weight:700;color:#1e6e3a;">➕ Registrar nuevo pago</h6>
+
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Orden de compra *</label>
+              <select [(ngModel)]="pagoForm.ordenId" (ngModelChange)="onOrdenChange($event)"
+                      style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+                <option [ngValue]="null">-- Seleccionar orden --</option>
+                <option *ngFor="let ord of ordenesDelBl" [ngValue]="ord.ordenId">
+                  {{ ord.label }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Orden ID</label>
+              <input type="number" [ngModel]="pagoForm.ordenId" readonly
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;background:#e9ecef;color:#495057;cursor:not-allowed;font-weight:600;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Monto *</label>
+              <input type="number" [(ngModel)]="pagoForm.monto" placeholder="0.00" min="0" step="0.01"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Moneda</label>
+              <select [(ngModel)]="pagoForm.moneda"
+                      style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="CNY">CNY</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Tipo de pago</label>
+              <select [(ngModel)]="pagoForm.tipoPago"
+                      style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+                <option value="ABONO">ABONO</option>
+                <option value="GARANTIA">GARANTIA</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Fecha pago *</label>
+              <input type="date" [(ngModel)]="pagoForm.fechaPago"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Referencia</label>
+              <input type="text" [(ngModel)]="pagoForm.referencia" placeholder="N° transferencia / cheque"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+            <div style="grid-column:span 2;">
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Observaciones</label>
+              <input type="text" [(ngModel)]="pagoForm.observaciones" placeholder="Notas adicionales"
+                     style="width:100%;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+
+          </div>
+
+          <button (click)="guardarPago()" [disabled]="guardandoPago"
+                  style="margin-top:14px;background:#1e6e3a;color:white;border:none;border-radius:5px;padding:8px 20px;font-weight:600;cursor:pointer;">
+            {{ guardandoPago ? '⏳ Guardando...' : '💾 Guardar pago' }}
+          </button>
+        </div>
+
+        <!-- ── Subir documento a pago existente ── -->
+        <div style="background:#e6f4ec;border:1px solid #bcdccb;border-radius:8px;padding:16px;">
+          <h6 style="margin:0 0 12px;font-weight:700;color:#185832;">📎 Subir comprobante PDF / imagen</h6>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Pago ID</label>
+              <input type="number" [(ngModel)]="pagoSeleccionadoId" placeholder="ID del pago"
+                     style="width:130px;padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+            </div>
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Tipo documento</label>
+              <select [(ngModel)]="docTipo"
+                      style="padding:6px 8px;border:1px solid #ccc;border-radius:4px;font-size:0.85rem;">
+                <option value="COMPROBANTE">COMPROBANTE</option>
+                <option value="SWIFT">SWIFT</option>
+                <option value="FACTURA">FACTURA</option>
+                <option value="OTRO">OTRO</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">Archivo</label>
+              <input type="file" accept=".pdf,.jpg,.jpeg,.png,.xlsx"
+                     (change)="onDocFileSelect($event)"
+                     style="font-size:0.82rem;">
+            </div>
+            <button (click)="subirDocumento(pagoSeleccionadoId!)" [disabled]="subiendoDoc || !docFile || !pagoSeleccionadoId"
+                    style="background:#185832;color:white;border:none;border-radius:4px;padding:7px 16px;font-size:0.85rem;cursor:pointer;">
+              {{ subiendoDoc ? '⏳ Subiendo...' : '⬆️ Subir' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Lista de pagos existentes ── -->
+        <div>
+          <h6 style="font-weight:700;color:#333;margin-bottom:10px;">
+            📋 Pagos registrados
+            <span *ngIf="pagosCargando" style="font-size:0.8rem;color:#888;font-weight:400;"> cargando...</span>
+          </h6>
+
+          <div *ngIf="pagosData" style="margin-bottom:8px;display:flex;gap:16px;font-size:0.85rem;background:#e6f4ec;padding:8px 12px;border-radius:6px;">
+            <span>Total pagos: <strong>{{ pagosData.totalPagos }}</strong></span>
+            <span>Total pagado: <strong>$ {{ pagosData.totalPagado | number:'1.2-2' }}</strong></span>
+            <span>Anticipos: <strong>$ {{ pagosData.totalAnticipo | number:'1.2-2' }}</strong></span>
+          </div>
+
+          <div *ngIf="!pagosCargando && pagosData?.pagos?.length === 0"
+               style="text-align:center;color:#888;padding:20px;">Sin pagos registrados.</div>
+
+          <div *ngFor="let pago of pagosData?.pagos"
+               style="border:1px solid #dee2e6;border-radius:6px;padding:12px;margin-bottom:10px;background:white;">
+
+            <!-- Cabecera pago -->
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+              <div>
+                <span style="font-weight:700;font-size:0.9rem;">ID {{ pago.id }}</span>
+                <span style="margin-left:8px;font-size:0.78rem;padding:2px 8px;border-radius:12px;"
+                      [style.background]="pago.tipoPago === 'ANTICIPO' ? '#eaf1fb' : '#e6f4ec'"
+                      [style.color]="pago.tipoPago === 'ANTICIPO' ? '#2f6abf' : '#1e6e3a'">
+                  {{ pago.tipoPago }}
+                </span>
+                <span style="margin-left:6px;font-size:0.78rem;padding:2px 8px;border-radius:12px;"
+                      [style.background]="pago.estado === 'CONFIRMADO' ? '#e6f4ec' : pago.estado === 'ANULADO' ? '#fdecea' : '#faf3dd'"
+                      [style.color]="pago.estado === 'CONFIRMADO' ? '#1e6e3a' : pago.estado === 'ANULADO' ? '#b3362a' : '#8a6d1a'">
+                  {{ pago.estado }}
+                </span>
+              </div>
+              <strong style="font-size:1rem;color:#1e6e3a;">$ {{ pago.monto | number:'1.2-2' }} {{ pago.moneda }}</strong>
+            </div>
+
+            <div style="font-size:0.82rem;color:#555;margin-top:6px;display:flex;flex-wrap:wrap;gap:12px;">
+              <span>📅 {{ pago.fechaPago | date:'dd/MM/yyyy' }}</span>
+              <span *ngIf="pago.referencia">🔖 {{ pago.referencia }}</span>
+              <span *ngIf="pago.observaciones">📝 {{ pago.observaciones }}</span>
+              <span>Invoice: {{ pago.invoiceBlNombre }}</span>
+            </div>
+
+            <!-- Documentos del pago -->
+            <div *ngIf="pago.documentos?.length > 0" style="margin-top:8px;">
+              <small style="font-weight:600;color:#555;">Documentos:</small>
+              <div *ngFor="let doc of pago.documentos"
+                   style="display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border-radius:4px;padding:3px 8px;margin:3px;font-size:0.78rem;">
+                <span>📄 {{ doc.nombreArchivo }}</span>
+                <button (click)="descargarDocumento(pago.id, doc.id)"
+                        style="background:none;border:none;cursor:pointer;color:#2f6abf;font-size:0.78rem;padding:0;">⬇️</button>
+                <button (click)="eliminarDocumento(pago.id, doc.id)"
+                        style="background:none;border:none;cursor:pointer;color:#b3362a;font-size:0.78rem;padding:0;">🗑️</button>
+              </div>
+            </div>
+
+            <!-- Acciones del pago -->
+            <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;" *ngIf="pago.estado !== 'ANULADO'">
+              <button *ngIf="pago.estado === 'REGISTRADO'"
+                      (click)="cambiarEstadoPago(pago.id, 'CONFIRMADO')"
+                      style="background:#1e6e3a;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:0.78rem;cursor:pointer;">
+                ✅ Confirmar
+              </button>
+              <button *ngIf="pago.estado !== 'ANULADO'"
+                      (click)="cambiarEstadoPago(pago.id, 'ANULADO')"
+                      style="background:#b3362a;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:0.78rem;cursor:pointer;">
+                ❌ Anular
+              </button>
+              <button *ngIf="pago.estado === 'REGISTRADO'"
+                      (click)="eliminarPago(pago.id)"
+                      style="background:#6b7280;color:white;border:none;border-radius:4px;padding:4px 12px;font-size:0.78rem;cursor:pointer;">
+                🗑️ Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de imagen -->
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeModal()">&times;</span>
+      <img [src]="currentImageUrl" alt="Imagen del Pedido" class="image-modal-image">
+    </div>
+  </div>
+</main>

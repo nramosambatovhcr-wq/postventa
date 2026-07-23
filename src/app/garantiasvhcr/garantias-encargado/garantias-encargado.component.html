@@ -1,0 +1,866 @@
+<div class="container-fluid p-0 garantias-encargado-page">
+
+  <!-- ══════════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════════ -->
+  <div class="page-header px-4 py-3 d-flex justify-content-between align-items-center">
+    <div>
+      <h4 class="mb-0 fw-bold">
+        <i class="bi bi-send-check me-2 text-primary"></i>Gestión Simscloud
+      </h4>
+      <small class="text-muted">Encargado de garantías — trámites con fábrica</small>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <!-- Campana de notificaciones -->
+      <div class="position-relative">
+        <button class="btn btn-outline-secondary btn-sm position-relative"
+                (click)="mostrarNotif = !mostrarNotif; cargarNotificaciones()">
+          <i class="bi bi-bell-fill"></i>
+          <span *ngIf="totalNoLeidas > 0"
+                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                style="font-size:0.6rem">
+            {{ totalNoLeidas }}
+          </span>
+        </button>
+
+        <!-- Panel de notificaciones -->
+        <div *ngIf="mostrarNotif" class="notif-panel shadow-lg">
+          <div class="notif-header d-flex justify-content-between align-items-center">
+            <span class="fw-semibold small">Notificaciones</span>
+            <button class="btn-close btn-sm" (click)="mostrarNotif = false"></button>
+          </div>
+          <div *ngIf="loadingNotif" class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary"></div>
+          </div>
+          <div *ngIf="!loadingNotif && notificaciones.length === 0" class="text-center py-3 text-muted small">
+            Sin notificaciones.
+          </div>
+          <div *ngFor="let n of notificaciones" class="notif-item"
+               [class.notif-item-urgente]="n.esUrgente"
+               [class.notif-leida]="n.estado === 'leida'"
+               (click)="abrirGarantiaDesdeNotif(n)">
+            <div class="d-flex justify-content-between align-items-start">
+              <span class="small fw-semibold">{{ n.titulo }}</span>
+              <span *ngIf="n.esUrgente" class="badge bg-danger ms-1" style="font-size:.6rem">URGENTE</span>
+            </div>
+            <div class="small text-muted mt-1">{{ n.mensaje }}</div>
+            <div class="d-flex justify-content-between mt-1">
+              <span *ngIf="n.numeroOt" class="badge bg-secondary-subtle text-secondary" style="font-size:.65rem">{{ n.numeroOt }}</span>
+              <span class="text-muted" style="font-size:.65rem">{{ formatFechaHora(n.creadoEn) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline-primary btn-sm" (click)="cargarGarantias()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TARJETAS RESUMEN
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pt-3 pb-2">
+    <div class="row g-2">
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-pendiente">
+          <div class="stat-number">{{ contarPorEstado('finalizada_taller') }}</div>
+          <div class="stat-label">Listas para Simscloud</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-enviada">
+          <div class="stat-number">{{ contarPorEstado('enviada_simscloud') }}</div>
+          <div class="stat-label">Enviadas a fábrica</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-aprobada">
+          <div class="stat-number">{{ contarPorEstado('aprobada') }}</div>
+          <div class="stat-label">Aprobadas</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="stat-card stat-rechazada">
+          <div class="stat-number">{{ contarPorEstado('rechazada') + contarPorEstado('urgente') }}</div>
+          <div class="stat-label">Rechazadas</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       FILTROS
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pb-2">
+    <div class="card border-0 bg-light rounded-3 p-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-md-5">
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+            <input type="text" class="form-control border-start-0"
+                   placeholder="OT, placa, cliente, VIN..."
+                   [(ngModel)]="filtroTexto" (input)="aplicarFiltros()">
+          </div>
+        </div>
+        <div class="col-md-4">
+          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (change)="aplicarFiltros()">
+            <option value="">Todos los estados</option>
+            <option value="finalizada_taller">Lista para Simscloud</option>
+            <option value="enviada_simscloud">Enviada a fábrica</option>
+            <option value="aprobada">Aprobada</option>
+            <option value="rechazada">Rechazada</option>
+            <option value="urgente">Urgente</option>
+          </select>
+        </div>
+        <div class="col-md-3 text-end">
+          <button class="btn btn-sm btn-outline-secondary" (click)="limpiarFiltros()">
+            <i class="bi bi-x-circle me-1"></i>Limpiar
+          </button>
+          <span class="ms-2 text-muted small">{{ garantiasFiltradas.length }} resultado(s)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══════════════════════════════════════════════
+       OT GARANTÍA ORACLE
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+      <h6 class="mb-0 fw-bold text-muted">
+        <i class="bi bi-tools me-1 text-primary"></i>
+        OT de Garantía en Sistema Oracle
+        <span class="badge bg-primary-subtle text-primary ms-1">{{ ordenesGRT.length }}</span>
+      </h6>
+      <button class="btn btn-outline-secondary btn-sm" (click)="cargarOrdenesGRT()" [disabled]="loadingOrdenes">
+        <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+      </button>
+    </div>
+
+    <div *ngIf="loadingOrdenes" class="text-center py-3">
+      <div class="spinner-border spinner-border-sm text-primary"></div>
+      <span class="text-muted ms-2 small">Cargando órdenes Oracle...</span>
+    </div>
+
+    <div *ngIf="!loadingOrdenes && ordenesGRT.length === 0" class="text-center py-3 text-muted small">
+      <i class="bi bi-inbox me-1"></i>No hay órdenes GRT activas para esta agencia.
+    </div>
+
+    <div *ngIf="!loadingOrdenes && ordenesGRT.length > 0" class="table-responsive">
+      <table class="table table-sm table-hover align-middle mb-0" style="font-size:.82rem">
+        <thead class="table-light">
+          <tr>
+            <th>OT</th>
+            <th>Estado</th>
+            <th>Cliente</th>
+            <th>Chasis</th>
+            <th>Placa</th>
+            <th>Motivo</th>
+            <th class="text-end">Total</th>
+            <th class="text-center">Días</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let ot of ordenesGRT">
+            <td class="fw-semibold">{{ ot.numero }}</td>
+            <td>
+              <span class="badge rounded-pill"
+                [ngClass]="{
+                  'bg-warning text-dark': ot.estado === 'SD',
+                  'bg-success':           ot.estado === 'TR',
+                  'bg-secondary':         ot.estado !== 'SD' && ot.estado !== 'TR'
+                }">
+                {{ ot.estado }}
+              </span>
+            </td>
+            <td>
+              <div class="fw-semibold text-truncate" style="max-width:160px;" [title]="ot.clienteNombre ?? ''">
+                {{ ot.clienteNombre ?? '—' }}
+              </div>
+              <div class="text-muted" style="font-size:.72rem">{{ ot.clienteCedula }}</div>
+            </td>
+            <td class="font-monospace small">{{ ot.chasis ?? '—' }}</td>
+            <td class="font-monospace small">{{ ot.placa ?? '—' }}</td>
+            <td class="text-truncate" style="max-width:140px;" [title]="ot.motivo ?? ''">
+              {{ ot.motivo ?? '—' }}
+            </td>
+            <td class="text-end fw-semibold">
+              {{ ot.total | currency:'USD':'symbol':'1.2-2' }}
+            </td>
+            <td class="text-center">
+              <span class="badge"
+                [ngClass]="{
+                  'bg-danger':            (ot.diasAbierto ?? 0) > 30,
+                  'bg-warning text-dark': (ot.diasAbierto ?? 0) > 15 && (ot.diasAbierto ?? 0) <= 30,
+                  'bg-success':           (ot.diasAbierto ?? 0) <= 15
+                }">
+                {{ ot.diasAbierto ?? 0 }}d
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       LAYOUT PRINCIPAL
+  ══════════════════════════════════════════════ -->
+  <div class="px-4 pb-4">
+    <div class="row g-3">
+
+      <!-- ─── LISTA ─────────────────────────────── -->
+      <div [class]="garantiaSeleccionada ? 'col-md-4' : 'col-12'">
+
+        <div *ngIf="loading" class="text-center py-5">
+          <div class="spinner-border text-primary"></div>
+          <p class="text-muted mt-2 small">Cargando garantías...</p>
+        </div>
+
+        <div *ngIf="!loading && garantiasFiltradas.length === 0" class="text-center py-5">
+          <i class="bi bi-inbox display-4 text-muted"></i>
+          <p class="text-muted mt-2">No hay garantías para gestionar.</p>
+        </div>
+
+        <div *ngFor="let g of garantiasFiltradas" class="ot-card mb-2"
+             [class.ot-card-activa]="garantiaSeleccionada?.garantiaId === g.garantiaId"
+             [class.ot-card-lista]="g.estado === 'finalizada_taller'"
+             [class.ot-card-aprobada]="g.estado === 'aprobada'"
+             [class.ot-card-rechazada]="g.estado === 'rechazada' || g.estado === 'urgente'"
+             (click)="seleccionarGarantia(g)">
+
+          <!-- Fila superior -->
+          <div class="d-flex justify-content-between align-items-start mb-1">
+            <span class="ot-numero">{{ g.numeroOt }}</span>
+            <span class="badge rounded-pill" [ngClass]="'bg-' + getColorEstado(g.estado, false)">
+              {{ getLabelEstado(g.estado) }}
+            </span>
+          </div>
+
+          <!-- Vehículo y cliente -->
+          <div class="row g-1 mb-2">
+            <div class="col-7">
+              <div class="small fw-semibold"><i class="bi bi-truck me-1 text-muted"></i>{{ g.placa }}</div>
+              <div class="small text-muted text-truncate">{{ g.cliente }}</div>
+            </div>
+            <div class="col-5 text-end">
+              <div class="small text-muted">{{ formatFecha(g.fechaFinalizacion) }}</div>
+              <div class="small text-muted" style="font-size:.7rem">{{ g.numeroVin }}</div>
+            </div>
+          </div>
+
+          <!-- Footer: estado en Simscloud -->
+          <div class="border-top pt-2">
+            <!-- Sin tramitar aún -->
+            <div *ngIf="!g.numeroTramiteSimscloud" class="d-flex align-items-center gap-1">
+              <span class="badge-estado badge-pendiente-sims">
+                <i class="bi bi-hourglass-split me-1"></i>Pendiente de envío
+              </span>
+            </div>
+            <!-- Tramitada -->
+            <div *ngIf="g.numeroTramiteSimscloud" class="d-flex justify-content-between align-items-center">
+              <span class="badge-estado badge-tramitada">
+                <i class="bi bi-cloud-check me-1"></i>{{ g.numeroTramiteSimscloud }}
+              </span>
+              <!-- Respuesta de fábrica -->
+              <span *ngIf="g.respuestaFabrica" class="badge rounded-pill"
+                    [ngClass]="g.respuestaFabrica === 'aprobada' ? 'bg-success' : 'bg-danger'">
+                {{ g.respuestaFabrica === 'aprobada' ? '✓ Aprobada' : '✗ Rechazada' }}
+              </span>
+              <span *ngIf="!g.respuestaFabrica" class="badge bg-warning text-dark">
+                <i class="bi bi-clock me-1"></i>Esperando fábrica
+              </span>
+            </div>
+            <!-- Motivo de rechazo visible en la tarjeta -->
+            <div *ngIf="g.motivoRechazo" class="mt-1 small text-danger text-truncate"
+                 [title]="g.motivoRechazo">
+              <i class="bi bi-x-octagon me-1"></i>{{ g.motivoRechazo }}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── PANEL DE DETALLE ───────────────────── -->
+      <div class="col-md-8" *ngIf="garantiaSeleccionada">
+        <div class="panel-detalle">
+
+          <!-- Cabecera -->
+          <div class="panel-header d-flex justify-content-between align-items-center">
+            <div>
+              <h6 class="mb-0 fw-bold">{{ garantiaSeleccionada.numeroOt }}</h6>
+              <small class="text-muted">{{ garantiaSeleccionada.placa }} · {{ garantiaSeleccionada.cliente }}</small>
+            </div>
+            <div class="d-flex gap-2">
+              <button class="btn btn-sm btn-outline-secondary" (click)="descargarZip()" title="Descargar archivos ZIP">
+                <i class="bi bi-download me-1"></i>ZIP
+              </button>
+              <button class="btn btn-sm btn-outline-secondary" (click)="cerrarPanel()">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Barra de progreso del flujo -->
+          <div class="flujo-barra px-3 py-2">
+            <div class="flujo-pasos">
+              <div class="flujo-paso" [class.flujo-activo]="true" [class.flujo-completo]="true">
+                <div class="flujo-circulo"><i class="bi bi-check-lg"></i></div>
+                <span>Técnico</span>
+              </div>
+              <div class="flujo-linea" [class.flujo-linea-completa]="true"></div>
+              <div class="flujo-paso" [class.flujo-activo]="true" [class.flujo-completo]="true">
+                <div class="flujo-circulo"><i class="bi bi-check-lg"></i></div>
+                <span>Taller</span>
+              </div>
+              <div class="flujo-linea" [class.flujo-linea-completa]="garantiaSeleccionada.estado !== 'finalizada_taller'"></div>
+              <div class="flujo-paso"
+                   [class.flujo-activo]="garantiaSeleccionada.estado !== 'finalizada_taller'"
+                   [class.flujo-completo]="garantiaSeleccionada.estado === 'aprobada' || garantiaSeleccionada.estado === 'rechazada' || garantiaSeleccionada.estado === 'urgente'">
+                <div class="flujo-circulo">
+                  <i *ngIf="garantiaSeleccionada.estado !== 'finalizada_taller'" class="bi bi-check-lg"></i>
+                  <span *ngIf="garantiaSeleccionada.estado === 'finalizada_taller'">3</span>
+                </div>
+                <span>Simscloud</span>
+              </div>
+              <div class="flujo-linea" [class.flujo-linea-completa]="garantiaSeleccionada.estado === 'aprobada' || garantiaSeleccionada.estado === 'rechazada' || garantiaSeleccionada.estado === 'urgente'"></div>
+              <div class="flujo-paso"
+                   [class.flujo-activo]="garantiaSeleccionada.estado === 'aprobada' || garantiaSeleccionada.estado === 'rechazada' || garantiaSeleccionada.estado === 'urgente'"
+                   [class.flujo-completo]="garantiaSeleccionada.estado === 'aprobada'"
+                   [class.flujo-rechazado]="garantiaSeleccionada.estado === 'rechazada' || garantiaSeleccionada.estado === 'urgente'">
+                <div class="flujo-circulo">
+                  <i *ngIf="garantiaSeleccionada.estado === 'aprobada'" class="bi bi-check-lg"></i>
+                  <i *ngIf="garantiaSeleccionada.estado === 'rechazada' || garantiaSeleccionada.estado === 'urgente'" class="bi bi-x-lg"></i>
+                  <span *ngIf="garantiaSeleccionada.estado === 'enviada_simscloud' || garantiaSeleccionada.estado === 'finalizada_taller'">4</span>
+                </div>
+                <span>Fábrica</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <ul class="nav nav-tabs panel-tabs px-3 pt-1">
+            <li class="nav-item">
+              <a class="nav-link" [class.active]="vistaActiva === 'info'" (click)="vistaActiva = 'info'">
+                <i class="bi bi-info-circle me-1"></i>Info
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [class.active]="vistaActiva === 'simscloud'"
+                 (click)="vistaActiva = 'simscloud'">
+                <i class="bi bi-cloud-upload me-1"></i>Enviar a Simscloud
+                <span *ngIf="puedeEnviarSimscloud()" class="badge bg-warning text-dark ms-1" style="font-size:.6rem">Pendiente</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [class.active]="vistaActiva === 'respuesta'"
+                 (click)="vistaActiva = 'respuesta'">
+                <i class="bi bi-building-check me-1"></i>Respuesta fábrica
+                <span *ngIf="puedeRegistrarRespuesta()" class="badge bg-info text-dark ms-1" style="font-size:.6rem">En espera</span>
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [class.active]="vistaActiva === 'tramites'" (click)="abrirTramites()">
+                <i class="bi bi-journal-text me-1"></i>Historial
+              </a>
+            </li>
+          </ul>
+
+          <!-- ══════════ TAB: INFO ══════════ -->
+          <div class="panel-body" *ngIf="vistaActiva === 'info'">
+            <div *ngIf="loadingDetalle" class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+
+            <div *ngIf="!loadingDetalle && detalle">
+              <div class="row g-3">
+
+                <!-- Vehículo -->
+                <div class="col-md-6">
+                  <div class="info-card">
+                    <div class="info-card-titulo"><i class="bi bi-truck me-2"></i>Vehículo</div>
+                    <div class="info-fila"><span>Placa</span><strong>{{ detalle.placa }}</strong></div>
+                    <div class="info-fila"><span>VIN</span><strong>{{ detalle.numeroVin }}</strong></div>
+                    <div class="info-fila"><span>Modelo</span><strong>{{ detalle.modelo || '—' }}</strong></div>
+                    <div class="info-fila"><span>Año</span><strong>{{ detalle.anio || '—' }}</strong></div>
+                    <div class="info-fila"><span>Taller</span><strong>{{ detalle.taller }}</strong></div>
+                  </div>
+                </div>
+
+                <!-- Cliente -->
+                <div class="col-md-6">
+                  <div class="info-card">
+                    <div class="info-card-titulo"><i class="bi bi-building me-2"></i>Cliente</div>
+                    <div class="info-fila"><span>Razón social</span><strong>{{ detalle.cliente }}</strong></div>
+                    <div class="info-fila"><span>Documento</span><strong>{{ detalle.numeroDocumentoCliente }}</strong></div>
+                    <div class="info-fila"><span>Teléfono</span><strong>{{ detalle.telefonoCliente || '—' }}</strong></div>
+                    <div class="info-fila"><span>Email</span><strong>{{ detalle.emailCliente || '—' }}</strong></div>
+                  </div>
+                </div>
+
+                <!-- Actores del flujo -->
+                <div class="col-12">
+                  <div class="info-card">
+                    <div class="info-card-titulo"><i class="bi bi-people me-2"></i>Actores del proceso</div>
+                    <div class="row g-2">
+                      <div class="col-md-4">
+                        <div class="actor-chip">
+                          <i class="bi bi-wrench text-primary"></i>
+                          <div>
+                            <div style="font-size:.65rem;color:#adb5bd">TÉCNICO</div>
+                            <div class="small fw-semibold">{{ detalle.tecnico }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="actor-chip" [class.actor-inactivo]="!detalle.jefeTaller">
+                          <i class="bi bi-person-badge text-purple"></i>
+                          <div>
+                            <div style="font-size:.65rem;color:#adb5bd">JEFE TALLER</div>
+                            <div class="small fw-semibold">{{ detalle.jefeTaller || 'Pendiente' }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="col-md-4">
+                        <div class="actor-chip actor-yo">
+                          <i class="bi bi-send text-success"></i>
+                          <div>
+                            <div style="font-size:.65rem;color:#adb5bd">ENCARGADO</div>
+                            <div class="small fw-semibold">{{ detalle.encargado || 'Tú' }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Fechas del proceso -->
+                <div class="col-12">
+                  <div class="info-card">
+                    <div class="info-card-titulo"><i class="bi bi-calendar3 me-2"></i>Fechas del proceso</div>
+                    <div class="row g-2">
+                      <div class="col-6 col-md-3">
+                        <div class="fecha-chip">
+                          <div class="fecha-label">Apertura OT</div>
+                          <div class="fecha-valor">{{ formatFecha(detalle.fechaInicio) }}</div>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <div class="fecha-chip" [class.fecha-chip-inactiva]="!detalle.fechaEnvioJefe">
+                          <div class="fecha-label">Enviada al jefe</div>
+                          <div class="fecha-valor">{{ formatFecha(detalle.fechaEnvioJefe) }}</div>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <div class="fecha-chip" [class.fecha-chip-inactiva]="!detalle.fechaFinalizacion">
+                          <div class="fecha-label">Finalizada taller</div>
+                          <div class="fecha-valor">{{ formatFecha(detalle.fechaFinalizacion) }}</div>
+                        </div>
+                      </div>
+                      <div class="col-6 col-md-3">
+                        <div class="fecha-chip" [class.fecha-chip-inactiva]="!detalle.fechaEnvioSimscloud">
+                          <div class="fecha-label">Enviada Simscloud</div>
+                          <div class="fecha-valor">{{ formatFecha(detalle.fechaEnvioSimscloud) }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- ══════════ TAB: ENVIAR A SIMSCLOUD ══════════ -->
+          <div class="panel-body" *ngIf="vistaActiva === 'simscloud'">
+
+            <!-- Ya enviada -->
+            <div *ngIf="!puedeEnviarSimscloud() && garantiaSeleccionada.numeroTramiteSimscloud"
+                 class="alert alert-success d-flex align-items-center gap-2">
+              <i class="bi bi-cloud-check-fill fs-4"></i>
+              <div>
+                <strong>Garantía ya enviada a Simscloud</strong>
+                <div class="small mt-1">
+                  N° trámite: <strong>{{ garantiaSeleccionada.numeroTramiteSimscloud }}</strong>
+                  · Enviada el {{ formatFecha(garantiaSeleccionada.fechaEnvioSimscloud) }}
+                </div>
+              </div>
+            </div>
+
+            <!-- No está lista para enviar -->
+            <div *ngIf="!puedeEnviarSimscloud() && !garantiaSeleccionada.numeroTramiteSimscloud"
+                 class="alert alert-warning d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+              <div>
+                <strong>Esta garantía no está lista para enviar.</strong>
+                <div class="small mt-1">Solo se pueden enviar garantías en estado <em>Finalizada en taller</em>.</div>
+              </div>
+            </div>
+
+            <!-- Formulario de envío -->
+            <div *ngIf="puedeEnviarSimscloud()">
+
+              <div class="alert alert-info d-flex align-items-center gap-2 py-2 mb-3">
+                <i class="bi bi-info-circle-fill"></i>
+                <span class="small">Registra el envío a Simscloud. Si ya tienes un número de trámite de la plataforma, inclúyelo.</span>
+              </div>
+
+              <div *ngIf="mensajeSimscloud" class="alert alert-success py-2 small mb-3">{{ mensajeSimscloud }}</div>
+              <div *ngIf="errorSimscloud"   class="alert alert-danger  py-2 small mb-3">{{ errorSimscloud }}</div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">N° de trámite Simscloud</label>
+                  <input type="text" class="form-control form-control-sm"
+                         placeholder="Ej: SIMS-2025-00123 (opcional)"
+                         [(ngModel)]="simscloudForm.numeroTramiteSimscloud">
+                  <div class="form-text">Déjalo en blanco si aún no lo tienes.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Observaciones del envío</label>
+                  <textarea class="form-control form-control-sm" rows="3"
+                            placeholder="Notas sobre este trámite..."
+                            [(ngModel)]="simscloudForm.observaciones"></textarea>
+                </div>
+
+                <!-- Resumen de lo que se enviará -->
+                <div class="col-12">
+                  <div class="info-card border-start border-primary border-3">
+                    <div class="info-card-titulo"><i class="bi bi-file-earmark-check me-2"></i>Resumen a enviar</div>
+                    <div class="row g-2 small">
+                      <div class="col-6"><span class="text-muted">OT:</span> <strong>{{ garantiaSeleccionada.numeroOt }}</strong></div>
+                      <div class="col-6"><span class="text-muted">Placa:</span> <strong>{{ garantiaSeleccionada.placa }}</strong></div>
+                      <div class="col-6"><span class="text-muted">VIN:</span> <strong>{{ garantiaSeleccionada.numeroVin }}</strong></div>
+                      <div class="col-6"><span class="text-muted">Cliente:</span> <strong>{{ garantiaSeleccionada.cliente }}</strong></div>
+                      <div class="col-6">
+                        <span class="text-muted">Archivos:</span>
+                        <button class="btn btn-link btn-sm p-0 ms-1" (click)="descargarZip()">
+                          <i class="bi bi-download me-1"></i>Descargar ZIP
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end">
+                  <button class="btn btn-primary" (click)="enviarASimscloud()" [disabled]="enviandoSimscloud">
+                    <span *ngIf="enviandoSimscloud" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!enviandoSimscloud" class="bi bi-cloud-upload me-1"></i>
+                    Registrar envío a Simscloud
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══════════ TAB: RESPUESTA DE FÁBRICA ══════════ -->
+          <div class="panel-body" *ngIf="vistaActiva === 'respuesta'">
+
+            <!-- Ya tiene respuesta -->
+            <div *ngIf="garantiaSeleccionada.respuestaFabrica"
+                 class="alert d-flex align-items-center gap-2 mb-3"
+                 [ngClass]="garantiaSeleccionada.respuestaFabrica === 'aprobada' ? 'alert-success' : 'alert-danger'">
+              <i class="bi fs-4"
+                 [ngClass]="garantiaSeleccionada.respuestaFabrica === 'aprobada' ? 'bi-check-circle-fill' : 'bi-x-circle-fill'"></i>
+              <div>
+                <strong>Fábrica ya respondió: {{ garantiaSeleccionada.respuestaFabrica | uppercase }}</strong>
+                <div *ngIf="garantiaSeleccionada.motivoRechazo" class="small mt-1">
+                  Motivo: {{ garantiaSeleccionada.motivoRechazo }}
+                </div>
+              </div>
+            </div>
+
+            <!-- No enviada aún -->
+            <div *ngIf="!puedeRegistrarRespuesta() && !garantiaSeleccionada.respuestaFabrica"
+                 class="alert alert-warning d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+              <div>
+                <strong>Aún no ha sido enviada a Simscloud.</strong>
+                <div class="small mt-1">Primero registra el envío en la pestaña anterior.</div>
+              </div>
+            </div>
+
+            <!-- Formulario de respuesta -->
+            <div *ngIf="puedeRegistrarRespuesta()">
+
+              <div *ngIf="mensajeRespuesta" class="alert py-2 small mb-3"
+                   [ngClass]="respuestaForm.resultado === 'aprobada' ? 'alert-success' : 'alert-warning'">
+                {{ mensajeRespuesta }}
+              </div>
+              <div *ngIf="errorRespuesta" class="alert alert-danger py-2 small mb-3">{{ errorRespuesta }}</div>
+
+              <!-- Confirmación inline -->
+              <div *ngIf="mostrarConfirmRespuesta" class="alert alert-warning d-flex justify-content-between align-items-center py-2 mb-3">
+                <span class="small fw-semibold">
+                  <i class="bi bi-question-circle me-1"></i>
+                  ¿Confirmas registrar la respuesta
+                  <strong>{{ respuestaForm.resultado | uppercase }}</strong>
+                  para la garantía <strong>{{ garantiaSeleccionada.numeroOt }}</strong>?
+                  <span *ngIf="respuestaForm.resultado === 'rechazada'" class="text-danger">
+                    El jefe de taller será notificado como URGENTE.
+                  </span>
+                </span>
+                <div class="d-flex gap-2 ms-3">
+                  <button class="btn btn-sm"
+                          [ngClass]="respuestaForm.resultado === 'aprobada' ? 'btn-success' : 'btn-danger'"
+                          (click)="registrarRespuesta()">
+                    Confirmar
+                  </button>
+                  <button class="btn btn-outline-secondary btn-sm" (click)="mostrarConfirmRespuesta = false">
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+
+              <div class="row g-3">
+
+                <!-- Resultado -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Resultado de fábrica <span class="text-danger">*</span></label>
+                  <div class="d-flex gap-3">
+                    <div class="resultado-opcion"
+                         [class.resultado-aprobada]="respuestaForm.resultado === 'aprobada'"
+                         (click)="respuestaForm.resultado = 'aprobada'">
+                      <i class="bi bi-check-circle-fill fs-3"></i>
+                      <span class="fw-semibold">Aprobada</span>
+                      <small class="text-muted">Fábrica acepta la garantía</small>
+                    </div>
+                    <div class="resultado-opcion"
+                         [class.resultado-rechazada]="respuestaForm.resultado === 'rechazada'"
+                         (click)="respuestaForm.resultado = 'rechazada'">
+                      <i class="bi bi-x-circle-fill fs-3"></i>
+                      <span class="fw-semibold">Rechazada</span>
+                      <small class="text-muted">Jefe recibirá alerta urgente</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Motivo de rechazo (solo si rechazada) -->
+                <div class="col-12" *ngIf="respuestaForm.resultado === 'rechazada'">
+                  <div class="alert alert-danger py-2 small mb-2">
+                    <i class="bi bi-exclamation-octagon-fill me-1"></i>
+                    Al registrar el rechazo, la garantía se marcará como <strong>URGENTE</strong> y el jefe de taller recibirá una notificación inmediata.
+                  </div>
+                  <label class="form-label fw-semibold small">Motivo de rechazo <span class="text-danger">*</span></label>
+                  <textarea class="form-control form-control-sm" rows="3"
+                            placeholder="Describe el motivo exacto por el que la fábrica rechazó esta garantía..."
+                            [(ngModel)]="respuestaForm.motivoRechazo"></textarea>
+                </div>
+
+                <!-- Código de respuesta -->
+                <div class="col-md-6">
+                  <label class="form-label fw-semibold small">Código respuesta Simscloud</label>
+                  <input type="text" class="form-control form-control-sm"
+                         placeholder="Ej: APROV-2025-001"
+                         [(ngModel)]="respuestaForm.codigoRespuesta">
+                </div>
+
+                <!-- Monto cubierto (solo si aprobada) -->
+                <div class="col-md-6" *ngIf="respuestaForm.resultado === 'aprobada'">
+                  <label class="form-label fw-semibold small">Monto cubierto por fábrica (USD)</label>
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text">$</span>
+                    <input type="number" class="form-control" placeholder="0.00" min="0" step="0.01"
+                           [(ngModel)]="respuestaForm.montoCubierto">
+                  </div>
+                </div>
+
+                <!-- Comentario adicional -->
+                <div class="col-12">
+                  <label class="form-label fw-semibold small">Comentario adicional de fábrica</label>
+                  <textarea class="form-control form-control-sm" rows="2"
+                            placeholder="Observaciones adicionales de la fábrica (opcional)..."
+                            [(ngModel)]="respuestaForm.comentarioFabrica"></textarea>
+                </div>
+
+                <div class="col-12 d-flex justify-content-end">
+                  <button class="btn btn-sm me-2 btn-outline-secondary" (click)="vistaActiva = 'info'">
+                    Cancelar
+                  </button>
+                  <button class="btn"
+                          [ngClass]="respuestaForm.resultado === 'aprobada' ? 'btn-success' : 'btn-danger'"
+                          (click)="confirmarRespuesta()"
+                          [disabled]="registrandoRespuesta">
+                    <span *ngIf="registrandoRespuesta" class="spinner-border spinner-border-sm me-1"></span>
+                    <i *ngIf="!registrandoRespuesta" class="bi me-1"
+                       [ngClass]="respuestaForm.resultado === 'aprobada' ? 'bi-check2-circle' : 'bi-x-circle'"></i>
+                    Registrar como {{ respuestaForm.resultado }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ══════════ TAB: HISTORIAL DE TRÁMITES ══════════ -->
+          <div class="panel-body" *ngIf="vistaActiva === 'tramites'">
+
+            <div *ngIf="loadingTramites" class="text-center py-4">
+              <div class="spinner-border spinner-border-sm text-primary"></div>
+            </div>
+
+            <div *ngIf="!loadingTramites && tramites.length === 0" class="text-center py-4 text-muted">
+              <i class="bi bi-journal-x display-5"></i>
+              <p class="mt-2 small">Sin trámites registrados aún.</p>
+            </div>
+
+            <div *ngFor="let t of tramites; let i = index" class="tramite-card mb-3">
+              <div class="tramite-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold small">
+                  <i class="bi bi-cloud-upload me-1 text-primary"></i>
+                  Envío #{{ tramites.length - i }}
+                  <span *ngIf="t.numeroTramiteSimscloud" class="text-muted ms-2">· {{ t.numeroTramiteSimscloud }}</span>
+                </span>
+                <span class="text-muted small">{{ formatFecha(t.fechaEnvio) }}</span>
+              </div>
+              <div class="tramite-body">
+                <div class="row g-2 small">
+                  <div class="col-6"><span class="text-muted">Estado envío:</span> <strong>{{ t.estadoEnvio }}</strong></div>
+                  <div class="col-6"><span class="text-muted">Encargado:</span> <strong>{{ t.encargado }}</strong></div>
+                  <div class="col-12" *ngIf="t.observaciones">
+                    <span class="text-muted">Obs.:</span> {{ t.observaciones }}
+                  </div>
+                </div>
+
+                <!-- Respuesta de fábrica dentro del trámite -->
+                <div *ngIf="t.resultadoFabrica" class="mt-2 pt-2 border-top">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge"
+                          [ngClass]="t.resultadoFabrica === 'aprobada' ? 'bg-success' : 'bg-danger'">
+                      Fábrica: {{ t.resultadoFabrica | uppercase }}
+                    </span>
+                    <span *ngIf="t.codigoRespuesta" class="badge bg-secondary">{{ t.codigoRespuesta }}</span>
+                    <span class="text-muted small ms-auto">{{ formatFecha(t.fechaRespuestaFabrica) }}</span>
+                  </div>
+                  <div *ngIf="t.motivoRechazo" class="small text-danger">
+                    <i class="bi bi-x-octagon me-1"></i>{{ t.motivoRechazo }}
+                  </div>
+                  <div *ngIf="t.comentarioFabrica" class="small text-muted fst-italic mt-1">
+                    "{{ t.comentarioFabrica }}"
+                  </div>
+                  <div *ngIf="t.montoCubierto" class="small text-success mt-1">
+                    <i class="bi bi-currency-dollar me-1"></i>Monto cubierto: ${{ t.montoCubierto | number:'1.2-2' }}
+                  </div>
+                </div>
+                <div *ngIf="!t.resultadoFabrica" class="mt-2 pt-2 border-top">
+                  <span class="badge bg-warning text-dark">
+                    <i class="bi bi-hourglass-split me-1"></i>Esperando respuesta de fábrica
+                  </span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+  .garantias-encargado-page { background:#f5f6fa; min-height:100vh; }
+
+  .page-header { background:#fff; border-bottom:1px solid #e9ecef; position:sticky; top:0; z-index:100; }
+
+  /* Stats */
+  .stat-card { background:#fff; border-radius:10px; padding:12px 16px; border-left:4px solid transparent; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+  .stat-card .stat-number { font-size:1.6rem; font-weight:700; line-height:1; }
+  .stat-card .stat-label  { font-size:0.72rem; text-transform:uppercase; letter-spacing:.5px; color:#6c757d; }
+  .stat-pendiente  { border-left-color:#ffc107; } .stat-pendiente .stat-number  { color:#e0a800; }
+  .stat-enviada    { border-left-color:#0dcaf0; } .stat-enviada .stat-number    { color:#0aa2c0; }
+  .stat-aprobada   { border-left-color:#198754; } .stat-aprobada .stat-number   { color:#198754; }
+  .stat-rechazada  { border-left-color:#dc3545; } .stat-rechazada .stat-number  { color:#dc3545; }
+
+  /* Tarjetas OT */
+  .ot-card { background:#fff; border:1px solid #e9ecef; border-radius:10px; padding:14px; cursor:pointer; transition:all .18s; }
+  .ot-card:hover        { border-color:#0d6efd; box-shadow:0 2px 8px rgba(13,110,253,.12); transform:translateY(-1px); }
+  .ot-card-activa       { border-color:#0d6efd !important; background:#f0f6ff !important; }
+  .ot-card-lista        { border-left:4px solid #ffc107 !important; }
+  .ot-card-aprobada     { border-left:4px solid #198754 !important; }
+  .ot-card-rechazada    { border-left:4px solid #dc3545 !important; background:#fff8f8 !important; }
+  .ot-numero            { font-weight:700; font-size:.95rem; }
+
+  /* Badges de estado Simscloud */
+  .badge-estado { display:inline-flex; align-items:center; font-size:.72rem; padding:3px 8px; border-radius:20px; }
+  .badge-pendiente-sims { background:#fff8e1; color:#856404; border:1px solid #ffecb5; }
+  .badge-tramitada      { background:#e8f5e9; color:#2e7d32; border:1px solid #c8e6c9; }
+
+  /* Panel detalle */
+  .panel-detalle { background:#fff; border:1px solid #e9ecef; border-radius:12px; overflow:hidden; position:sticky; top:70px; }
+  .panel-header  { background:#f8f9fa; border-bottom:1px solid #e9ecef; padding:12px 16px; }
+  .panel-tabs .nav-link { font-size:.82rem; padding:6px 12px; color:#6c757d; border:none; cursor:pointer; }
+  .panel-tabs .nav-link.active { color:#0d6efd; font-weight:600; border-bottom:2px solid #0d6efd; }
+  .panel-body { padding:16px; max-height:calc(100vh - 280px); overflow-y:auto; }
+
+  /* Barra de flujo */
+  .flujo-barra { background:#f8f9fa; border-bottom:1px solid #e9ecef; }
+  .flujo-pasos { display:flex; align-items:center; gap:0; }
+  .flujo-paso  { display:flex; flex-direction:column; align-items:center; gap:3px; min-width:60px; }
+  .flujo-paso span { font-size:.65rem; color:#adb5bd; white-space:nowrap; }
+  .flujo-circulo {
+    width:28px; height:28px; border-radius:50%;
+    background:#e9ecef; color:#adb5bd;
+    display:flex; align-items:center; justify-content:center;
+    font-size:.75rem; font-weight:700;
+    border:2px solid #dee2e6; transition:all .3s;
+  }
+  .flujo-activo .flujo-circulo   { background:#dbeafe; color:#1d4ed8; border-color:#93c5fd; }
+  .flujo-completo .flujo-circulo { background:#d1fae5; color:#065f46; border-color:#6ee7b7; }
+  .flujo-rechazado .flujo-circulo{ background:#fee2e2; color:#991b1b; border-color:#fca5a5; }
+  .flujo-activo span   { color:#1d4ed8; font-weight:600; }
+  .flujo-completo span { color:#065f46; font-weight:600; }
+  .flujo-linea { flex:1; height:2px; background:#e9ecef; margin-bottom:18px; transition:background .3s; }
+  .flujo-linea-completa { background:#6ee7b7; }
+
+  /* Info cards */
+  .info-card { background:#f8f9fa; border-radius:8px; padding:12px; height:100%; }
+  .info-card-titulo { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#6c757d; margin-bottom:10px; }
+  .info-fila { display:flex; justify-content:space-between; font-size:.82rem; padding:3px 0; border-bottom:1px solid #f0f0f0; }
+  .info-fila span { color:#adb5bd; }
+
+  /* Actores */
+  .actor-chip { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid #e9ecef; border-radius:8px; padding:8px 10px; }
+  .actor-chip.actor-inactivo { opacity:.45; }
+  .actor-chip.actor-yo { border-color:#198754; background:#f0fff4; }
+
+  /* Fechas */
+  .fecha-chip { background:#fff; border:1px solid #e9ecef; border-radius:8px; padding:8px; text-align:center; }
+  .fecha-chip.fecha-chip-inactiva { opacity:.4; }
+  .fecha-label { font-size:.65rem; text-transform:uppercase; color:#adb5bd; letter-spacing:.5px; }
+  .fecha-valor { font-size:.8rem; font-weight:600; color:#212529; margin-top:2px; }
+
+  /* Resultado aprobado/rechazado selector */
+  .resultado-opcion {
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:16px; border:2px solid #e9ecef; border-radius:10px;
+    cursor:pointer; transition:all .18s; color:#6c757d;
+  }
+  .resultado-opcion:hover { border-color:#adb5bd; }
+  .resultado-aprobada { border-color:#198754 !important; background:#f0fff4 !important; color:#198754 !important; }
+  .resultado-rechazada { border-color:#dc3545 !important; background:#fff5f5 !important; color:#dc3545 !important; }
+
+  /* Tramite cards */
+  .tramite-card { border:1px solid #e9ecef; border-radius:10px; overflow:hidden; }
+  .tramite-header { background:#f8f9fa; padding:10px 14px; border-bottom:1px solid #e9ecef; }
+  .tramite-body   { padding:12px 14px; }
+
+  /* Notificaciones */
+  .notif-panel {
+    position:absolute; top:calc(100% + 8px); right:0;
+    width:360px; background:#fff; border:1px solid #e9ecef;
+    border-radius:12px; z-index:200; max-height:440px; overflow-y:auto;
+  }
+  .notif-header { padding:10px 14px; border-bottom:1px solid #e9ecef; background:#f8f9fa; position:sticky; top:0; }
+  .notif-item {
+    padding:10px 14px; border-bottom:1px solid #f0f0f0;
+    cursor:pointer; transition:background .12s;
+  }
+  .notif-item:hover { background:#f8f9fa; }
+  .notif-item:last-child { border-bottom:none; }
+  .notif-item-urgente { border-left:3px solid #dc3545; background:#fff8f8; }
+  .notif-leida { opacity:.55; }
+</style>

@@ -1,0 +1,728 @@
+<div class="container-fluid">
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">Dashboard de Agendamientos</h1>
+      <p class="dashboard-subtitle">Gestión y monitoreo de citas en tiempo real</p>
+    </div>
+  </div>
+
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible fade show" role="alert">
+    {{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''" aria-label="Close"></button>
+  </div>
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+  </div>
+
+<!-- REEMPLAZA tu sección de calendario con este HTML corregido -->
+ <!--
+<div class="calendar-container">
+  <h2>Calendario de Agendamientos</h2>
+  
+  <div class="calendar-header">
+    <div class="calendar-navigation">
+      <button class="btn" (click)="previousView()">
+        <i class="fas fa-chevron-left"></i> Anterior
+      </button>
+      <button class="btn" (click)="nextView()">
+        Siguiente <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+    
+    <h3 class="calendar-title">
+      {{ getFormattedDate(viewDate) }}
+    </h3>
+    
+    <div class="calendar-actions">
+      <button class="btn" (click)="irAHoy()">
+        <i class="fas fa-calendar-day"></i> Hoy
+      </button>
+    </div>
+  </div>
+  
+  <div class="simple-calendar">
+    <div class="calendar-grid"> 
+      <div class="calendar-day-header">Lunes</div>
+      <div class="calendar-day-header">Martes</div>
+      <div class="calendar-day-header">Miércoles</div>
+      <div class="calendar-day-header">Jueves</div>
+      <div class="calendar-day-header">Viernes</div>
+      <div class="calendar-day-header">Sábado</div>
+      <div class="calendar-day-header">Domingo</div>
+      
+     
+      <div 
+        *ngFor="let day of getDaysInMonth(); trackBy: trackByDay" 
+        class="calendar-day"
+        [class.today]="isToday(day)"
+        [class.other-month]="!isSameMonth(day)"
+        [class.has-events]="hasEventsOnDay(day)"
+        (click)="onDayClick(day)"
+      >
+        <div class="day-number">{{ day.getDate() }}</div>
+        <div class="day-events">
+          <div 
+            *ngFor="let agendamiento of getAgendamientosForDay(day)" 
+            class="event-item"
+            [ngClass]="'event-' + agendamiento.estado.toLowerCase()"
+            [title]="agendamiento.nombreCliente + ' - ' + agendamiento.nombrePlan + ' (' + agendamiento.estado + ')'"
+            (click)="onEventClick($event, agendamiento)"
+          >
+            {{ agendamiento.nombreCliente }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+-->
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fas fa-calendar-alt"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.total }}</h3>
+        <p>TOTAL AGENDAMIENTOS</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.iniciados }}</h3>
+        <p>INICIADOS</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon in-progress">
+        <i class="fas fa-tasks"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.proceso }}</h3>
+        <p>EN PROCESO</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon completed">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.finalizados }}</h3>
+        <p>FINALIZADOS</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon canceled">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.cancelados }}</h3>
+        <p>CANCELADOS</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-section">
+    <div class="row g-3 align-items-center mb-3">
+      <div class="col-12 col-md-4">
+        <div class="input-group">
+          <input type="text" class="form-control" placeholder="Buscar por cliente o plan"
+                 [(ngModel)]="terminoBusqueda" (ngModelChange)="onBusquedaChange()">
+          <button class="btn btn-outline-secondary" type="button" (click)="onBusquedaChange()">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+      <div class="col-6 col-md-2">
+        <select class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="onFiltroChange()">
+          <option value="">Todos los Estados</option>
+          <option value="Iniciado">Iniciado</option>
+          <option value="Proceso">En proceso</option>
+          <option value="Finalizado">Finalizado</option>
+          <option value="Cancelado">Cancelado</option>
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <input type="date" class="form-control" [(ngModel)]="fechaDesde" (ngModelChange)="onFiltroChange()">
+      </div>
+      <div class="col-6 col-md-2">
+        <input type="date" class="form-control" [(ngModel)]="fechaHasta" (ngModelChange)="onFiltroChange()">
+      </div>
+      <div class="col-6 col-md-2 d-flex justify-content-end">
+        <button class="btn btn-primary me-2" (click)="abrirModalCreacionAgendamiento()">
+          <i class="fas fa-plus"></i> Nuevo Agendamiento
+        </button>
+        <button class="btn btn-success" (click)="abrirModalCreacionVehiculo()">
+          <i class="fas fa-car"></i> Nuevo Vehículo
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-responsive-lg">
+    <table class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">FECHA</th>
+          <th scope="col">PLAN</th>
+          <th scope="col">VEHICULO</th>
+          <th scope="col">PLACA</th>
+          <th scope="col">KILOMETRAJE</th>
+          <th scope="col">AGENDADO</th>
+          <th scope="col">ESTADO</th>
+          <th scope="col">ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isLoadingResults">
+          <td colspan="7" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando agendamientos...</p>
+          </td>
+        </tr>
+        <tr *ngIf="!isLoadingResults && agendamientosFiltrados.length === 0">
+          <td colspan="7" class="text-center">No se encontraron agendamientos.</td>
+        </tr>
+        <tr *ngFor="let agendamiento of agendamientosFiltrados">
+          <td>{{ agendamiento.idAgenda }}</td>
+          <td>{{ formatearFecha(agendamiento.fechaCreacion) }}</td>          
+          <td>{{ agendamiento.nombrePlan }}</td>
+          <td>{{ agendamiento.vehiculo }}</td>
+          <td>{{ agendamiento.placa }}</td>
+          <td>{{ agendamiento.kilometrajeActual }} Km</td>
+          <td>{{ formatearFecha(agendamiento.fecha_mantenimiento) }}</td>
+          <td>
+            <span class="badge" [class]="obtenerClaseEstado(agendamiento.estado)">
+              {{ agendamiento.estado }}
+            </span>
+          </td>
+          <td class="action-buttons">
+            <button class="btn btn-sm btn-warning me-1" (click)="abrirModalEdicionAgendamiento(agendamiento)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-sm btn-info me-1" (click)="abrirModalReagendar(agendamiento)">
+              <i class="fas fa-calendar-plus"></i>
+            </button>
+            <button class="btn btn-sm btn-danger me-1" (click)="deleteAgendamiento(agendamiento.idAgenda)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="modal fade" [class.show]="mostrarModalAgendamiento" [class.d-block]="mostrarModalAgendamiento" tabindex="-1" role="dialog" aria-labelledby="agendamientoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="agendamientoModalLabel">
+            {{ modoEdicion ? 'Editar Agendamiento' : 'Nuevo Agendamiento' }}
+          </h5>
+          <button type="button" class="btn-close" (click)="cerrarModalAgendamiento()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+         <!-- <form #agendamientoForm="ngForm" (ngSubmit)="guardarAgendamiento()">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="fechaMantenimiento" class="form-label">Fecha de Mantenimiento:</label>
+                <input type="date" class="form-control" id="fechaMantenimiento" [(ngModel)]="agendamientoSeleccionado.fecha_mantenimiento" name="fecha_mantenimiento" required>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="nombreCliente" class="form-label">Nombre del Cliente:</label>
+                <input type="text" class="form-control" id="nombreCliente" [(ngModel)]="agendamientoSeleccionado.nombre_cliente" name="nombre_cliente" required readonly>
+              </div>
+
+            </div>
+            <div class="row">
+             <div class="col-md-6 mb-3">
+                    <label for="vehiculo" class="form-label">Vehiculos:</label>
+                    <select class="form-select" id="vehiculo" [(ngModel)]="agendamientoSeleccionado.idVehiculo" name="vehiculo" required (change)="onVehiculoChange()">
+                    <option *ngFor="let vehi of vehiculo" [value]="vehi.idVehiculo">{{vehi.placa}}</option>
+                     </select>
+
+                </div>
+                <div class="col-md-6 mb-3">
+                <label for="nombrePlan" class="form-label">Plan:</label>
+                 <div *ngIf="modoEdicion==false; else loggedOut ">
+
+                     <select class="form-select" id="nombrePlan" [(ngModel)]="agendamientoSeleccionado.idplanmantenimiento" name="nombrePlan" (change)="onVehiculoChange1()" >
+                    <option *ngFor="let plan of planes" [value]="plan.idPlan">{{plan.kilometrajeIntervalo}} KM</option>
+                </select>
+                 </div>
+
+                  <ng-template #loggedOut>
+                      <select class="form-select" id="nombrePlan" [(ngModel)]="agendamientoSeleccionado.idplanmantenimiento" name="nombrePlan" (change)="onVehiculoChange1()" >
+                    <option *ngFor="let plan of planes" [value]="plan.idplan">{{plan.kilometrajeIntervalo}}</option>
+                </select>
+                    </ng-template>
+            </div>
+            </div>
+            <div class="row">
+
+              <div class="col-md-6 mb-3">
+                <label for="kilometrajeActual" class="form-label">Kilometraje Actual:</label>
+                <input type="number" class="form-control" id="kilometrajeActual" [(ngModel)]="agendamientoSeleccionado.kilometrajeactual" name="kilometraje_actual" placeholder="Ej. 50000">
+              </div>
+
+            </div>
+            <div class="mb-3">
+              <label for="observaciones" class="form-label">Observaciones:</label>
+              <textarea class="form-control" id="observaciones" rows="3" [(ngModel)]="agendamientoSeleccionado.observaciones" name="observaciones" placeholder="Notas adicionales"></textarea>
+            </div>
+            <div class="mb-3">
+              <label for="estado" class="form-label">Estado:</label>
+              <select class="form-select" id="estado" [(ngModel)]="agendamientoSeleccionado.estado" name="estado" required>
+                <option value="Pendiente">Pendiente</option>
+              </select>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="cerrarModalAgendamiento()">Cerrar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="agendamientoForm.invalid || isLoadingResults">
+                <span *ngIf="isLoadingResults" class="spinner-border spinner-border-sm me-2"></span>
+                {{ modoEdicion ? 'Guardar Cambios' : 'Crear Agendamiento' }}
+              </button>
+            </div>
+          </form>-->
+          <form #agendamientoForm="ngForm" (ngSubmit)="guardarAgendamiento()">
+    <input type="hidden" [(ngModel)]="agendamientoSeleccionado.tipo_mantenimiento" name="tipo_mantenimiento">
+
+    <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" [class.active]="tipoMantenimientoActivo === 'Preventivo'"
+                    (click)="setTipoMantenimiento('Preventivo')"
+                    type="button">
+                Mantenimiento Preventivo
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" [class.active]="tipoMantenimientoActivo === 'Correctivo'"
+                    (click)="setTipoMantenimiento('Correctivo')"
+                    type="button">
+                Mantenimiento Correctivo
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content pt-3">
+        
+        <div *ngIf="tipoMantenimientoActivo == 'Correctivo'; else loggedOut" class="tab-pane fade show active">
+            
+            <div class="row">
+                
+                <div class="col-md-6 mb-3">
+                    <label for="nombreCliente" class="form-label">Nombre del Cliente:</label>
+                    <input type="text" class="form-control" id="nombreCliente" 
+                           [(ngModel)]="nombrecliente" name="nombre_cliente_P" required readonly>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="fechaMantenimiento" class="form-label">Fecha de Mantenimiento Corre:</label>
+                    <input type="date" class="form-control" id="fechaMantenimiento" 
+                           [(ngModel)]="agendamientoSeleccionado.fecha_mantenimiento" name="fecha_mantenimiento_P" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="vehiculo" class="form-label">Vehículos:</label>
+                    <select class="form-select" id="vehiculo" 
+                            [(ngModel)]="agendamientoSeleccionado.idVehiculo" name="vehiculo_P" required (change)="onVehiculoChange()">
+                        <option *ngFor="let vehi of vehiculo" [value]="vehi.idVehiculo">{{vehi.placa}}</option>
+                    </select>
+                </div>
+                
+             <!--   <div class="col-md-6 mb-3">
+                    <label for="nombrePlan" class="form-label">Plan:</label>
+                    <div *ngIf="modoEdicion==false; else loggedOut ">
+                        <select class="form-select" id="nombrePlan" 
+                                [(ngModel)]="agendamientoSeleccionado.idplanmantenimiento" name="nombrePlan_P" (change)="onVehiculoChange1()" >
+                            <option *ngFor="let plan of planes" [value]="plan.idPlan">{{plan.kilometrajeIntervalo}} KM</option>
+                        </select>
+                    </div>
+                    <ng-template #loggedOut>
+                        <select class="form-select" id="nombrePlanEdicion" 
+                                [(ngModel)]="agendamientoSeleccionado.idplanmantenimiento" name="nombrePlan_PE" (change)="onVehiculoChange1()" >
+                            <option *ngFor="let plan of planes" [value]="plan.idplan">{{plan.kilometrajeIntervalo}}</option>
+                        </select>
+                    </ng-template>
+                </div>-->
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="kilometrajeActual" class="form-label">Kilometraje Actual:</label>
+                    <input type="number" class="form-control" id="kilometrajeActual" 
+                           [(ngModel)]="agendamientoSeleccionado.kilometrajeactual" name="kilometraje_actual_P" placeholder="Ej. 50000">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="observaciones" class="form-label">Observaciones:</label>
+                <textarea class="form-control" id="observaciones" rows="3" 
+                          [(ngModel)]="agendamientoSeleccionado.observaciones" name="observaciones_P" placeholder="Notas adicionales"></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="estado" class="form-label">Estado:</label>
+                <select class="form-select" id="estado" 
+                        [(ngModel)]="agendamientoSeleccionado.estado" name="estado_P" required>
+                    <option value="Iniciado">Iniciado</option>
+                </select>
+            </div>
+        </div>
+        <ng-template #loggedOut>
+
+        <div *ngIf="tipoMantenimientoActivo == 'Preventivo'"  >
+            <div class="row">
+                
+                <div class="col-md-6 mb-3">
+                    <label for="nombreClienteC" class="form-label">Nombre del Cliente:</label>
+                    <input type="text" class="form-control" id="nombreClienteC" 
+                           [(ngModel)]="nombrecliente" name="nombre_cliente_C" required readonly>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label for="fechaMantenimientoC" class="form-label">Fecha de Ingreso/Reporte:</label>
+                    <input type="date" class="form-control" id="fechaMantenimientoC" 
+                           [(ngModel)]="agendamientoSeleccionado.fecha_mantenimiento" name="fecha_mantenimiento_C" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="vehiculoC" class="form-label">Vehículos:</label>
+                    <select class="form-select" id="vehiculoC" 
+                            [(ngModel)]="agendamientoSeleccionado.idVehiculo" name="vehiculo_C" required (change)="onVehiculoChange()">
+                        <option *ngFor="let vehi of vehiculo" [value]="vehi.idVehiculo">{{vehi.placa}}</option>
+                    </select>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label for="nombrePlanC" class="form-label">Plan:</label>
+                    <select class="form-select" id="nombrePlanC" 
+                            [(ngModel)]="agendamientoSeleccionado.idplanmantenimiento" name="nombrePlan_C"   >
+                        <option value="N/A">N/A (No aplica)</option>
+                        <option *ngFor="let plan of planes" [value]="plan.idplanmantenimiento">{{plan.kilometrajeIntervalo}} KM</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="kilometrajeActualC" class="form-label">Kilometraje Actual:</label>
+                    <input type="number" class="form-control" id="kilometrajeActualC" 
+                           [(ngModel)]="agendamientoSeleccionado.kilometrajeactual" name="kilometraje_actual_C" placeholder="Ej. 50000">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="observacionesC" class="form-label">Observaciones (Falla Reportada):</label>
+                <textarea class="form-control" id="observacionesC" rows="3" 
+                          [(ngModel)]="agendamientoSeleccionado.observaciones" name="observaciones_C" placeholder="Descripción de la falla o problema"></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="estadoC" class="form-label">Estado:</label>
+                <select class="form-select" id="estadoC" 
+                        [(ngModel)]="agendamientoSeleccionado.estado" name="estado_C" required>
+                       <option value="Iniciado">Iniciado</option>
+                </select>
+            </div>
+        </div>
+        </ng-template>
+    </div>
+    <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalAgendamiento()">Cerrar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="agendamientoForm.invalid || isLoadingResults">
+            <span *ngIf="isLoadingResults" class="spinner-border spinner-border-sm me-2"></span>
+            {{ modoEdicion ? 'Guardar Cambios' : 'Crear Agendamiento' }}
+        </button>
+    </div>
+</form>
+       
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" [class.show]="mostrarModalVehiculo" [class.d-block]="mostrarModalVehiculo" tabindex="-1" role="dialog" aria-labelledby="vehiculoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="vehiculoModalLabel">Nuevo Vehículo</h5>
+          <button type="button" class="btn-close" (click)="cerrarModalVehiculo()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+          <form #vehiculoForm="ngForm" (ngSubmit)="guardarVehiculo()">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="vim" class="form-label">Chasis:</label>
+                <input type="text" class="form-control" id="vim" [(ngModel)]="formularioVehiculo.chasis" name="vim" required>
+              </div>
+            </div>
+            <div class="row">
+            <div class="col-md-6 mb-3">
+              <label for="modelo" class="form-label">Modelo:</label>
+              <select 
+                  class="form-control" 
+                  id="modelo" 
+                  [(ngModel)]="formularioVehiculo.modelo" 
+                  name="modelo" 
+                  required
+                  (ngModelChange)="onModeloChange()"> <option [ngValue]="null" disabled>Seleccione un modelo</option>
+                  
+                  <option *ngFor="let modelo of modelosDisponibles" [ngValue]="modelo.nombre">{{ modelo.nombre }}</option>
+              </select>
+          </div>
+
+
+          <div class="col-md-6 mb-3">
+              <label for="capacidad" class="form-label">Capacidad:</label>
+              <select 
+                  class="form-control" 
+                  id="capacidad" 
+                  [(ngModel)]="formularioVehiculo.capacidad" 
+                  name="capacidad" 
+                  required
+                  [disabled]="!formularioVehiculo.modelo"> <option [ngValue]="null" disabled>
+                      {{ formularioVehiculo.modelo ? 'Seleccione una capacidad' : 'Seleccione primero un modelo' }}
+                  </option>
+                  
+                  <option *ngFor="let capacidad of capacidadesFiltradas" [ngValue]="capacidad">{{ capacidad }} m3</option>
+              </select>
+          </div>
+              <div class="col-md-6 mb-3">
+                <label for="anio" class="form-label">Año:</label>
+                <input type="number" class="form-control" id="anio" [(ngModel)]="formularioVehiculo.anio" name="anio" required>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="color" class="form-label">Color:</label>
+                <input type="text" class="form-control" id="color" [(ngModel)]="formularioVehiculo.color" name="color">
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="placa" class="form-label">Placa:</label>
+                <input type="text" class="form-control" id="placa" [(ngModel)]="formularioVehiculo.placa" name="placa">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="cerrarModalVehiculo()">Cerrar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="vehiculoForm.invalid || isLoadingResults">
+                <span *ngIf="isLoadingResults" class="spinner-border spinner-border-sm me-2"></span>
+                Crear Vehículo
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" [class.show]="mostrarModalReagendar" [class.d-block]="mostrarModalReagendar" tabindex="-1" role="dialog" aria-labelledby="reagendarModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="reagendarModalLabel">Reagendar Cita</h5>
+          <button type="button" class="btn-close" (click)="cerrarModalReagendar()" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div *ngIf="error" class="alert alert-danger" role="alert">{{ error }}</div>
+          <form #rescheduleForm="ngForm" (ngSubmit)="guardarReagendamiento()">
+            <div class="mb-3">
+              <label for="nuevaFecha" class="form-label">Nueva Fecha de Agendamiento:</label>
+              <input type="date" class="form-control" id="nuevaFecha" [(ngModel)]="agendamientoReagendar.fecha_mantenimiento" name="nuevaFecha" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" (click)="cerrarModalReagendar()">Cerrar</button>
+              <button type="submit" class="btn btn-primary" [disabled]="!agendamientoReagendar.fecha_mantenimiento || isLoadingResults">
+                <span *ngIf="isLoadingResults" class="spinner-border spinner-border-sm me-2"></span>
+                Reagendar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isLoadingResults" class="loading-overlay">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p>Cargando agendamientos...</p>
+  </div>
+  
+<!-- Modal de Reagendamiento con Calendario Integrado -->
+<div class="modal fade" id="reagendarModal" tabindex="-1" aria-labelledby="reagendarModalLabel" aria-hidden="true"
+  [class.show]="mostrarModalReagendar" [style.display]="mostrarModalReagendar ? 'block' : 'none'">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="reagendarModalLabel">
+          <i class="fas fa-calendar-alt me-2"></i>
+          Reagendar Cita
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalReagendar()" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- Información del agendamiento -->
+        <div class="row mb-4" *ngIf="agendamientoReagendar.nombre_cliente">
+          <div class="col-12">
+            <div class="alert alert-info">
+              <h6 class="mb-2"><i class="fas fa-user me-1"></i> Cliente: {{ agendamientoReagendar.nombre_cliente }}</h6>
+              <p class="mb-0"><strong>ID Agendamiento:</strong> #{{ agendamientoReagendar.id_agenda }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Error display -->
+        <div *ngIf="error" class="alert alert-danger" role="alert">
+          <i class="fas fa-exclamation-triangle me-2"></i>
+          {{ error }}
+        </div>
+
+        <div class="row">
+          <!-- Columna del Calendario -->
+          <div class="col-lg-8 col-md-7">
+            <div class="calendar-container-modal">
+              <h6 class="mb-3">Selecciona una nueva fecha:</h6>
+              
+              <!-- Controles de navegación del calendario -->
+              <div class="calendar-header-modal">
+                <div class="calendar-navigation">
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="previousViewModal()">
+                    <i class="fas fa-chevron-left"></i>
+                  </button>
+                  <h6 class="calendar-title-modal mx-3 mb-0">
+                    {{ getFormattedDate(modalViewDate) }}
+                  </h6>
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="nextViewModal()">
+                    <i class="fas fa-chevron-right"></i>
+                  </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-secondary" (click)="irAHoyModal()">
+                  Hoy
+                </button>
+              </div>
+              
+              <!-- Calendario en el modal -->
+              <div class="simple-calendar-modal">
+                <div class="calendar-grid-modal">
+                  <!-- Encabezados de días -->
+                  <div class="calendar-day-header-modal">L</div>
+                  <div class="calendar-day-header-modal">M</div>
+                  <div class="calendar-day-header-modal">M</div>
+                  <div class="calendar-day-header-modal">J</div>
+                  <div class="calendar-day-header-modal">V</div>
+                  <div class="calendar-day-header-modal">S</div>
+                  <div class="calendar-day-header-modal">D</div>
+                  
+                  <!-- Días del mes -->
+                  <div 
+                    *ngFor="let day of getDaysInMonthModal(); trackBy: trackByDay" 
+                    class="calendar-day-modal"
+                    [class.today-modal]="isToday(day)"
+                    [class.other-month-modal]="!isSameMonthModal(day)"
+                    [class.has-events-modal]="hasEventsOnDay(day)"
+                    [class.selected-date-modal]="isSelectedDate(day)"
+                    [class.past-date-modal]="isPastDate(day)"
+                    [class.disabled-modal]="isPastDate(day)"
+                    (click)="onDayClickModal(day)"
+                  >
+                    <div class="day-number-modal">{{ day.getDate() }}</div>
+                    <div class="day-events-modal" *ngIf="!isPastDate(day)">
+                      <div 
+                        *ngFor="let agendamiento of getAgendamientosForDay(day)" 
+                        class="event-item-modal"
+                        [ngClass]="'event-' + agendamiento.estado.toLowerCase()"
+                      >
+                        •
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Columna del Formulario -->
+          <div class="col-lg-4 col-md-5">
+            <form #rescheduleForm="ngForm" (ngSubmit)="guardarReagendamiento()">
+              <div class="mb-3">
+                <label for="nuevaFecha" class="form-label">
+                  <i class="fas fa-calendar me-1"></i>
+                  Fecha seleccionada:
+                </label>
+                <input 
+                  type="date" 
+                  class="form-control" 
+                  id="nuevaFecha" 
+                  [(ngModel)]="agendamientoReagendar.fecha_mantenimiento" 
+                  name="nuevaFecha" 
+                  required
+                  readonly>
+              </div>
+
+              <!-- Información de la fecha seleccionada -->
+              <div class="mb-3" *ngIf="agendamientoReagendar.fecha_mantenimiento">
+                <div class="card border-primary">
+                  <div class="card-body p-3">
+                    <h6 class="card-title mb-2">
+                      <i class="fas fa-calendar-check text-primary me-1"></i>
+                      Nueva fecha:
+                    </h6>
+                    <p class="card-text mb-0">
+                      {{ formatearFechaLegible(agendamientoReagendar.fecha_mantenimiento) }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Verificar conflictos -->
+              <div class="mb-3" *ngIf="agendamientoReagendar.fecha_mantenimiento && hasConflictOnDate(agendamientoReagendar.fecha_mantenimiento)">
+                <div class="alert alert-warning">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <strong>Atención:</strong> Ya existe un agendamiento en esta fecha.
+                </div>
+              </div>
+
+              <!-- Botones de acción -->
+              <div class="d-grid gap-2">
+                <button 
+                  type="submit" 
+                  class="btn btn-primary" 
+                  [disabled]="!agendamientoReagendar.fecha_mantenimiento || isLoadingResults || hasConflictOnDate(agendamientoReagendar.fecha_mantenimiento)">
+                  <span *ngIf="isLoadingResults" class="spinner-border spinner-border-sm me-2"></span>
+                  <i *ngIf="!isLoadingResults" class="fas fa-save me-1"></i>
+                  {{ isLoadingResults ? 'Reagendando...' : 'Reagendar Cita' }}
+                </button>
+                <button 
+                  type="button" 
+                  class="btn btn-secondary" 
+                  (click)="cerrarModalReagendar()"
+                  [disabled]="isLoadingResults">
+                  <i class="fas fa-times me-1"></i>
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div *ngIf="mostrarModalAgendamiento || mostrarModalVehiculo || mostrarModalReagendar" class="modal-backdrop fade show"></div>
+</div>

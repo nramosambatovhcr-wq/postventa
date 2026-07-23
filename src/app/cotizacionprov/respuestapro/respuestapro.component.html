@@ -1,0 +1,612 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">{{ t('header') }}</div>
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          [placeholder]="t('search')"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+      </div>
+      <div class="language-selector">
+        <button 
+          class="lang-btn" 
+          [class.active]="currentLanguage === 'es'"
+          (click)="changeLanguage('es')">
+          ES
+        </button>
+        <button 
+          class="lang-btn" 
+          [class.active]="currentLanguage === 'en'"
+          (click)="changeLanguage('en')">
+          EN
+        </button>
+        <button 
+          class="lang-btn" 
+          [class.active]="currentLanguage === 'zh'"
+          (click)="changeLanguage('zh')">
+          中文
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">{{ t('dashboard') }}</h1>
+      <p class="panel-subtitulo">{{ t('subtitle') }}</p>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="coti()">
+          <div class="valor-estadistica">{{ t('quotations') }}</div>
+      </div>
+      <!--<div class="tarjeta-estadistica" (click)="crear()">
+        <div class="valor-estadistica">{{ t('create') }}</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="error()">
+          <div class="valor-estadistica">{{ t('uploadDetail') }}</div>
+      </div>-->
+      <div class="tarjeta-estadistica" (click)="aprobada()">
+         <div class="valor-estadistica">{{ t('approved') }}</div>
+      </div>
+      <div class="tarjeta-estadistica total-general-card"> 
+         <div class="valor-estadistica">${{ grandTotal | number: '1.2-2' }}</div>
+         <div class="nombre-estadistica">{{ t('total') }} General</div>
+      </div>
+      </div>
+    
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">{{ t('quotationDetails') }}</div>
+        <div class="acciones-tabla">
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label for="startDate">{{ t('from') }}</label>
+              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+            </div>
+            <div class="fecha-hasta">
+              <label for="endDate">{{ t('to') }}</label>
+              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+            </div>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">{{ t('reset') }}</button>
+          </div>
+          <button class="boton boton-contorno" (click)="filterData()">{{ t('filter') }}</button>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">{{ t('export') }}</button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">CSV (.csv)</a>
+            </div>
+          </div>
+          
+          <button class="boton boton-primario" (click)="addNewItem()">
+            <i class="fas fa-plus"></i> {{ t('addItem') }}
+          </button>
+          
+          <div class="upload-btn-wrapper">
+            <button class="boton boton-contorno">{{ t('importExcel') }}</button>
+            <input type="file" (change)="onFileSelected($event)" accept=".xlsx, .xls" />
+          </div>
+          <button class="boton boton-primario" [disabled]="!hasChanges" (click)="saveChanges()">
+            {{ t('saveChanges') }}
+          </button>
+        </div>
+      </div>
+      
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ t('code') }}</th>
+              <th>{{ t('equivalentCode') }}</th>
+              <th>{{ t('description') }}</th> 
+              <th>{{ t('clientQty') }}</th> <th>{{ t('qty') }}</th> <th>{{ t('fob') }}</th>
+              <th>{{ t('total') }}</th> <th>{{ t('observations') }}</th>
+              <th>{{ t('actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr 
+              *ngFor="let item of lista; let i = index" 
+              class="fila-datos"
+              [ngClass]="{'fila-nueva': item.isNew}" >
+              <td data-label="Codigo">
+                <ng-container *ngIf="!item.isNew">{{ item.code }}</ng-container>
+                <input 
+                  *ngIf="item.isNew" 
+                  type="text" 
+                  class="input-editable" 
+                  [(ngModel)]="item.code" 
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td [attr.data-label]="t('equivalentCode')"> 
+                <input 
+                  type="text" 
+                  class="input-editable" 
+                  [(ngModel)]="item.equivalent_code" 
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'equivalent_code')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+             <td [attr.data-label]="t('description')" class="descripcion-celda">
+                <div class="descripcion-principal">
+                  {{ getTranslatedDescription(item) }}
+                </div>
+                
+                <div 
+                    *ngIf="currentLanguage === 'zh' && item.translations?.es && item.translations?.es !== getTranslatedDescription(item)" 
+                    class="descripcion-secundaria">
+                  <i class="fas fa-language me-1"></i>
+                  {{ item.translations?.es }} (ES)
+                </div>
+                
+                <div 
+                    *ngIf="currentLanguage !== 'zh' && item.translations?.zh && item.translations?.zh !== getTranslatedDescription(item)" 
+                    class="descripcion-secundaria">
+                  <i class="fas fa-language me-1"></i>
+                  {{ item.translations?.zh }} ({{ t('chineseLabel') }})
+                </div>
+              </td>
+              
+              <td [attr.data-label]="t('clientQty')" class="qty-celda">
+                <span class="qty-fija">{{ item.clientQty || 'N/A' }}</span>
+              </td>
+              
+              <td [attr.data-label]="t('qty')">
+                <input 
+                  type="number" 
+                  class="input-editable" 
+                  [(ngModel)]="item.qty" 
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'qty')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td [attr.data-label]="t('fob')">
+                <input 
+                  type="number" 
+                  class="input-editable" 
+                  [(ngModel)]="item.price" 
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'price')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td [attr.data-label]="t('total')" class="total-celda"> ${{ getTotalForItem(item) | number: '1.2-2' }}
+              </td>
+              <td [attr.data-label]="t('observations')">
+                <input
+                  type="text"
+                  class="input-editable"
+                  [(ngModel)]="item.observations"
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'observations')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td [attr.data-label]="t('actions')" class="acciones-columna">
+                <button 
+                  class="boton-accion" 
+                  (click)="resetItemChanges(item, i)" 
+                  *ngIf="!item.isNew && isItemChanged(item)"
+                >
+                  <i class="fas fa-undo"></i> {{ t('undo') }}
+                </button>
+                <button class="boton-accion boton-eliminar" (click)="deleteItem(item, i)">
+                  <i class="fas fa-trash"></i> {{ t('delete') }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pie-tabla">
+        <div class="items-count">{{ t('showing') }} {{ lista?.length || 0 }} {{ t('of') }} {{ totalItems || 0 }} {{ t('orders') }}</div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pagina" 
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+  
+  <div class="modal-overlay" *ngIf="showDeleteConfirmModal">
+    <div class="modal-content">
+      <h3>{{ t('confirmDelete') }}</h3>
+      <p>{{ t('confirmDeleteMsg') }}</p>
+      <div class="modal-actions">
+        <button class="boton boton-cancelar" (click)="cancelDelete()">{{ t('cancel') }}</button>
+        <button class="boton boton-confirmar" (click)="confirmDelete()">{{ t('delete') }}</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="modal-overlay" *ngIf="showImportModal">
+    <div class="modal-content">
+      <h3>{{ t('importData') }}</h3>
+      <div *ngIf="importProgress === 'uploading'" class="loading-indicator">
+        <p>{{ t('processing') }}</p>
+        <div class="spinner"></div>
+      </div>
+      <div *ngIf="importProgress === 'preview'" class="excel-preview">
+        <p>{{ t('preview') }}</p>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th *ngFor="let header of excelPreviewHeaders">{{ header }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of excelPreviewData">
+              <td *ngFor="let cell of row">{{ cell }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mapping-container" *ngIf="excelPreviewHeaders.length > 0">
+          <h4>{{ t('columnMapping') }}</h4>
+          <div class="mapping-row" *ngFor="let field of requiredFields">
+            <label>{{ field.label }}:</label>
+            <select [(ngModel)]="fieldMapping[field.key]">
+              <option value="">{{ t('selectColumn') }}</option>
+              <option *ngFor="let header of excelPreviewHeaders" [value]="header">{{ header }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="boton boton-cancelar" (click)="cancelImport()">{{ t('cancel') }}</button>
+        <button *ngIf="importProgress === 'preview'" class="boton boton-confirmar" 
+                [disabled]="!isValidMapping()" (click)="processExcelImport()">{{ t('import') }}</button>
+      </div>
+    </div>
+  </div>
+    
+  <style>
+    .image-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+  
+    .image-modal-content {
+      position: relative;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 90%;
+      max-height: 90%;
+    }
+  
+    .image-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #333;
+    }
+  
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 80vh;
+      display: block;
+    }
+
+    /* Selector de idioma */
+    .language-selector {
+      display: flex;
+      gap: 5px;
+      align-items: center;
+      margin-left: 15px;
+    }
+
+    .lang-btn {
+      padding: 6px 12px;
+      background-color: #f0f0f0;
+      border: 2px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s ease;
+      color: #666;
+    }
+
+    .lang-btn:hover {
+      background-color: #e0e0e0;
+      transform: translateY(-1px);
+    }
+
+    .lang-btn.active {
+      background-color: #007bff;
+      color: white;
+      border-color: #0056b3;
+      box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    }
+
+    /* Estilos para los campos editables */
+    .input-editable {
+      width: 100%;
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .campo-modificado {
+      background-color: #fff9e0;
+      border-color: #ffd54f;
+    }
+
+    .boton-accion {
+      background-color: transparent;
+      border: none;
+      color: #0056b3;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 8px;
+      margin-right: 5px;
+    }
+
+    .boton-accion:hover {
+      text-decoration: underline;
+    }
+
+    .boton-eliminar {
+      color: #dc3545;
+    }
+
+    .boton-primario {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .boton-primario:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    /* NUEVO: Estilo para la cantidad fija del cliente */
+    .qty-fija {
+      font-weight: bold;
+      color: #6c757d;
+      display: block; 
+      padding: 4px 8px; 
+    }
+    
+    /* NUEVO: Estilo para las filas agregadas (Excel/Manual) */
+    .fila-nueva {
+      background-color: #f7fff0; /* Verde muy claro para indicar adición */
+      border-left: 5px solid #28a745; /* Borde verde */
+    }
+
+    .fila-nueva .input-editable {
+      border-color: #28a745;
+    }
+    
+    /* NEW: Estilo para la tarjeta de Total General */
+    .total-general-card {
+      background: linear-gradient(45deg, #17a2b8, #007bff);
+      color: white;
+      cursor: default !important;
+      border: none;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    }
+    
+    /* NEW: Estilo para la celda del total de fila */
+    .total-celda {
+      font-weight: bold;
+      color: #007bff;
+    }
+
+    /* Estilos para modales */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 1200px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .boton-cancelar {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .boton-confirmar {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Estilos para la tabla de acciones */
+    .acciones-columna {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    /* Estilos para la importación de Excel */
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .upload-btn-wrapper input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .excel-preview {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+
+    .preview-table th, .preview-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .mapping-container {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    .mapping-row {
+      display: flex;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .mapping-row label {
+      width: 150px;
+      font-weight: bold;
+    }
+
+    .mapping-row select {
+      flex: 1;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      margin-top: 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* ESTILOS MEJORADOS PARA DESCRIPCIÓN CON CHINO */
+    .descripcion-celda {
+      min-width: 300px;
+      padding: 12px 8px;
+    }
+
+    .descripcion-principal {
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 8px;
+      line-height: 1.4;
+    }
+
+    .descripcion-chino {
+      font-size: 14px;
+      color: #2c3e50;
+      font-family: 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+      padding: 8px 10px;
+      background: linear-gradient(135deg, #f0f8ff 0%, #e8f4f8 100%);
+      border-left: 4px solid #4a90e2;
+      border-radius: 4px;
+      margin-top: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
+    }
+
+    .descripcion-chino:hover {
+      background: linear-gradient(135deg, #e8f4f8 0%, #d8ecf5 100%);
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      transform: translateX(2px);
+    }
+
+    .descripcion-chino i {
+      color: #4a90e2;
+      margin-right: 6px;
+      font-size: 16px;
+    }
+
+    /* Responsive para descripción chino */
+    @media (max-width: 768px) {
+      .descripcion-celda {
+        min-width: 250px;
+      }
+      
+      .descripcion-chino {
+        font-size: 13px;
+        padding: 6px 8px;
+      }
+    }
+  </style>
+</main>

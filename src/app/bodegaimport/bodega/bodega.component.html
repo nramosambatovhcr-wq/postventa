@@ -1,0 +1,159 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">REPUESTOS IMPORTACIONES</div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Bodega</h1>
+      <p class="panel-subtitulo">Gestión y monitoreo de inventario</p>
+    </div>
+
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="filterByStatus('')">
+          <div class="valor-estadistica">{{ stats.totalItems }}</div>
+          <div class="etiqueta-estadistica">Total Items</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="filterByStatus('activo')">
+          <div class="valor-estadistica">{{ stats.itemsActivos }}</div>
+          <div class="etiqueta-estadistica">Items Activos</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="filterByStatus('inactivo')">
+        <div class="valor-estadistica">{{ stats.itemsInactivos }}</div>
+        <div class="etiqueta-estadistica">Items Inactivos</div>
+      </div>
+      <div class="tarjeta-estadistica">
+        <div class="valor-estadistica">{{ stats.totalCantidad }}</div>
+        <div class="etiqueta-estadistica">Cantidad Total</div>
+      </div>
+      <div class="tarjeta-estadistica">
+        <div class="valor-estadistica">{{ stats.totalReservado }}</div>
+        <div class="etiqueta-estadistica">Cantidad Reservada</div>
+      </div>
+    </div>
+
+    <div class="panel-contenido">
+      <div class="opciones-tabla">
+        <div>
+          <input
+            type="text"
+            class="busqueda"
+            placeholder="Buscar por Código, Ubicación o Estado"
+            [(ngModel)]="searchTerm"
+            (input)="applyFilters()"
+            (keyup.enter)="applyFilters()">
+        </div>
+      </div>
+
+      <div class="contenedor-tabla">
+        <table class="tabla-pedidos">
+          <thead>
+            <tr>
+              <th>CÓDIGO</th>
+              <th>DESCRIPCION</th>              
+              <th>UBICACIÓN</th>
+              <th>UBICACIÓN PROVISIONAL</th>
+              <th>CANTIDAD</th>
+              <th>DISPONIBLE</th>
+              <th>RESERVADA</th>
+              <th>ESTADO</th>
+              <th>FECHA</th>
+              <th>ACCIONES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of pagedData">
+              <td data-label="Código">{{ item.codigo }}</td>
+              <td data-label="Descripcion">{{ item.descripcion }}</td>
+              <td data-label="Ubicación">{{ item.ubicacion }}</td>
+              <td data-label="Ubicación Provisional">{{ item.ubicacionprovisional }}</td>
+              <td data-label="Cantidad">{{ item.cantidad }}</td>              
+              <td data-label="Disponible">{{ calcularDisponible(item) }}</td>
+              <td data-label="Reservada">{{ item.reservada }}</td>
+              <td data-label="Estado">
+                <span class="estado" [ngClass]="{ 'pendiente': item.estado === 'pendiente', 'activa': item.estado === 'activo', 'inactiva': item.estado === 'inactivo' }">
+                  {{ item.estado }}
+                </span>
+              </td>
+              <td data-label="Fecha">{{ item.fecha | date:'short' }}</td>
+              <td data-label="Acciones">
+                <button class="boton-reserva" (click)="openModalReserva(item)" [disabled]="calcularDisponible(item) === 0">Reservar</button>
+                <button class="boton-reserva" (click)="openModalActualizar(item)">Actualizar</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pie-tabla">
+        <div class="items-count">Mostrando {{ pagedData?.length || 0 }} de {{ filteredData?.length || 0 }} ítems</div>
+        <div class="paginacion">
+          <button class="pagination-button" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button
+            *ngFor="let page of getPaginationArray()"
+            class="pagination-button"
+            [ngClass]="{'active': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== '...'">{{ page }}</ng-container>
+            <ng-container *ngIf="page === '...'">...</ng-container>
+          </button>
+          <button class="pagination-button" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="modal-overlay" *ngIf="isModalReservaOpen" (click)="closeModalReserva()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <span class="modal-close" (click)="closeModalReserva()">&times;</span>
+      <h2 class="modal-title">Reservar Ítem</h2>
+      <div class="modal-body" *ngIf="selectedItem">
+        <p><strong>Código:</strong> {{ selectedItem.codigo }}</p>
+        <p><strong>Cantidad Disponible:</strong> {{ calcularDisponible(selectedItem) }}</p>
+        <div class="form-group">
+          <label for="cantidad">Cantidad a Reservar:</label>
+          <input type="number" id="cantidad" [(ngModel)]="cantidadAReservar" class="form-control" [max]="calcularDisponible(selectedItem)" min="1">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModalReserva()">Cancelar</button>
+        <button style="background-color: blue;" class="btn btn-primary" (click)="reservarItem()" [disabled]="cantidadAReservar <= 0 || cantidadAReservar > calcularDisponible(selectedItem)">Reservar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" *ngIf="isModalActualizarOpen" (click)="closeModalActualizar()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <span class="modal-close" (click)="closeModalActualizar()">&times;</span>
+      <h2 class="modal-title">Actualizar Ítem</h2>
+      <div class="modal-body" *ngIf="itemToUpdate">
+        <p><strong>Código:</strong> {{ itemToUpdate.codigo }}</p>
+        <p><strong>Descripción:</strong> {{ itemToUpdate.descripcion }}</p>
+        <div class="form-group">
+          <label for="ubicacion">Ubicación Fija:</label>
+          <input type="text" id="ubicacion" [(ngModel)]="itemToUpdate.ubicacion" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="ubicacionProvisional">Ubicación Provisional:</label>
+          <input type="text" id="ubicacionProvisional" [(ngModel)]="itemToUpdate.ubicacionprovisional" class="form-control">
+        </div>
+        <div class="form-group">
+          <label for="estado">Estado:</label>
+          <select id="estado" [(ngModel)]="itemToUpdate.estado" class="form-control">
+            <option value="activo">Activo</option>
+            <option value="inactivo">Inactivo</option>
+            <option value="pendiente">Pendiente</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeModalActualizar()">Cancelar</button>
+        <button style="background-color: green;" class="btn btn-primary" (click)="updateItem()">Actualizar</button>
+      </div>
+    </div>
+  </div>
+</main>

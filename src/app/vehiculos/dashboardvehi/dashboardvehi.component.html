@@ -1,0 +1,328 @@
+<!-- dashboard.component.html -->
+<div class="dashboard">
+
+  <!-- ══════════════════════════════════════════
+       HEADER
+  ══════════════════════════════════════════ -->
+  <header class="dash-header">
+    <div class="dash-header__left">
+      <div class="dash-header__logo">
+        <span class="logo-icon">⬡</span>
+      </div>
+      <div>
+        <h1 class="dash-header__title">CONTROL DE OPERACIONES</h1>
+        <p class="dash-header__sub">Tránsito · Importación · Bodega · Ensamblaje PDI</p>
+      </div>
+    </div>
+    <div class="dash-header__right">
+      <div class="last-update" *ngIf="!loading">
+        <span class="live-dot"></span>
+        Actualizado {{ formatTime(lastUpdated.toISOString()) }}
+      </div>
+      <button class="btn-refresh" (click)="loadDashboardData()" [disabled]="loading">
+        <span [class.spinning]="loading">↻</span>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       ESTADO DE CARGA / ERROR
+  ══════════════════════════════════════════ -->
+  <div class="loading-bar" *ngIf="loading">
+    <div class="loading-bar__fill"></div>
+  </div>
+
+  <div class="error-banner" *ngIf="error">
+    <span>⚠ {{ error }}</span>
+    <button (click)="loadDashboardData()">Reintentar</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════
+       GRID PRINCIPAL
+  ══════════════════════════════════════════ -->
+  <main class="dash-main" *ngIf="!loading">
+
+    <!-- ─── KPI CARDS ─────────────────────────── -->
+    <section class="kpi-row">
+      <div class="kpi-card" *ngFor="let kpi of kpis; trackBy: trackByIndex" [ngClass]="kpi.color">
+        <div class="kpi-card__icon">{{ kpi.icon }}</div>
+        <div class="kpi-card__body">
+          <div class="kpi-card__value">{{ kpi.value }}</div>
+          <div class="kpi-card__label">{{ kpi.label }}</div>
+          <div class="kpi-card__sub">{{ kpi.sub }}</div>
+        </div>
+        <div class="kpi-card__accent"></div>
+      </div>
+    </section>
+
+    <!-- ─── PIPELINE VISUAL ──────────────────── -->
+    <section class="pipeline-section">
+      <h2 class="section-title">
+        <span class="section-title__marker"></span>
+        Flujo Operativo
+      </h2>
+      <div class="pipeline">
+        <ng-container *ngFor="let stage of pipelineStages; let i = index; let last = last; trackBy: trackByIndex">
+          <div class="pipeline__stage" [style.--stage-color]="stage.color">
+            <div class="pipeline__icon">{{ stage.icon }}</div>
+            <div class="pipeline__info">
+              <div class="pipeline__step">PASO {{ i + 1 }}</div>
+              <div class="pipeline__label">{{ stage.label }}</div>
+              <div class="pipeline__sublabel">{{ stage.sublabel }}</div>
+            </div>
+            <div class="pipeline__counts">
+              <div class="pipeline__count pipeline__count--total">
+                <span class="count-num">{{ stage.count }}</span>
+                <span class="count-label">Total</span>
+              </div>
+              <div class="pipeline__count pipeline__count--pending">
+                <span class="count-num">{{ stage.pending }}</span>
+                <span class="count-label">Pendiente</span>
+              </div>
+              <div class="pipeline__count pipeline__count--done">
+                <span class="count-num">{{ stage.completed }}</span>
+                <span class="count-label">Completado</span>
+              </div>
+            </div>
+            <div class="pipeline__bar">
+              <div
+                class="pipeline__bar-fill"
+                [style.width.%]="stage.count > 0 ? (stage.completed / stage.count) * 100 : 0"
+                [style.background]="stage.color"
+              ></div>
+            </div>
+          </div>
+          <div class="pipeline__arrow" *ngIf="!last">›</div>
+        </ng-container>
+      </div>
+    </section>
+
+    <!-- ─── GRILLA INFERIOR (2 columnas) ─────── -->
+    <div class="bottom-grid">
+
+      <!-- ──── En Tránsito (BDC) ──────────────── -->
+      <section class="card card--transito">
+        <div class="card__header">
+          <h3 class="card__title">
+            <span class="title-dot title-dot--cyan"></span>
+            En Tránsito
+          </h3>
+          <div class="transito-global">
+            <span class="transito-global__num">{{ transitoTotalUnidades }}</span>
+            <span class="transito-global__label">Unidades</span>
+          </div>
+        </div>
+
+        <div class="transito-list" *ngIf="transitoDisponible">
+          <div class="transito-item" *ngFor="let o of transitoOrdenes; trackBy: trackByIndex">
+            <div class="transito-item__left">
+              <div class="transito-item__orden mono">{{ o.orden }}</div>
+              <div class="transito-item__detail">
+                {{ o.modelos }} modelo(s)
+                <ng-container *ngIf="o.contenedores"> · {{ o.contenedores }} contenedores</ng-container>
+              </div>
+              <div class="transito-mini-bar">
+                <div class="transito-mini-bar__fill" [style.width.%]="getPorcentajeOrden(o)"></div>
+              </div>
+            </div>
+            <div class="transito-item__right">
+              <div class="transito-item__units">
+                <span class="big-num">{{ o.unidades }}</span>
+                <span class="small-lbl">unid.</span>
+              </div>
+              <div class="transito-item__eta mono" *ngIf="o.proximaFecha">
+                <span class="eta-flag" *ngIf="esArriboProximo(o.proximaFecha)">●</span>
+                {{ formatDate(o.proximaFecha) }}
+              </div>
+              <div class="transito-item__eta mono" *ngIf="!o.proximaFecha">Sin fecha</div>
+            </div>
+          </div>
+          <div *ngIf="transitoOrdenes.length === 0" class="empty-row">
+            Sin unidades en tránsito
+          </div>
+        </div>
+
+        <div *ngIf="!transitoDisponible" class="empty-row">
+          No se pudo consultar el tránsito BDC
+        </div>
+      </section>
+
+      <!-- ──── Recepciones Recientes ──────────── -->
+      <section class="card card--receptions">
+        <div class="card__header">
+          <h3 class="card__title">
+            <span class="title-dot title-dot--amber"></span>
+            Recepciones Recientes
+          </h3>
+          <span class="card__badge">{{ recentReceptions.length }}</span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Contenedor</th>
+                <th>Empresa</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of recentReceptions; trackBy: trackByIndex">
+                <td class="mono">{{ r.receptionId }}</td>
+                <td class="mono">{{ r.containerNumber ?? '—' }}</td>
+                <td class="text-truncate" [title]="r.companyName">{{ r.companyName }}</td>
+                <td class="mono date-col">{{ formatDate(r.entryDate) }}</td>
+                <td>
+                  <span class="badge" [ngClass]="getReceptionStatusClass(r.receptionStatus)">
+                    {{ getReceptionStatusLabel(r.receptionStatus) }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="recentReceptions.length === 0">
+                <td colspan="5" class="empty-row">Sin registros recientes</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ──── PDI / Checklists ───────────────── -->
+      <section class="card card--pdi">
+        <div class="card__header">
+          <h3 class="card__title">
+            <span class="title-dot title-dot--purple"></span>
+            Ensamblaje / PDI
+          </h3>
+          <div class="pdi-global">
+            <span class="pdi-global__num">{{ checklistStats.porcentajeGlobal | number: '1.1-1' }}%</span>
+            <span class="pdi-global__label">Global</span>
+          </div>
+        </div>
+
+        <!-- Barra global de progreso -->
+        <div class="global-progress">
+          <div class="global-progress__bar">
+            <div
+              class="global-progress__fill"
+              [style.width.%]="checklistStats.porcentajeGlobal"
+            ></div>
+          </div>
+          <div class="global-progress__stats">
+            <span>{{ checklistStats.tareasCompletadas }} completadas</span>
+            <span>{{ checklistStats.tareasPendientes }} pendientes</span>
+          </div>
+        </div>
+
+        <!-- Lista de checklists -->
+        <div class="pdi-list">
+          <div class="pdi-item" *ngFor="let c of recentChecklists; trackBy: trackByIndex">
+            <div class="pdi-item__info">
+              <div class="pdi-item__model">{{ c.modelo }}</div>
+              <div class="pdi-item__vin mono">{{ c.numeroVin }}</div>
+            </div>
+            <div class="pdi-item__progress">
+              <div class="pdi-mini-bar">
+                <div
+                  class="pdi-mini-bar__fill"
+                  [style.width.%]="c.porcentajeAvance"
+                  [ngClass]="checklistService.getProgressClass(c.porcentajeAvance)"
+                ></div>
+              </div>
+              <span class="pdi-item__pct mono">{{ c.porcentajeAvance | number: '1.0-0' }}%</span>
+            </div>
+          </div>
+          <div *ngIf="recentChecklists.length === 0" class="empty-row">
+            Sin checklists activos
+          </div>
+        </div>
+      </section>
+
+      <!-- ──── B/L Activos ────────────────────── -->
+      <section class="card card--bl">
+        <div class="card__header">
+          <h3 class="card__title">
+            <span class="title-dot title-dot--blue"></span>
+            B/L Activos
+          </h3>
+          <span class="card__badge card__badge--blue">{{ blStats.totalBl }}</span>
+        </div>
+        <div class="bl-list">
+          <div class="bl-item" *ngFor="let bl of recentBls; trackBy: trackByIndex">
+            <div class="bl-item__left">
+              <div class="bl-item__number mono">{{ bl.blNumber }}</div>
+              <div class="bl-item__vessel">{{ bl.vesselName }}</div>
+              <div class="bl-item__route">
+                {{ bl.portOfLoading }} <span class="arrow-small">→</span> {{ bl.portOfDischarge }}
+              </div>
+            </div>
+            <div class="bl-item__right">
+              <div class="bl-item__containers">
+                <span class="big-num">{{ bl.totalContainers }}</span>
+                <span class="small-lbl">cont.</span>
+              </div>
+              <div class="bl-item__date mono">{{ formatDate(bl.createdAt) }}</div>
+            </div>
+          </div>
+          <div *ngIf="recentBls.length === 0" class="empty-row">
+            Sin B/L registrados
+          </div>
+        </div>
+      </section>
+
+      <!-- ──── Actividad Reciente ─────────────── -->
+      <section class="card card--activity">
+        <div class="card__header">
+          <h3 class="card__title">
+            <span class="title-dot title-dot--green"></span>
+            Actividad Reciente
+          </h3>
+        </div>
+        <div class="activity-feed">
+          <div class="activity-item" *ngFor="let a of recentActivity; trackBy: trackByIndex">
+            <div class="activity-item__icon">{{ getActivityIcon(a.type) }}</div>
+            <div class="activity-item__body">
+              <div class="activity-item__title">{{ a.title }}</div>
+              <div class="activity-item__sub">{{ a.subtitle }}</div>
+              <div class="activity-item__progress" *ngIf="a.progress !== undefined">
+                <div class="tiny-bar">
+                  <div class="tiny-bar__fill" [style.width.%]="a.progress"></div>
+                </div>
+              </div>
+            </div>
+            <div class="activity-item__right">
+              <span class="badge badge-sm" [ngClass]="a.statusColor">{{ a.status }}</span>
+              <div class="activity-item__date mono">{{ formatDate(a.timestamp) }}</div>
+            </div>
+          </div>
+          <div *ngIf="recentActivity.length === 0" class="empty-row">
+            Sin actividad reciente
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ══════════════════════════════════════════
+       SKELETON mientras carga
+  ══════════════════════════════════════════ -->
+  <main class="dash-main" *ngIf="loading">
+    <section class="kpi-row">
+      <div class="kpi-card skeleton" *ngFor="let i of [0,1,2,3,4]; trackBy: trackByIndex">
+        <div class="sk-block sk-block--lg"></div>
+        <div class="sk-block sk-block--sm"></div>
+      </div>
+    </section>
+    <section class="pipeline-section">
+      <div class="pipeline">
+        <div class="pipeline__stage skeleton" *ngFor="let i of [0,1,2,3]; trackBy: trackByIndex">
+          <div class="sk-block sk-block--md"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+</div>

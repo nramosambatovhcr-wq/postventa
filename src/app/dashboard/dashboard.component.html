@@ -1,0 +1,603 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">
+        <i class="fa fa-ship"></i>
+        Importaciones Dashboard
+      </div>
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          placeholder="Buscar por código, orden, BL, proveedor..."
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i>
+        </button>
+      </div>
+      <div class="acciones-usuario">
+        <button class="boton boton-icono" title="Notificaciones">
+          <i class="fa fa-bell"></i>
+          <span class="badge-notif">3</span>
+        </button>
+        <button class="boton boton-icono" title="Usuario">
+          <i class="fa fa-user"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <div>
+        <h1 class="panel-titulo">Dashboard de Importaciones</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de cotizaciones, órdenes y BLs</p>
+      </div>
+      <button class="boton boton-primario" (click)="createNewImport()">
+        <i class="fa fa-plus"></i> Nueva Importación
+      </button>
+    </div>
+    
+    <!-- Estadísticas Cards -->
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica tarjeta-azul">
+        <div class="icono-estadistica">
+          <i class="fa fa-file-text"></i>
+        </div>
+        <div class="contenido-estadistica">
+          <div class="titulo-estadistica">Total Cotizaciones</div>
+          <div class="valor-estadistica">{{ stats.totalCotizaciones }}</div>
+          <div class="cambio-estadistica positivo">
+            <i class="fa fa-arrow-up"></i> +12% vs mes anterior
+          </div>
+        </div>
+      </div>
+      
+      <div class="tarjeta-estadistica tarjeta-verde">
+        <div class="icono-estadistica">
+          <i class="fa fa-shopping-cart"></i>
+        </div>
+        <div class="contenido-estadistica">
+          <div class="titulo-estadistica">Órdenes Activas</div>
+          <div class="valor-estadistica">{{ stats.totalOrdenes }}</div>
+          <div class="cambio-estadistica positivo">
+            <i class="fa fa-arrow-up"></i> +8% vs mes anterior
+          </div>
+        </div>
+      </div>
+      
+      <div class="tarjeta-estadistica tarjeta-naranja">
+        <div class="icono-estadistica">
+          <i class="fa fa-ship"></i>
+        </div>
+        <div class="contenido-estadistica">
+          <div class="titulo-estadistica">BLs en Tránsito</div>
+          <div class="valor-estadistica">{{ stats.blsEnTransito }}</div>
+          <div class="cambio-estadistica positivo">
+            <i class="fa fa-arrow-up"></i> +5% vs mes anterior
+          </div>
+        </div>
+      </div>
+      
+      <div class="tarjeta-estadistica tarjeta-morada">
+        <div class="icono-estadistica">
+          <i class="fa fa-check-circle"></i>
+        </div>
+        <div class="contenido-estadistica">
+          <div class="titulo-estadistica">BLs Liquidados</div>
+          <div class="valor-estadistica">{{ stats.blsLiquidados }}</div>
+          <div class="cambio-estadistica negativo">
+            <i class="fa fa-arrow-down"></i> -3% vs mes anterior
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Filtros y Acciones -->
+    <div class="barra-acciones">
+      <div class="filtros-rapidos">
+        <button class="chip-filtro" [class.activo]="filtroActivo === 'todos'" (click)="aplicarFiltro('todos')">
+          <i class="fa fa-globe"></i> Todos
+        </button>
+        <button class="chip-filtro" [class.activo]="filtroActivo === 'transito'" (click)="aplicarFiltro('transito')">
+          <i class="fa fa-ship"></i> En Tránsito
+        </button>
+        <button class="chip-filtro" [class.activo]="filtroActivo === 'pendiente'" (click)="aplicarFiltro('pendiente')">
+          <i class="fa fa-clock-o"></i> Pendientes
+        </button>
+        <button class="chip-filtro" [class.activo]="filtroActivo === 'liquidado'" (click)="aplicarFiltro('liquidado')">
+          <i class="fa fa-check"></i> Liquidados
+        </button>
+      </div>
+      
+      <div class="acciones-secundarias">
+        <div class="filtro-fechas">
+          <input type="date" [(ngModel)]="startDate" placeholder="Desde">
+          <span class="separador">-</span>
+          <input type="date" [(ngModel)]="endDate" placeholder="Hasta">
+          <button class="boton boton-icono-small" (click)="applyDateFilter()" title="Aplicar fechas">
+            <i class="fa fa-filter"></i>
+          </button>
+          <button class="boton boton-icono-small" (click)="resetDateFilter()" title="Limpiar filtros">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        
+        <div class="dropdown">
+          <button class="boton boton-secundario" (click)="toggleExportMenu()">
+            <i class="fa fa-download"></i> Exportar
+          </button>
+          <div class="dropdown-content" *ngIf="showExportMenu">
+            <a (click)="downloadExcel()">
+              <i class="fa fa-file-excel-o"></i> Excel (.xlsx)
+            </a>
+            <a (click)="downloadCSV()">
+              <i class="fa fa-file-text-o"></i> CSV (.csv)
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Vista de Tabs -->
+    <div class="tabs-contenedor">
+      <div class="tabs-header">
+        <button class="tab" [class.activo]="vistaActiva === 'jerarquica'" (click)="cambiarVista('jerarquica')">
+          <i class="fa fa-list"></i> Vista Jerárquica
+        </button>
+        <button class="tab" [class.activo]="vistaActiva === 'tabla'" (click)="cambiarVista('tabla')">
+          <i class="fa fa-table"></i> Vista Tabla
+        </button>
+      </div>
+      
+      <!-- Loading State -->
+      <div class="loading-container" *ngIf="loading">
+        <div class="loading-spinner"></div>
+        <p>Cargando importaciones...</p>
+      </div>
+      
+      <!-- Vista Jerárquica (Expandible) -->
+      <div class="vista-jerarquica" *ngIf="vistaActiva === 'jerarquica' && !loading">
+        <div class="lista-cotizaciones">
+          <div class="cotizacion-card" *ngFor="let cotizacion of displayedCotizaciones">
+            <div class="cotizacion-header" (click)="toggleCotizacion(cotizacion.cotizacionId)">
+              <div class="cotizacion-principal">
+                <i class="fa" [ngClass]="cotizacion.expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                <div class="cotizacion-info-principal">
+                  <h3 class="cotizacion-titulo">{{ cotizacion.codigoCot }}</h3>
+                  <div class="cotizacion-meta">
+                    <span class="badge" [ngClass]="getEstadoBadgeClass(cotizacion.estadoCotizacion)">
+                      {{ cotizacion.estadoCotizacion }}
+                    </span>
+                    <span class="meta-item">
+                      <i class="fa fa-calendar"></i>
+                      {{ cotizacion.fechaSolicitud | date:'dd/MM/yyyy' }}
+                    </span>
+                    <span class="meta-item">
+                      <i class="fa fa-shopping-cart"></i>
+                      {{ cotizacion.ordenesCompra?.length || 0 }} órdenes
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="cotizacion-acciones" (click)="$event.stopPropagation()">
+                <button class="boton-icono" title="Editar">
+                  <i class="fa fa-edit"></i>
+                </button>
+                <button class="boton-icono" title="Más opciones">
+                  <i class="fa fa-ellipsis-v"></i>
+                </button>
+              </div>
+            </div>
+            
+            <!-- Contenido Expandible -->
+            <div class="cotizacion-body" *ngIf="cotizacion.expanded">
+              <div class="info-grid">
+                <!-- CAMBIADO: Información del Proveedor -->
+                <div class="info-card">
+                  <span class="info-label">Proveedor</span>
+                  <span class="info-valor">
+                    {{ cotizacion.proveedor?.nombre || 'Sin proveedor' }}
+                    <span class="texto-secundario" *ngIf="cotizacion.proveedor?.codigo" style="display: block; font-size: 0.85em; margin-top: 2px;">
+                      Código: {{ cotizacion.proveedor?.codigo }}
+                    </span>
+                  </span>
+                </div>
+                
+                <!-- NUEVO: Contacto del Proveedor (Opcional) -->
+                <div class="info-card" *ngIf="cotizacion.proveedor?.telefono || cotizacion.proveedor?.email">
+                  <span class="info-label">Contacto</span>
+                  <span class="info-valor">
+                    <span *ngIf="cotizacion.proveedor?.telefono" style="display: block;">
+                      <i class="fa fa-phone"></i> {{ cotizacion.proveedor?.telefono }}
+                    </span>
+                    <span *ngIf="cotizacion.proveedor?.email" style="display: block; font-size: 0.85em;">
+                      <i class="fa fa-envelope"></i> {{ cotizacion.proveedor?.email }}
+                    </span>
+                  </span>
+                </div>
+                
+                <div class="info-card">
+                  <span class="info-label">Ref. Solicitud</span>
+                  <span class="info-valor">{{ cotizacion.referenciaSolicitud || 'N/A' }}</span>
+                </div>
+                <div class="info-card">
+                  <span class="info-label">Ref. Proveedor</span>
+                  <span class="info-valor">{{ cotizacion.referenciaProveedor || 'N/A' }}</span>
+                </div>
+                <div class="info-card">
+                  <span class="info-label">Fecha Respuesta</span>
+                  <span class="info-valor">
+                    {{ cotizacion.fechaRespuesta ? (cotizacion.fechaRespuesta | date:'dd/MM/yyyy') : 'Pendiente' }}
+                  </span>
+                </div>
+              </div>
+              
+              <div class="observaciones-box" *ngIf="cotizacion.observacionesSolicitud || cotizacion.observacionesRespuesta">
+                <div class="observacion-item" *ngIf="cotizacion.observacionesSolicitud">
+                  <strong><i class="fa fa-comment"></i> Observaciones Solicitud:</strong>
+                  <p>{{ cotizacion.observacionesSolicitud }}</p>
+                </div>
+                <div class="observacion-item" *ngIf="cotizacion.observacionesRespuesta">
+                  <strong><i class="fa fa-comment"></i> Observaciones Respuesta:</strong>
+                  <p>{{ cotizacion.observacionesRespuesta }}</p>
+                </div>
+              </div>
+              
+              <!-- Órdenes de Compra -->
+              <div class="ordenes-container">
+                <h4 class="seccion-titulo">
+                  <i class="fa fa-shopping-cart"></i>
+                  Órdenes de Compra ({{ cotizacion.ordenesCompra?.length || 0 }})
+                </h4>
+                
+                <div class="orden-card" *ngFor="let orden of cotizacion.ordenesCompra">
+                  <div class="orden-header" (click)="toggleOrden(cotizacion.cotizacionId, orden.ordenId)">
+                    <div class="orden-info">
+                      <i class="fa" [ngClass]="orden.expanded ? 'fa-chevron-down' : 'fa-chevron-right'"></i>
+                      <strong>{{ orden.invoiceN }}</strong>
+                      <span class="badge badge-sm" [ngClass]="getEstadoBadgeClass(orden.estadoOrden)">
+                        {{ orden.estadoOrden }}
+                      </span>
+                      <span class="bl-contador">
+                        <i class="fa fa-ship"></i>
+                        {{ orden.invoices?.length || 0 }} BL(s)
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <!-- BLs -->
+                  <div class="bls-container" *ngIf="orden.expanded">
+                    <div class="tabla-bls-wrapper" *ngIf="orden.invoices && orden.invoices.length > 0">
+                      <table class="tabla-bls-moderna">
+                        <thead>
+                          <tr>
+                            <th><i class="fa fa-file-text"></i> Invoice BL</th>
+                            <th><i class="fa fa-ship"></i> BL</th>
+                            <th><i class="fa fa-cube"></i> Contenedor</th>
+                            <th><i class="fa fa-money"></i> Liquidación</th>
+                            <th><i class="fa fa-info-circle"></i> Estado</th>
+                            <th><i class="fa fa-calendar"></i> F. Embarque</th>
+                            <th><i class="fa fa-calendar-check-o"></i> F. Arribo</th>
+                            <th>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr *ngFor="let invoice of orden.invoices">
+                            <td>{{ invoice.invoiceBl || '-' }}</td>
+                            <td><strong>{{ invoice.bl || '-' }}</strong></td>
+                            <td>{{ invoice.contenedor || '-' }}</td>
+                            <td>{{ invoice.liquidacion || '-' }}</td>
+                            <td>
+                              <span class="badge badge-sm" [ngClass]="getEstadoBadgeClass(invoice.estadoBl)">
+                                {{ invoice.estadoBl || 'N/A' }}
+                              </span>
+                            </td>
+                            <td>{{ invoice.fechaEmbarque ? (invoice.fechaEmbarque | date:'dd/MM/yyyy') : '-' }}</td>
+                            <td>{{ invoice.fechaArrivo ? (invoice.fechaArrivo | date:'dd/MM/yyyy') : '-' }}</td>
+                            <td>
+                              <div class="acciones-bl">
+                                <button class="boton-icono-tiny" title="Ver detalles" (click)="verDetalles(invoice.id)">
+                                  <i class="fa fa-eye"></i>
+                                </button>
+                                <button class="boton-icono-tiny" *ngIf="usuario?.rol === 'admin'" title="Editar">
+                                  <i class="fa fa-edit"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="mensaje-vacio" *ngIf="!orden.invoices || orden.invoices.length === 0">
+                      <i class="fa fa-inbox"></i>
+                      <p>No hay BLs registrados para esta orden</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="mensaje-vacio" *ngIf="!cotizacion.ordenesCompra || cotizacion.ordenesCompra.length === 0">
+                  <i class="fa fa-inbox"></i>
+                  <p>No hay órdenes de compra para esta cotización</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="mensaje-vacio grande" *ngIf="displayedCotizaciones.length === 0">
+            <i class="fa fa-search"></i>
+            <h3>No se encontraron resultados</h3>
+            <p>Intenta ajustar tus filtros o términos de búsqueda</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Vista Tabla (Simple) -->
+      <div class="vista-tabla" *ngIf="vistaActiva === 'tabla' && !loading">
+        <div class="tabla-moderna-wrapper">
+          <table class="tabla-moderna">
+            <thead>
+              <tr>
+                <th>Cotización</th>
+                <th>Proveedor</th>
+                <th>Orden</th>
+                <th>Invoice BL</th>
+                <th>BL</th>
+                <th>Contenedor</th>
+                <th>F. Embarque</th>
+                <th>F. Arribo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let cotizacion of displayedCotizaciones">
+                <ng-container *ngFor="let orden of cotizacion.ordenesCompra">
+                  <tr *ngFor="let invoice of orden.invoices" class="fila-hover">
+                    <td>
+                      <div class="celda-principal">
+                        <strong>{{ cotizacion.codigoCot }}</strong>
+                        <span class="texto-secundario">{{ cotizacion.fechaSolicitud | date:'dd/MM/yyyy' }}</span>
+                      </div>
+                    </td>
+                    <!-- NUEVO: Columna de Proveedor -->
+                    <td>
+                      <div class="celda-principal">
+                        <strong>{{ cotizacion.proveedor?.nombre || 'Sin proveedor' }}</strong>
+                        <span class="texto-secundario" *ngIf="cotizacion.proveedor?.codigo">{{ cotizacion.proveedor?.codigo }}</span>
+                      </div>
+                    </td>
+                    <td>{{ orden.invoiceN }}</td>
+                    <td>{{ invoice.invoiceBl || '-' }}</td>
+                    <td><strong>{{ invoice.bl || '-' }}</strong></td>
+                    <td>{{ invoice.contenedor || '-' }}</td>
+                    <td>{{ invoice.fechaEmbarque ? (invoice.fechaEmbarque | date:'dd/MM/yyyy') : '-' }}</td>
+                    <td>{{ invoice.fechaArrivo ? (invoice.fechaArrivo | date:'dd/MM/yyyy') : '-' }}</td>
+                    <td>
+                      <span class="badge badge-sm" [ngClass]="getEstadoBadgeClass(invoice.estadoBl)">
+                        {{ invoice.estadoBl || 'N/A' }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="acciones-fila">
+                        <button class="boton-icono-tiny" title="Ver" (click)="abrirModalDetalle(cotizacion, orden, invoice)">
+                          <i class="fa fa-eye"></i>
+                        </button>
+                        <button class="boton-icono-tiny" *ngIf="usuario?.rol === 'admin'" title="Editar">
+                          <i class="fa fa-edit"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </ng-container>
+              </ng-container>
+              <tr *ngIf="getTotalRows() === 0">
+                <td colspan="10" class="celda-vacia">
+                  <div class="mensaje-vacio">
+                    <i class="fa fa-inbox"></i>
+                    <p>No hay datos disponibles</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Paginación -->
+      <div class="paginacion-container" *ngIf="!loading && displayedCotizaciones.length > 0">
+        <div class="paginacion-info">
+          <span>Mostrando {{ displayedCotizaciones.length }} de {{ totalItems }} registros</span>
+        </div>
+        <div class="paginacion-controles">
+          <button class="boton-pag" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">
+            <i class="fa fa-chevron-left"></i>
+          </button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pag" 
+            [class.activo]="page === currentPage"
+            [disabled]="page === -1"
+            (click)="page !== -1 ? changePage(page) : null">
+            <span *ngIf="page !== -1">{{ page }}</span>
+            <span *ngIf="page === -1">...</span>
+          </button>
+          <button class="boton-pag" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">
+            <i class="fa fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- Modal de Detalles -->
+<div class="modal-overlay" *ngIf="mostrarModal" (click)="cerrarModal()">
+  <div class="modal-contenido" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fa fa-file-text"></i>
+        Detalles de la Importación
+      </h2>
+      <button class="boton-cerrar" (click)="cerrarModal()">
+        <i class="fa fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="detalleSeleccionado">
+      <!-- Información de la Cotización -->
+      <div class="seccion-modal">
+        <h3 class="titulo-seccion">
+          <i class="fa fa-file-text"></i>
+          Información de Cotización
+        </h3>
+        <div class="grid-info">
+          <div class="info-item">
+            <span class="label-modal">Código Cotización:</span>
+            <span class="valor-modal destacado">{{ detalleSeleccionado.cotizacion.codigoCot }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Estado:</span>
+            <span class="badge" [ngClass]="getEstadoBadgeClass(detalleSeleccionado.cotizacion.estadoCotizacion)">
+              {{ detalleSeleccionado.cotizacion.estadoCotizacion }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Fecha Solicitud:</span>
+            <span class="valor-modal">
+              {{ detalleSeleccionado.cotizacion.fechaSolicitud | date:'dd/MM/yyyy' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Fecha Respuesta:</span>
+            <span class="valor-modal">
+              {{ detalleSeleccionado.cotizacion.fechaRespuesta ? (detalleSeleccionado.cotizacion.fechaRespuesta | date:'dd/MM/yyyy') : 'Pendiente' }}
+            </span>
+          </div>
+          
+          <!-- CAMBIADO: Información del Proveedor en Modal -->
+          <div class="info-item">
+            <span class="label-modal">Proveedor:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.cotizacion.proveedor?.nombre || 'Sin proveedor' }}</span>
+          </div>
+          
+          <div class="info-item" *ngIf="detalleSeleccionado.cotizacion.proveedor?.codigo">
+            <span class="label-modal">Código Proveedor:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.cotizacion.proveedor?.codigo }}</span>
+          </div>
+          
+          <div class="info-item" *ngIf="detalleSeleccionado.cotizacion.proveedor?.telefono">
+            <span class="label-modal">Teléfono Proveedor:</span>
+            <span class="valor-modal">
+              <i class="fa fa-phone"></i> {{ detalleSeleccionado.cotizacion.proveedor?.telefono }}
+            </span>
+          </div>
+          
+          <div class="info-item" *ngIf="detalleSeleccionado.cotizacion.proveedor?.email">
+            <span class="label-modal">Email Proveedor:</span>
+            <span class="valor-modal">
+              <i class="fa fa-envelope"></i> {{ detalleSeleccionado.cotizacion.proveedor?.email }}
+            </span>
+          </div>
+          
+          <div class="info-item" *ngIf="detalleSeleccionado.cotizacion.proveedor?.direccion">
+            <span class="label-modal">Dirección Proveedor:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.cotizacion.proveedor?.direccion }}</span>
+          </div>
+          
+          <div class="info-item">
+            <span class="label-modal">Ref. Solicitud:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.cotizacion.referenciaSolicitud || 'N/A' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Ref. Proveedor:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.cotizacion.referenciaProveedor || 'N/A' }}</span>
+          </div>
+        </div>
+        
+        <div class="observaciones-modal" *ngIf="detalleSeleccionado.cotizacion.observacionesSolicitud || detalleSeleccionado.cotizacion.observacionesRespuesta">
+          <div class="obs-item" *ngIf="detalleSeleccionado.cotizacion.observacionesSolicitud">
+            <strong><i class="fa fa-comment"></i> Observaciones Solicitud:</strong>
+            <p>{{ detalleSeleccionado.cotizacion.observacionesSolicitud }}</p>
+          </div>
+          <div class="obs-item" *ngIf="detalleSeleccionado.cotizacion.observacionesRespuesta">
+            <strong><i class="fa fa-comment"></i> Observaciones Respuesta:</strong>
+            <p>{{ detalleSeleccionado.cotizacion.observacionesRespuesta }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Información de la Orden -->
+      <div class="seccion-modal">
+        <h3 class="titulo-seccion">
+          <i class="fa fa-shopping-cart"></i>
+          Orden de Compra
+        </h3>
+        <div class="grid-info">
+          <div class="info-item">
+            <span class="label-modal">Número de Orden:</span>
+            <span class="valor-modal destacado">{{ detalleSeleccionado.orden.invoiceN }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Estado Orden:</span>
+            <span class="badge" [ngClass]="getEstadoBadgeClass(detalleSeleccionado.orden.estadoOrden)">
+              {{ detalleSeleccionado.orden.estadoOrden }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Información del BL/Invoice -->
+      <div class="seccion-modal">
+        <h3 class="titulo-seccion">
+          <i class="fa fa-ship"></i>
+          Información de Embarque
+        </h3>
+        <div class="grid-info">
+          <div class="info-item">
+            <span class="label-modal">Invoice BL:</span>
+            <span class="valor-modal destacado">{{ detalleSeleccionado.invoice.invoiceBl || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">BL:</span>
+            <span class="valor-modal destacado">{{ detalleSeleccionado.invoice.bl || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Contenedor:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.invoice.contenedor || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Liquidación:</span>
+            <span class="valor-modal">{{ detalleSeleccionado.invoice.liquidacion || '-' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Estado BL:</span>
+            <span class="badge" [ngClass]="getEstadoBadgeClass(detalleSeleccionado.invoice.estadoBl)">
+              {{ detalleSeleccionado.invoice.estadoBl || 'N/A' }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="label-modal">Fecha Embarque:</span>
+            <span class="valor-modal">
+              {{ detalleSeleccionado.invoice.fechaArrivo ? (detalleSeleccionado.invoice.fechaArrivo | date:'dd/MM/yyyy') : '-' }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="boton boton-secundario" (click)="cerrarModal()">
+        <i class="fa fa-times"></i>
+        Cerrar
+      </button>
+      <button class="boton boton-primario" *ngIf="usuario?.rol === 'admin'">
+        <i class="fa fa-edit"></i>
+        Editar
+      </button>
+    </div>
+  </div>
+</div>

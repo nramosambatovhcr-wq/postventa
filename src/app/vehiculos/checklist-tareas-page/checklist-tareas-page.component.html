@@ -1,0 +1,87 @@
+<!-- app-checklist-tareas-page -->
+
+<!-- ── Spinner de carga ── -->
+<div *ngIf="loading" class="tareas-page-loading">
+  <div class="spinner"></div>
+  <span>Cargando tareas...</span>
+</div>
+
+<!-- ── Contenido principal ── -->
+<ng-container *ngIf="checklist && !loading">
+
+  <!-- Error de guardado (no bloquea la pantalla) -->
+  <div *ngIf="savingError" class="alert alert-warning alert-saving">
+    <i class="icon-alert-circle"></i> {{ savingError }}
+    <button (click)="savingError = ''">×</button>
+  </div>
+
+  <!-- ── Info bar ── -->
+  <section class="tareas-page-infobar">
+    <div class="infobar-inner">
+
+      <div class="infobar-datos">
+        <span class="infobar-vin">{{ checklist.numeroVin }}</span>
+        <span class="infobar-modelo">{{ checklist.modelo }}</span>
+        <span class="infobar-fecha">
+          <i class="icon-calendar"></i> {{ formatDate(checklist.fecha) }}
+        </span>
+      </div>
+
+      <div class="infobar-progreso">
+        <div class="progress-bar-wrapper infobar-bar">
+          <div class="progress-bar {{ getProgressClass(checklist.porcentajeAvance) }}"
+               [style.width.%]="checklist.porcentajeAvance">
+          </div>
+        </div>
+        <span class="infobar-pct {{ getProgressClass(checklist.porcentajeAvance) }}">
+          {{ getPorcentaje(checklist.porcentajeAvance) }}
+        </span>
+        <span class="infobar-count">
+          {{ checklist.tareasCompletadas }}/{{ checklist.totalTareas }} tareas
+        </span>
+      </div>
+
+      <div class="infobar-actions">
+        <button class="btn btn-sm btn-secondary" (click)="expandirTodos()">
+          <i class="icon-maximize"></i> Expandir todo
+        </button>
+        <button class="btn btn-sm btn-secondary" (click)="colapsarTodos()">
+          <i class="icon-minimize"></i> Colapsar todo
+        </button>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ── Acordeón de grupos ── -->
+  <section class="tareas-page-body">
+    <div class="tareas-accordion">
+
+      <!-- Sin registros -->
+      <div *ngIf="grupos.length === 0" class="empty-cell">
+        <i class="icon-inbox"></i>
+        <p>No hay tareas registradas para este checklist.</p>
+      </div>
+
+      <!--
+        Un componente por grupo.
+        trackByGrupo evita que Angular destruya y recree los nodos
+        cuando el array cambia de referencia (al recalcular stats).
+      -->
+      <app-checklist-grupo
+        *ngFor="let grupo of grupos; let i = index; trackBy: trackByGrupo"
+        [grupo]="grupo"
+        [index]="i"
+        [expanded]="isExpanded(i)"
+        [tareaEnEdicionId]="tareaEnEdicionId"
+        (toggleGrupo)="toggleGrupo($event)"
+        (tareaToggled)="onTareaToggled($event)"
+        (tareaEditOpen)="onEditOpen($event)"
+        (tareaEditSave)="onEditSave($event)"
+        (tareaEditCancel)="onEditCancel()">
+      </app-checklist-grupo>
+
+    </div>
+  </section>
+
+</ng-container>

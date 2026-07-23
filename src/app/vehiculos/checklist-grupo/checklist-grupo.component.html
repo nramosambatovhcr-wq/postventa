@@ -1,0 +1,45 @@
+<!-- app-checklist-grupo -->
+<div class="grupo-section">
+
+  <!-- ── Cabecera del acordeón ── -->
+  <div class="grupo-header-bar" (click)="onHeaderClick()">
+    <div class="grupo-title">
+      <svg class="chevron-icon" [class.rotated]="expanded"
+           width="16" height="16" viewBox="0 0 24 24" fill="none"
+           stroke="currentColor" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="6 9 12 15 18 9"></polyline>
+      </svg>
+      {{ grupo.nombre }}
+    </div>
+
+    <div class="grupo-progress">
+      <!-- Stats pre-calculados: sin llamadas a funciones en el template -->
+      <span class="grupo-stats">{{ grupo.completadas }}/{{ grupo.total }}</span>
+      <div class="progress-bar-mini">
+        <div class="progress-bar {{ progressClass }}"
+             [style.width.%]="grupo.porcentaje">
+        </div>
+      </div>
+      <span class="grupo-pct">{{ grupo.porcentaje }}%</span>
+    </div>
+  </div>
+
+  <!-- ── Contenido: lista de tareas ── -->
+  <div class="grupo-content" [class.expanded]="expanded">
+    <div class="tareas-list">
+
+      <app-checklist-tarea-item
+        *ngFor="let registro of grupo.registros; trackBy: trackByTareaId"
+        [registro]="registro"
+        [enEdicion]="isEnEdicion(registro)"
+        (toggled)="tareaToggled.emit($event)"
+        (editOpen)="tareaEditOpen.emit($event)"
+        (editSave)="tareaEditSave.emit($event)"
+        (editCancel)="tareaEditCancel.emit()">
+      </app-checklist-tarea-item>
+
+    </div>
+  </div>
+
+</div>

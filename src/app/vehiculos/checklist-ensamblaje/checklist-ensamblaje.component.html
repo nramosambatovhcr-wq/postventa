@@ -1,0 +1,710 @@
+<!-- Componente Checklist Ensamblaje SKD -->
+<div class="checklist-container" (keydown)="onKeydown($event)" tabindex="0">
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="page-header">
+    <div class="header-content">
+
+      <!-- Breadcrumb / título según vista -->
+      <h1 class="page-title" *ngIf="viewMode !== 'tareas'">
+        <i class="icon-clipboard"></i>
+        Checklist de Ensamblaje SKD
+      </h1>
+      <div class="tareas-breadcrumb" *ngIf="viewMode === 'tareas'">
+        <button class="btn-back" (click)="volverDesTareas()">
+          <i class="icon-arrow-left"></i> Volver
+        </button>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-label">Checklist de Ensamblaje SKD</span>
+        <span class="breadcrumb-sep">/</span>
+        <span class="breadcrumb-current">
+          <i class="icon-tool"></i>
+          Gestión de Tareas
+          <span *ngIf="selectedChecklist" class="breadcrumb-vin">{{ selectedChecklist.numeroVin }}</span>
+        </span>
+      </div>
+
+      <div class="header-actions">
+        <!-- Tabs solo visibles en chassis / checklists -->
+        <div class="view-tabs" *ngIf="viewMode !== 'tareas'">
+          <button class="btn btn-tab" [class.active]="viewMode === 'chassis'" (click)="goToView('chassis')">
+            <i class="icon-truck"></i> Chasis
+            <span class="tab-badge">{{ allChassis.length }}</span>
+          </button>
+          <button class="btn btn-tab" [class.active]="viewMode === 'checklists'" (click)="goToView('checklists')">
+            <i class="icon-list"></i> Checklists
+            <span class="tab-badge">{{ checklists.length }}</span>
+          </button>
+        </div>
+        <button class="btn btn-success" (click)="exportarExcelMultiple()" *ngIf="viewMode === 'checklists'">
+          <i class="icon-download"></i> Exportar
+        </button>
+        <!-- En vista tareas: exportar el checklist actual -->
+        <button class="btn btn-success" (click)="exportarExcel()" *ngIf="viewMode === 'tareas' && selectedChecklist">
+          <i class="icon-download"></i> Exportar Excel
+        </button>
+        <button class="btn btn-warning" (click)="openModalNuevoEnsamblaje()" *ngIf="viewMode !== 'tareas'">
+          <i class="icon-play"></i> Nuevo Ensamblaje
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ==================== ALERTAS ==================== -->
+  <div class="alerts-container">
+    <div *ngIf="successMessage" class="alert alert-success" (click)="successMessage = ''">
+      {{ successMessage }} <span class="close-btn">&times;</span>
+    </div>
+    <div *ngIf="errorMessage" class="alert alert-danger" (click)="errorMessage = ''">
+      {{ errorMessage }} <span class="close-btn">&times;</span>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       VISTA 1: LISTA DE CHASIS (pantalla principal)
+       ============================================================ -->
+  <ng-container *ngIf="viewMode === 'chassis'">
+
+    <!-- Tarjetas resumen -->
+    <section class="stats-cards">
+      <div class="stat-card stat-card--total" (click)="chassisFilterStatus = 'all'; applyChassisFilters()">
+        <div class="stat-icon"><i class="icon-truck"></i></div>
+        <div class="stat-body">
+          <span class="stat-value">{{ allChassis.length }}</span>
+          <span class="stat-label">Total chasis</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--pending" (click)="chassisFilterStatus = 'sin-checklist'; applyChassisFilters()">
+        <div class="stat-icon"><i class="icon-inbox"></i></div>
+        <div class="stat-body">
+          <span class="stat-value">{{ totalSinChecklist }}</span>
+          <span class="stat-label">Sin checklist</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--progress" (click)="chassisFilterStatus = 'en-progreso'; applyChassisFilters()">
+        <div class="stat-icon"><i class="icon-tool"></i></div>
+        <div class="stat-body">
+          <span class="stat-value">{{ totalEnProgreso }}</span>
+          <span class="stat-label">En progreso</span>
+        </div>
+      </div>
+      <div class="stat-card stat-card--done" (click)="chassisFilterStatus = 'completado'; applyChassisFilters()">
+        <div class="stat-icon"><i class="icon-check-circle"></i></div>
+        <div class="stat-body">
+          <span class="stat-value">{{ totalCompletados }}</span>
+          <span class="stat-label">Completados</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Filtros -->
+    <section class="filters-section">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label">Buscar chasis</label>
+          <div class="input-group">
+            <i class="icon-search"></i>
+            <input type="text" class="form-control" placeholder="Número de chasis, contenedor, B/L..."
+              [(ngModel)]="chassisSearch" (input)="applyChassisFilters()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">B/L</label>
+          <input type="text" class="form-control" placeholder="Filtrar por B/L"
+            [(ngModel)]="chassisFilterBl" (input)="applyChassisFilters()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Estado</label>
+          <select class="form-control" [(ngModel)]="chassisFilterStatus" (change)="applyChassisFilters()">
+            <option value="all">Todos</option>
+            <option value="sin-checklist">Sin checklist</option>
+            <option value="en-progreso">En progreso</option>
+            <option value="completado">Completados</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-secondary" (click)="clearChassisFilters()">
+            <i class="icon-refresh"></i> Limpiar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tabla de Chasis -->
+    <section class="table-section">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Nº Chasis (VIN)</th>
+              <th>Contenedor</th>
+              <th>Invoice</th>
+              <th>B/L</th>
+              <th>Estado</th>
+              <th>Progreso</th>
+              <th class="actions-column">Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <tr *ngIf="loadingChassis">
+              <td colspan="8" class="loading-cell">
+                <div class="spinner"></div>
+                <span>Cargando chasis desde los B/Ls...</span>
+              </td>
+            </tr>
+
+            <tr *ngIf="chassisError && !loadingChassis">
+              <td colspan="8" class="empty-cell">
+                <i class="icon-alert-triangle"></i>
+                <p>{{ chassisError }}</p>
+                <button class="btn btn-sm btn-primary" (click)="loadAllData()">Reintentar</button>
+              </td>
+            </tr>
+
+            <tr *ngIf="!loadingChassis && !chassisError && filteredChassis.length === 0">
+              <td colspan="8" class="empty-cell">
+                <i class="icon-inbox"></i>
+                <p>No se encontraron chasis con los filtros aplicados</p>
+              </td>
+            </tr>
+
+            <tr
+              *ngFor="let item of filteredChassis; let i = index"
+              class="table-row"
+              [class.row-sin-checklist]="!item.checklist"
+              [class.row-en-progreso]="item.checklist && item.checklist.porcentajeAvance < 100"
+              [class.row-completado]="item.checklist?.porcentajeAvance === 100">
+
+              <td data-label="#">{{ i + 1 }}</td>
+
+              <td data-label="Chasis">
+                <span class="vin-cell">{{ item.chassisNumber }}</span>
+              </td>
+
+              <td data-label="Contenedor">{{ item.containerNumber }}</td>
+
+              <td data-label="Invoice">
+                <span *ngIf="item.invoiceNumber">{{ item.invoiceNumber }}</span>
+                <span *ngIf="!item.invoiceNumber" class="text-muted">—</span>
+              </td>
+
+              <td data-label="B/L">{{ item.blNumber }}</td>
+
+              <td data-label="Estado">
+                <span class="badge {{ getChassisStatusClass(item) }}">
+                  {{ getChassisStatusLabel(item) }}
+                </span>
+              </td>
+
+              <td data-label="Progreso">
+                <ng-container *ngIf="item.checklist; else sinProgreso">
+                  <div class="progress-container">
+                    <div class="progress-bar-wrapper">
+                      <div class="progress-bar {{ getProgressClass(item.checklist.porcentajeAvance) }}"
+                        [style.width.%]="item.checklist.porcentajeAvance"></div>
+                    </div>
+                    <span class="progress-text">{{ getPorcentajeFormateado(item.checklist.porcentajeAvance) }}</span>
+                    <small class="progress-detail">{{ item.checklist.tareasCompletadas }}/{{ item.checklist.totalTareas }}</small>
+                  </div>
+                </ng-container>
+                <ng-template #sinProgreso>
+                  <span class="text-muted">—</span>
+                </ng-template>
+              </td>
+
+              <td data-label="Acción" class="actions-cell">
+                <!-- Tiene checklist → Continuar / Ver + botones extra -->
+                <ng-container *ngIf="item.checklist">
+                  <div class="action-buttons">
+                    <button class="btn btn-primary" (click)="accionChasis(item)"
+                      title="Gestionar tareas del checklist">
+                      <i class="icon-tasks"></i>
+                      {{ item.checklist.porcentajeAvance === 100 ? 'Ver' : 'Continuar' }}
+                    </button>
+                    <button class="btn btn-icon btn-info"    (click)="openModalDetalle(item.checklist)" title="Ver detalle"><i class="icon-eye"></i></button>
+                    <button class="btn btn-icon btn-success" (click)="openModalReporte(item.checklist)" title="Reporte">    <i class="icon-file-text"></i></button>
+                  </div>
+                </ng-container>
+                <!-- Sin checklist → Iniciar -->
+                <ng-container *ngIf="!item.checklist">
+                  <button class="btn btn-warning" (click)="accionChasis(item)" title="Iniciar checklist para este chasis">
+                    <i class="icon-play"></i> Iniciar
+                  </button>
+                </ng-container>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="results-count">
+          Mostrando {{ filteredChassis.length }} de {{ allChassis.length }} chasis
+        </span>
+      </div>
+    </section>
+
+  </ng-container>
+
+
+  <!-- ============================================================
+       VISTA 2: LISTA DE CHECKLISTS (vista secundaria)
+       ============================================================ -->
+  <ng-container *ngIf="viewMode === 'checklists'">
+
+    <section class="filters-section">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label class="filter-label">Buscar</label>
+          <div class="input-group">
+            <i class="icon-search"></i>
+            <input type="text" class="form-control" placeholder="VIN o Modelo..."
+              [(ngModel)]="searchTerm" (input)="onSearch()">
+          </div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Modelo</label>
+          <input type="text" class="form-control" placeholder="Filtrar por modelo"
+            [(ngModel)]="filterModelo" (change)="onFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Desde</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateFrom" (change)="onFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Hasta</label>
+          <input type="date" class="form-control" [(ngModel)]="filterDateTo" (change)="onFilterChange()">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Estado</label>
+          <select class="form-control" [(ngModel)]="filterStatus" (change)="applyFilters()">
+            <option value="all">Todos</option>
+            <option value="pending">Sin iniciar</option>
+            <option value="in-progress">En progreso</option>
+            <option value="completed">Completados</option>
+          </select>
+        </div>
+        <div class="filter-actions">
+          <button class="btn btn-secondary" (click)="clearFilters()">
+            <i class="icon-refresh"></i> Limpiar
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="table-section">
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th (click)="sortBy('fecha')" class="sortable">
+                Fecha <span class="sort-icon" *ngIf="sortColumn === 'fecha'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="sortBy('modelo')" class="sortable">
+                Modelo <span class="sort-icon" *ngIf="sortColumn === 'modelo'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th (click)="sortBy('numeroVin')" class="sortable">
+                VIN <span class="sort-icon" *ngIf="sortColumn === 'numeroVin'">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th>Progreso</th>
+              <th>Estado</th>
+              <th class="actions-column">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="6" class="loading-cell"><div class="spinner"></div><span>Cargando...</span></td>
+            </tr>
+            <tr *ngIf="!loading && filteredChecklists.length === 0">
+              <td colspan="6" class="empty-cell"><i class="icon-inbox"></i><p>No se encontraron checklists</p></td>
+            </tr>
+            <tr *ngFor="let checklist of filteredChecklists" class="table-row">
+              <td data-label="Fecha">{{ formatDate(checklist.fecha) }}</td>
+              <td data-label="Modelo">{{ checklist.modelo }}</td>
+              <td data-label="VIN" class="vin-cell">{{ checklist.numeroVin }}</td>
+              <td data-label="Progreso">
+                <div class="progress-container">
+                  <div class="progress-bar-wrapper">
+                    <div class="progress-bar {{ getProgressClass(checklist.porcentajeAvance) }}" [style.width.%]="checklist.porcentajeAvance"></div>
+                  </div>
+                  <span class="progress-text">{{ getPorcentajeFormateado(checklist.porcentajeAvance) }}</span>
+                  <small class="progress-detail">{{ checklist.tareasCompletadas }}/{{ checklist.totalTareas }}</small>
+                </div>
+              </td>
+              <td data-label="Estado">
+                <span class="badge {{ getProgressClass(checklist.porcentajeAvance) }}">{{ getStatusText(checklist.porcentajeAvance) }}</span>
+              </td>
+              <td data-label="Acciones" class="actions-cell">
+                <div class="action-buttons">
+                  <button class="btn btn-icon btn-info"    (click)="openModalDetalle(checklist)"  title="Ver detalle">   <i class="icon-eye"></i></button>
+                  <button class="btn btn-icon btn-primary" (click)="goToViewTareas(checklist, 'checklists')" title="Gestionar"><i class="icon-tasks"></i></button>
+                  <button class="btn btn-icon btn-warning" (click)="openModalEditar(checklist)"   title="Editar">        <i class="icon-edit"></i></button>
+                  <button class="btn btn-icon btn-success" (click)="openModalReporte(checklist)"  title="Reporte">       <i class="icon-file-text"></i></button>
+                  <button class="btn btn-icon btn-danger"  (click)="openModalEliminar(checklist)" title="Eliminar">      <i class="icon-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span class="results-count">Mostrando {{ filteredChecklists.length }} de {{ checklists.length }} registros</span>
+      </div>
+    </section>
+
+  </ng-container>
+
+  <!-- ============================================================
+       VISTA 3: GESTIÓN DE TAREAS — delegada al sub-componente
+       ============================================================ -->
+  <ng-container *ngIf="viewMode === 'tareas'">
+    <!--
+      app-checklist-tareas-page recibe el checklist ya cargado y gestiona
+      su propio change-detection (OnPush) sin bloquear el padre.
+    -->
+    <app-checklist-tareas-page
+      [checklist]="selectedChecklist!"
+      [loading]="loadingDetail"
+      (volver)="volverDesTareas()"
+      (checklistActualizado)="onChecklistActualizado($event)">
+    </app-checklist-tareas-page>
+  </ng-container>
+
+</div><!-- /checklist-container -->
+
+
+<!-- ==================== MODAL NUEVO ENSAMBLAJE ==================== -->
+<div #modalNuevoEnsamblaje class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">
+          <i class="icon-play-circle"></i> Iniciar Ensamblaje
+          <span *ngIf="selectedChassisItem" class="vin-badge ms-2">{{ selectedChassisItem.chassisNumber }}</span>
+        </h5>
+        <button type="button" class="close" (click)="closeModal(modalNuevoEnsamblaje)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Info del chasis de origen -->
+        <div *ngIf="selectedChassisItem" class="chassis-origin-info">
+          <div class="info-row">
+            <span class="info-label"><i class="icon-package"></i> Contenedor:</span>
+            <span class="info-value">{{ selectedChassisItem.containerNumber }}</span>
+          </div>
+          <div class="info-row" *ngIf="selectedChassisItem.invoiceNumber">
+            <span class="info-label"><i class="icon-file"></i> Invoice:</span>
+            <span class="info-value">{{ selectedChassisItem.invoiceNumber }}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label"><i class="icon-ship"></i> B/L:</span>
+            <span class="info-value">{{ selectedChassisItem.blNumber }}</span>
+          </div>
+        </div>
+
+        <form class="form-grid">
+          <div class="form-group">
+            <label class="required">Fecha de Inicio</label>
+            <input type="date" class="form-control" [(ngModel)]="nuevoEnsamblaje.fecha" name="ensamblajeFecha">
+          </div>
+          <div class="form-group">
+            <label class="required">Modelo del Vehículo</label>
+            <select class="form-control" [(ngModel)]="nuevoEnsamblaje.modelo" name="ensamblajeModelo">
+              <option value="">Seleccione un modelo...</option>
+              <option value="Camión 4x4">Camión 4x4</option>
+              <option value="Camión 6x4">Camión 6x4</option>
+              <option value="Camión 6x6">Camión 6x6</option>
+              <option value="Tractor 4x2">Tractor 4x2</option>
+              <option value="Tractor 6x4">Tractor 6x4</option>
+              <option value="Volquete 6x4">Volquete 6x4</option>
+              <option value="Otro">Otro (especificar)</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="nuevoEnsamblaje.modelo === 'Otro'">
+            <label class="required">Especificar Modelo</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevoEnsamblaje.modeloPersonalizado" name="modeloPersonalizado" placeholder="Ingrese el modelo específico">
+          </div>
+          <div class="form-group full-width">
+            <label class="required">Número VIN (Chasis)</label>
+            <div class="vin-input-group">
+              <input type="text" class="form-control"
+                [(ngModel)]="nuevoEnsamblaje.numeroVin" name="ensamblajeVin"
+                placeholder="17 caracteres alfanuméricos" maxlength="17"
+                [readonly]="!!selectedChassisItem"
+                (input)="validarVinEnTiempoReal()">
+              <button *ngIf="!selectedChassisItem" type="button" class="btn btn-secondary btn-sm" (click)="generarVinTemporal()">
+                <i class="icon-shuffle"></i> Temporal
+              </button>
+            </div>
+            <small class="form-text"
+              [class.text-success]="vinValido"
+              [class.text-danger]="!vinValido && nuevoEnsamblaje.numeroVin">
+              {{ vinMensaje }}
+            </small>
+          </div>
+          <div class="form-group full-width">
+            <label>Orden de Trabajo</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevoEnsamblaje.ordenTrabajo" name="ensamblajeOrden" placeholder="Ej: OT-2024-001">
+          </div>
+          <div class="form-group full-width">
+            <label>Responsable</label>
+            <input type="text" class="form-control" [(ngModel)]="nuevoEnsamblaje.responsable" name="ensamblajeResponsable" placeholder="Nombre del operario o supervisor">
+          </div>
+          <div class="form-group full-width">
+            <label>Observaciones Iniciales</label>
+            <textarea class="form-control" [(ngModel)]="nuevoEnsamblaje.observaciones" name="ensamblajeObservaciones" rows="3" placeholder="Estado inicial, componentes recibidos, etc."></textarea>
+          </div>
+        </form>
+
+        <div class="tareas-preview" *ngIf="catalogoTareas.length > 0">
+          <h6 class="preview-title"><i class="icon-list"></i> Tareas que se crearán automáticamente:</h6>
+          <div class="preview-stats">
+            <span class="badge badge-info">{{ getTotalTareasCatalogo() }} tareas en total</span>
+            <span class="badge badge-secondary">{{ catalogoTareas.length }} grupos de trabajo</span>
+          </div>
+          <div class="preview-grupos">
+            <div *ngFor="let grupo of catalogoTareas.slice(0, 3)" class="preview-grupo">
+              <strong>{{ grupo.nombre }}:</strong> {{ grupo.tareas.length }} tareas
+            </div>
+            <div *ngIf="catalogoTareas.length > 3" class="preview-more">... y {{ catalogoTareas.length - 3 }} grupos más</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalNuevoEnsamblaje)">Cancelar</button>
+        <button type="button" class="btn btn-warning" (click)="iniciarNuevoEnsamblaje()" [disabled]="loading || !validarFormularioEnsamblaje()">
+          <span *ngIf="loading" class="spinner-small"></span>
+          <i *ngIf="!loading" class="icon-play"></i>
+          Iniciar Ensamblaje
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL CREAR ==================== -->
+<div #modalCrear class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="icon-plus-circle"></i> Nuevo Checklist</h5>
+        <button type="button" class="close" (click)="closeModal(modalCrear)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <form class="form-grid">
+          <div class="form-group"><label class="required">Fecha</label>
+            <input type="date" class="form-control" [(ngModel)]="newChecklist.fecha" name="fecha"></div>
+          <div class="form-group"><label class="required">Modelo</label>
+            <input type="text" class="form-control" [(ngModel)]="newChecklist.modelo" name="modelo" placeholder="Ej: Camión 4x4"></div>
+          <div class="form-group full-width"><label class="required">Número VIN</label>
+            <input type="text" class="form-control" [(ngModel)]="newChecklist.numeroVin" name="numeroVin" placeholder="17 caracteres alfanuméricos" maxlength="17">
+            <small class="form-text">Formato: 17 caracteres, sin I, O, Q</small></div>
+          <div class="form-group full-width"><label>Observaciones</label>
+            <textarea class="form-control" [(ngModel)]="newChecklist.observaciones" name="observaciones" rows="3"></textarea></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalCrear)">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="crearChecklist()" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-small"></span> Crear
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL EDITAR ==================== -->
+<div #modalEditar class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title"><i class="icon-edit"></i> Editar Checklist</h5>
+        <button type="button" class="close" (click)="closeModal(modalEditar)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <form class="form-grid">
+          <div class="form-group"><label>Fecha</label>
+            <input type="date" class="form-control" [(ngModel)]="editChecklistData.fecha" name="editFecha"></div>
+          <div class="form-group"><label>Modelo</label>
+            <input type="text" class="form-control" [(ngModel)]="editChecklistData.modelo" name="editModelo"></div>
+          <div class="form-group full-width"><label>Número VIN</label>
+            <input type="text" class="form-control" [(ngModel)]="editChecklistData.numeroVin" name="editVin" maxlength="17"></div>
+          <div class="form-group full-width"><label>Observaciones</label>
+            <textarea class="form-control" [(ngModel)]="editChecklistData.observaciones" name="editObservaciones" rows="3"></textarea></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalEditar)">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="actualizarChecklist()" [disabled]="loading">
+          <span *ngIf="loading" class="spinner-small"></span> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL ELIMINAR ==================== -->
+<div #modalEliminar class="modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-sm" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-danger"><h5 class="modal-title"><i class="icon-trash"></i> Confirmar Eliminación</h5>
+        <button type="button" class="close" (click)="closeModal(modalEliminar)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body text-center">
+        <i class="icon-alert-triangle warning-icon"></i>
+        <p>¿Está seguro de eliminar el checklist?</p>
+        <div *ngIf="selectedChecklistSimple" class="delete-info">
+          <strong>VIN:</strong> {{ selectedChecklistSimple.numeroVin }}<br>
+          <strong>Modelo:</strong> {{ selectedChecklistSimple.modelo }}
+        </div>
+        <div *ngIf="selectedChecklistSimple && selectedChecklistSimple.porcentajeAvance > 0" class="alert alert-warning">
+          <i class="icon-alert-circle"></i> Este checklist tiene tareas completadas. No se recomienda eliminarlo.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalEliminar)">Cancelar</button>
+        <button type="button" class="btn btn-danger" (click)="confirmarEliminar()"
+          [disabled]="loading || (selectedChecklistSimple && selectedChecklistSimple.porcentajeAvance > 0)">
+          <span *ngIf="loading" class="spinner-small"></span> Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL DETALLE ==================== -->
+<div #modalDetalle class="modal modal-lg" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-info"><h5 class="modal-title"><i class="icon-eye"></i> Detalle del Checklist</h5>
+        <button type="button" class="close" (click)="closeModal(modalDetalle)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="loadingDetail" class="loading-overlay"><div class="spinner"></div></div>
+        <div *ngIf="selectedChecklist && !loadingDetail" class="detail-content">
+          <div class="detail-header">
+            <div class="detail-info-grid">
+              <div class="info-item"><label>VIN:</label><span class="vin-highlight">{{ selectedChecklist.numeroVin }}</span></div>
+              <div class="info-item"><label>Modelo:</label><span>{{ selectedChecklist.modelo }}</span></div>
+              <div class="info-item"><label>Fecha:</label><span>{{ formatDate(selectedChecklist.fecha) }}</span></div>
+            </div>
+            <div class="progress-summary">
+              <div class="progress-circle">
+                <svg viewBox="0 0 36 36" class="circular-chart">
+                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path class="circle" [attr.stroke-dasharray]="selectedChecklist.porcentajeAvance + ', 100'"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <text x="18" y="20.35" class="percentage">{{ selectedChecklist.porcentajeAvance | number:'1.0-0' }}%</text>
+                </svg>
+              </div>
+              <div class="progress-stats">
+                <div class="stat"><span class="stat-value">{{ selectedChecklist.tareasCompletadas }}</span><span class="stat-label">Completadas</span></div>
+                <div class="stat"><span class="stat-value">{{ selectedChecklist.totalTareas - selectedChecklist.tareasCompletadas }}</span><span class="stat-label">Pendientes</span></div>
+                <div class="stat"><span class="stat-value">{{ selectedChecklist.totalTareas }}</span><span class="stat-label">Total</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="grupos-section" *ngIf="progresoGrupos.length > 0">
+            <h6>Progreso por Área de Trabajo</h6>
+            <div class="grupos-grid">
+              <div *ngFor="let grupo of progresoGrupos" class="grupo-card">
+                <div class="grupo-header">
+                  <span class="grupo-name">{{ grupo.grupo }}</span>
+                  <span class="grupo-percentage">{{ grupo.porcentaje | number:'1.0-0' }}%</span>
+                </div>
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar {{ getProgressClass(grupo.porcentaje) }}" [style.width.%]="grupo.porcentaje"></div>
+                </div>
+                <small>{{ grupo.completadas }}/{{ grupo.totalTareas }} tareas</small>
+              </div>
+            </div>
+          </div>
+          <div class="observaciones-section" *ngIf="selectedChecklist.observaciones">
+            <h6>Observaciones</h6>
+            <p class="observaciones-text">{{ selectedChecklist.observaciones }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalDetalle)">Cerrar</button>
+        <button type="button" class="btn btn-primary" (click)="closeModal(modalDetalle); goToViewTareas(selectedChecklist!)">Ver Tareas</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ==================== MODAL REPORTE ==================== -->
+<div #modalReporte class="modal modal-lg" tabindex="-1" role="dialog">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-success"><h5 class="modal-title"><i class="icon-file-text"></i> Reporte de Ensamblaje</h5>
+        <button type="button" class="close" (click)="closeModal(modalReporte)"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="!reporteData" class="loading-overlay"><div class="spinner"></div></div>
+        <div *ngIf="reporteData" class="reporte-content" id="reporte-print">
+          <div class="reporte-header">
+            <div class="reporte-logo"><h2>CHECKLIST ENSAMBLAJE SKD</h2></div>
+            <div class="reporte-info-principal">
+              <div class="info-row"><span class="info-label">VIN:</span><span class="info-value highlight">{{ reporteData.numeroVin }}</span></div>
+              <div class="info-row"><span class="info-label">Modelo:</span><span class="info-value">{{ reporteData.modelo }}</span></div>
+              <div class="info-row"><span class="info-label">Fecha:</span><span class="info-value">{{ formatDate(reporteData.fecha) }}</span></div>
+            </div>
+          </div>
+          <div class="reporte-resumen">
+            <div class="resumen-box"><span class="resumen-valor">{{ getPorcentajeFormateado(reporteData.porcentajeAvance) }}</span><span class="resumen-label">Completado</span></div>
+            <div class="resumen-box"><span class="resumen-valor">{{ reporteData.tareasCompletadas }}</span><span class="resumen-label">Tareas OK</span></div>
+            <div class="resumen-box"><span class="resumen-valor">{{ reporteData.totalTareas - reporteData.tareasCompletadas }}</span><span class="resumen-label">Pendientes</span></div>
+          </div>
+          <div class="reporte-detalle">
+            <h4>Detalle de Tareas</h4>
+            <div *ngFor="let grupo of agruparRegistros(reporteData.registros)" class="reporte-grupo">
+              <div class="reporte-grupo-header">
+                <h5>{{ grupo[0] }}</h5>
+                <span class="grupo-estadistica">{{ calcularEstadisticasGrupo(grupo[1]).completadas }}/{{ calcularEstadisticasGrupo(grupo[1]).total }}</span>
+              </div>
+              <table class="reporte-tabla">
+                <thead>
+                  <tr>
+                    <th style="width:50px">Estado</th><th>Tarea</th>
+                    <th style="width:150px">Realizado por</th>
+                    <th style="width:100px">Fecha</th><th>Observaciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let registro of grupo[1]" [class.fila-completada]="registro.completado">
+                    <td class="text-center">
+                      <span class="estado-icon" [class.completado]="registro.completado">{{ registro.completado ? '✓' : '○' }}</span>
+                    </td>
+                    <td>{{ registro.descripcionTarea }}</td>
+                    <td>{{ registro.realizadoPor || '-' }}</td>
+                    <td>{{ registro.fechaRealizacion ? formatDate(registro.fechaRealizacion) : '-' }}</td>
+                    <td>{{ registro.observaciones || '-' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="reporte-observaciones" *ngIf="reporteData.observaciones">
+            <h4>Observaciones Generales</h4>
+            <p>{{ reporteData.observaciones }}</p>
+          </div>
+          <div class="reporte-firmas">
+            <div class="firma-box"><div class="firma-linea"></div><span>Responsable Ensamblaje</span></div>
+            <div class="firma-box"><div class="firma-linea"></div><span>Supervisor Calidad</span></div>
+            <div class="firma-box"><div class="firma-linea"></div><span>Aprobación Final</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal(modalReporte)">Cerrar</button>
+        <button type="button" class="btn btn-info"    (click)="imprimirReporte()"><i class="icon-printer"></i> Imprimir</button>
+        <button type="button" class="btn btn-success" (click)="exportarExcel()">  <i class="icon-download"></i> Excel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Backdrop -->
+<div class="modal-backdrop" *ngIf="activeModal" (click)="closeAllModals()"></div>

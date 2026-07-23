@@ -1,0 +1,462 @@
+<div class="container-fluid mt-4">
+
+  <!-- ══════════════════════════════════════════════════════
+       CABECERA
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+
+            <div>
+              <h2 class="mb-1">
+                Facturas de Talleres
+                <span class="badge ms-2"
+                      [class.bg-primary]="modoConsulta === 'ano-actual'"
+                      [class.bg-secondary]="modoConsulta === 'rango'">
+                  {{ modoConsulta === 'ano-actual' ? 'AÑO ACTUAL' : 'RANGO PERSONALIZADO' }}
+                </span>
+              </h2>
+              <p class="text-muted mb-0">
+                <i class="fas fa-file-invoice-dollar me-2"></i>
+                Facturas únicas: <strong>{{ facturasUnicas }}</strong> &nbsp;|&nbsp;
+                OTs únicas: <strong>{{ otUnicas }}</strong> &nbsp;|&nbsp;
+                <span *ngIf="tiempoSegundos">Cargado en {{ tiempoSegundos | number:'1.2-2' }}s</span>
+              </p>
+            </div>
+
+            <div class="d-flex align-items-center flex-wrap gap-2">
+              <!-- Modo de consulta -->
+              <div class="btn-group" role="group">
+                <button type="button" class="btn"
+                        [class.btn-primary]="modoConsulta === 'ano-actual'"
+                        [class.btn-outline-primary]="modoConsulta !== 'ano-actual'"
+                        (click)="cambiarModo('ano-actual')"
+                        [disabled]="loading">
+                  <i class="fas fa-calendar-alt me-1"></i> Año Actual
+                </button>
+                <button type="button" class="btn"
+                        [class.btn-secondary]="modoConsulta === 'rango'"
+                        [class.btn-outline-secondary]="modoConsulta !== 'rango'"
+                        (click)="cambiarModo('rango')"
+                        [disabled]="loading">
+                  <i class="fas fa-calendar-week me-1"></i> Rango
+                </button>
+              </div>
+
+              <button class="btn btn-outline-primary" (click)="cargarDatos()" [disabled]="loading">
+                <i class="fas fa-sync-alt" [class.fa-spin]="loading"></i> Actualizar
+              </button>
+              <button class="btn btn-outline-success" (click)="exportarExcel()" [disabled]="loading || !facturasFiltradas.length">
+                <i class="fas fa-file-excel me-1"></i> Exportar
+              </button>
+              <button class="btn btn-outline-secondary" (click)="imprimirReporte()">
+                <i class="fas fa-print me-1"></i> Imprimir
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       SELECTOR DE RANGO (visible solo en modo rango)
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3" *ngIf="modoConsulta === 'rango'">
+    <div class="col-12">
+      <div class="card shadow-sm border-secondary">
+        <div class="card-header bg-secondary text-white">
+          <h6 class="mb-0"><i class="fas fa-calendar-week me-2"></i>Seleccionar Rango de Fechas</h6>
+        </div>
+        <div class="card-body">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label class="form-label">Fecha Inicio</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaInicio">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Fecha Fin</label>
+              <input type="date" class="form-control" [(ngModel)]="fechaFin">
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-secondary w-100" (click)="buscarRango()" [disabled]="loading || !fechaInicio || !fechaFin">
+                <i class="fas fa-search me-1"></i> Buscar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ALERTAS
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3" *ngIf="loading || error">
+    <div class="col-12">
+      <div class="alert alert-info d-flex align-items-center" *ngIf="loading">
+        <i class="fas fa-spinner fa-spin me-2"></i>
+        Cargando facturas de talleres...
+      </div>
+      <div class="alert alert-danger d-flex align-items-center" *ngIf="error && !loading">
+        <i class="fas fa-exclamation-triangle me-2"></i> {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       KPI CARDS
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-4 g-3" *ngIf="!loading && facturasFiltradas.length">
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-primary text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="mb-1 small opacity-75">Total Sin IVA</p>
+              <h4 class="mb-0 fw-bold">{{ formatearMoneda(totalSinIvaFiltrado) }}</h4>
+            </div>
+            <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-success text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="mb-1 small opacity-75">Facturas Únicas</p>
+              <h4 class="mb-0 fw-bold">{{ facturasUnicas | number }}</h4>
+              <small class="opacity-75">Promedio {{ formatearMoneda(promedioFactura) }}</small>
+            </div>
+            <i class="fas fa-file-invoice fa-2x opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-info text-white h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="mb-1 small opacity-75">OTs Únicas</p>
+              <h4 class="mb-0 fw-bold">{{ otUnicas | number }}</h4>
+              <small class="opacity-75">{{ resumenPorTipoOt.length }} tipo(s)</small>
+            </div>
+            <i class="fas fa-clipboard-list fa-2x opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-warning text-dark h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start">
+            <div>
+              <p class="mb-1 small opacity-75">Agencias</p>
+              <h4 class="mb-0 fw-bold">{{ resumenPorOficina.length }}</h4>
+              <small>{{ resumenPorOficina[0]?.oficina || '—' }} lidera</small>
+            </div>
+            <i class="fas fa-store fa-2x opacity-50"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       ESTADÍSTICAS: TIPO OT + OFICINA + MES
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-4 g-3" *ngIf="!loading && facturasFiltradas.length">
+
+    <!-- Resumen por Tipo OT -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-tags me-2 text-primary"></i>Por Tipo de OT</h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Tipo</th>
+                <th class="text-center">OTs</th>
+                <th class="text-center">Facturas</th>
+                <th class="text-end">Total S/IVA</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of resumenPorTipoOt; trackBy: trackByTipoOtResumen">
+                <td>
+                  <span class="badge" [ngClass]="badgeTipoOt(r.tipoOtId)">{{ r.tipoOtId }}</span>
+                  <small class="ms-1">{{ r.tipoOt }}</small>
+                </td>
+                <td class="text-center">{{ r.cantOt | number }}</td>
+                <td class="text-center">{{ r.cantFacturas | number }}</td>
+                <td class="text-end fw-semibold">{{ formatearMoneda(r.totalSinIva) }}</td>
+              </tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td>Total</td>
+                <td class="text-center">{{ otUnicas | number }}</td>
+                <td class="text-center">{{ facturasUnicas | number }}</td>
+                <td class="text-end">{{ formatearMoneda(totalSinIvaFiltrado) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumen por Oficina -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-store me-2 text-success"></i>Por Agencia (Top)</h6>
+        </div>
+        <div class="card-body">
+          <div *ngFor="let o of resumenPorOficina; let i = index; trackBy: trackByOficina" class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <small class="fw-semibold">
+                <span class="badge bg-secondary me-1">{{ i + 1 }}</span>{{ o.oficina }}
+              </small>
+              <small class="text-muted">{{ formatearMoneda(o.totalSinIva) }}</small>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-success"
+                   [style.width.%]="porcentajeBarra(o.totalSinIva, maxTotalOficina)">
+              </div>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <small class="text-muted">{{ o.cantOt }} OTs · {{ o.cantFacturas }} facturas</small>
+              <small class="text-muted">{{ porcentajeBarra(o.totalSinIva, maxTotalOficina) }}%</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Evolución por Mes -->
+    <div class="col-md-4">
+      <div class="card shadow-sm h-100">
+        <div class="card-header bg-light">
+          <h6 class="mb-0"><i class="fas fa-chart-bar me-2 text-info"></i>Evolución Mensual</h6>
+        </div>
+        <div class="card-body">
+          <div *ngFor="let m of resumenPorMes; trackBy: trackByMes" class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+              <small class="fw-semibold text-capitalize">{{ m.etiqueta }}</small>
+              <small class="text-muted">{{ formatearMoneda(m.totalSinIva) }}</small>
+            </div>
+            <div class="progress" style="height: 8px;">
+              <div class="progress-bar bg-info"
+                   [style.width.%]="porcentajeBarra(m.totalSinIva, maxTotalMes)">
+              </div>
+            </div>
+            <small class="text-muted">{{ m.cantFacturas }} factura(s)</small>
+          </div>
+          <p *ngIf="!resumenPorMes.length" class="text-muted text-center mt-3">Sin datos</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       FILTROS LOCALES
+  ══════════════════════════════════════════════════════ -->
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filtros de Búsqueda</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Agencia</label>
+              <select class="form-select" [(ngModel)]="filtroOficina" (change)="aplicarFiltros()">
+                <option value="">Todas</option>
+                <option *ngFor="let o of oficinasUnicas; trackBy: trackByStr" [value]="o">{{ o }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Tipo OT</label>
+              <select class="form-select" [(ngModel)]="filtroTipoOt" (change)="aplicarFiltros()">
+                <option value="">Todos</option>
+                <option *ngFor="let t of tiposOtUnicos; trackBy: trackByTipoOt" [value]="t.desc">{{ t.id }} — {{ t.desc }}</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" [(ngModel)]="filtroCliente"
+                     (input)="aplicarFiltros()" placeholder="Buscar cliente...">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Nº Documento</label>
+              <input type="text" class="form-control" [(ngModel)]="filtroDocumento"
+                     (input)="aplicarFiltros()" placeholder="Buscar documento...">
+            </div>
+          </div>
+          <div class="row mt-2">
+            <div class="col-12 text-end">
+              <button class="btn btn-secondary btn-sm" (click)="limpiarFiltros()">
+                <i class="fas fa-eraser me-1"></i> Limpiar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════
+       TABLA PRINCIPAL
+  ══════════════════════════════════════════════════════ -->
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th class="cursor-pointer" (click)="ordenarPor('oficina')">
+                    Agencia <i [class]="iconoOrden('oficina')"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('tipoOt')">
+                    Tipo OT <i [class]="iconoOrden('tipoOt')"></i>
+                  </th>
+                  <th>Orden Trabajo</th>
+                  <th class="cursor-pointer" (click)="ordenarPor('fechaOt')">
+                    Fecha OT <i [class]="iconoOrden('fechaOt')"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('cliente')">
+                    Cliente <i [class]="iconoOrden('cliente')"></i>
+                  </th>
+                  <th>ID Cliente</th>
+                  <th class="cursor-pointer" (click)="ordenarPor('numDocumento')">
+                    Nº Documento <i [class]="iconoOrden('numDocumento')"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('fecha')">
+                    Fecha Factura <i [class]="iconoOrden('fecha')"></i>
+                  </th>
+                  <th class="text-end cursor-pointer" (click)="ordenarPor('valorTotal')">
+                    Total S/IVA <i [class]="iconoOrden('valorTotal')"></i>
+                  </th>
+                  <th>Usuarios</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let f of facturasPaginadas; trackBy: trackByFactura">
+                  <td>
+                    <small class="text-muted d-block">{{ f.oficinaId }}</small>
+                    <strong>{{ f.oficina }}</strong>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="badgeTipoOt(f.tipoOtId)">{{ f.tipoOtId }}</span>
+                    <small class="d-block text-muted">{{ f.tipoOt }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">{{ f.ordenTrabajo }}</span>
+                  </td>
+                  <td>{{ formatearFecha(f.fechaOt) }}</td>
+                  <td>
+                    <div class="text-truncate" style="max-width: 200px;" [title]="f.cliente">
+                      {{ f.cliente || '—' }}
+                    </div>
+                    <small class="text-muted">{{ f.codCliente }}</small>
+                  </td>
+                  <td>{{ f.idCliente || '—' }}</td>
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ f.numDocumento }}</span>
+                  </td>
+                  <td>{{ formatearFecha(f.fecha) }}</td>
+                  <td class="text-end fw-semibold">
+                    {{ formatearMoneda(f.valorTotalSinIva) }}
+                  </td>
+                  <td>
+                    <small class="d-block">OT: {{ f.usuarioCrearOt || '—' }}</small>
+                    <small class="text-muted">Fact: {{ f.usuarioCrearFactura || '—' }}</small>
+                  </td>
+                </tr>
+
+                <!-- Sin resultados -->
+                <tr *ngIf="!loading && !facturasPaginadas.length">
+                  <td colspan="10" class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3 d-block"></i>
+                    <p class="text-muted mb-0">No se encontraron facturas</p>
+                  </td>
+                </tr>
+              </tbody>
+
+              <!-- Totales del pie de tabla -->
+              <tfoot class="table-dark fw-bold" *ngIf="facturasFiltradas.length">
+                <tr>
+                  <td colspan="8" class="text-end">Total Sin IVA (filtrado):</td>
+                  <td class="text-end">{{ formatearMoneda(totalSinIvaFiltrado) }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Paginación -->
+        <div class="card-footer bg-light" *ngIf="facturasFiltradas.length > 0">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <p class="mb-0 text-muted">
+                Mostrando
+                {{ (paginaActual - 1) * itemsPorPagina + 1 }} –
+                {{ Math.min(paginaActual * itemsPorPagina, facturasFiltradas.length) }}
+                de {{ facturasFiltradas.length | number }} registros
+              </p>
+            </div>
+            <div class="col-md-6">
+              <nav>
+                <ul class="pagination justify-content-end mb-0">
+                  <li class="page-item" [class.disabled]="paginaActual === 1">
+                    <a class="page-link" (click)="cambiarPagina(1)">
+                      <i class="fas fa-angle-double-left"></i>
+                    </a>
+                  </li>
+                  <li class="page-item" [class.disabled]="paginaActual === 1">
+                    <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+                      <i class="fas fa-angle-left"></i>
+                    </a>
+                  </li>
+                  <li class="page-item" *ngFor="let p of paginasArray; trackBy: trackByNum" [class.active]="p === paginaActual">
+                    <a class="page-link" (click)="cambiarPagina(p)">{{ p }}</a>
+                  </li>
+                  <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                    <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+                      <i class="fas fa-angle-right"></i>
+                    </a>
+                  </li>
+                  <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                    <a class="page-link" (click)="cambiarPagina(totalPaginas)">
+                      <i class="fas fa-angle-double-right"></i>
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+</div>

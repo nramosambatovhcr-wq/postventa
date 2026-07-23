@@ -1,0 +1,412 @@
+<div class="container-fluid mt-4">
+  <div class="row mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h2 class="mb-1">
+                Órdenes de Trabajo - Auto Consumo Detalle (AUT)
+                <span class="badge bg-secondary ms-2 text-capitalize">
+                  {{ vistaActual === 'pendientes' ? 'PENDIENTES' : 'PROCESADAS' }}
+                </span>
+              </h2>
+              <p class="text-muted mb-0">
+                <i class="fas fa-clipboard-list me-2"></i>
+                Registros encontrados: <strong>{{ ordenesFiltradas.length }}</strong>
+              </p>
+            </div>
+            
+            <div class="d-flex align-items-center">
+              <div class="btn-group me-3" role="group">
+                <button 
+                  type="button" 
+                  class="btn"
+                  [class.btn-primary]="vistaActual === 'pendientes'"
+                  [class.btn-outline-primary]="vistaActual !== 'pendientes'"
+                  (click)="cambiarVista('pendientes')"
+                  [disabled]="loading">
+                  <i class="fas fa-hourglass-half me-1"></i> Pendientes
+                </button>
+                <button 
+                  type="button" 
+                  class="btn"
+                  [class.btn-success]="vistaActual === 'procesadas'"
+                  [class.btn-outline-success]="vistaActual !== 'procesadas'"
+                  (click)="cambiarVista('procesadas')"
+                  [disabled]="loading">
+                  <i class="fas fa-check-circle me-1"></i> Procesadas
+                </button>
+              </div>
+
+              <button class="btn btn-outline-primary me-2" (click)="cargarOrdenes()" 
+                      [disabled]="loading">
+                <i class="fas fa-sync-alt" [class.fa-spin]="loading"></i>
+                Actualizar
+              </button>
+              <button class="btn btn-outline-success me-2" (click)="exportarExcel()">
+                <i class="fas fa-file-excel"></i>
+                Exportar
+              </button>
+              <button class="btn btn-outline-secondary" (click)="imprimirReporte()">
+                <i class="fas fa-print"></i>
+                Imprimir
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">
+            <i class="fas fa-filter me-2"></i>Filtros de Búsqueda
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-3">
+              <label class="form-label">Oficina</label>
+              <input type="text" class="form-control" [(ngModel)]="filtroOficina" 
+                     (input)="aplicarFiltros()" placeholder="Buscar oficina...">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Número Orden</label>
+              <input type="text" class="form-control" [(ngModel)]="filtroNumero" 
+                     (input)="aplicarFiltros()" placeholder="Buscar número...">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Cliente</label>
+              <input type="text" class="form-control" [(ngModel)]="filtroCliente" 
+                     (input)="aplicarFiltros()" placeholder="Buscar cliente...">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Artículo</label>
+              <input type="text" class="form-control" [(ngModel)]="filtroArticulo" 
+                     (input)="aplicarFiltros()" placeholder="Buscar artículo...">
+            </div>
+          </div>
+          <div class="row mt-3">
+            <div class="col-12 text-end">
+              <button class="btn btn-secondary btn-sm" (click)="limpiarFiltros()">
+                <i class="fas fa-eraser me-1"></i>
+                Limpiar Filtros
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row mb-3" *ngIf="loading || error">
+    <div class="col-12">
+      <div class="alert alert-info" *ngIf="loading">
+        <i class="fas fa-spinner fa-spin me-2"></i>
+        Cargando órdenes de auto consumo **{{ vistaActual }}** con detalle...
+      </div>
+      <div class="alert alert-danger" *ngIf="error">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        {{ error }}
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover table-striped mb-0">
+              <thead class="table-dark">
+                <tr>
+                  <th class="cursor-pointer" (click)="ordenarPor('diasAbierto')">
+                    Días Abierto
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('oficina')">
+                    Oficina
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('numero')">
+                    # Orden
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('fechaSolicitud')">
+                    Fecha
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="cursor-pointer" (click)="ordenarPor('cliente')">
+                    Cliente
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th>Chasis</th>
+                  <th class="cursor-pointer" (click)="ordenarPor('articulo')">
+                    Artículo
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th>Clase/Grupo</th>
+                  <th class="text-end cursor-pointer" (click)="ordenarPor('cantidad')">
+                    Cant.
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="text-end">P. Unit.</th>
+                  <th class="text-end cursor-pointer" (click)="ordenarPor('precioTotal')">
+                    P. Total
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="text-end cursor-pointer" (click)="ordenarPor('total')">
+                    Total Orden
+                    <i class="fas fa-sort ms-1"></i>
+                  </th>
+                  <th class="text-center">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let orden of ordenesPaginadas">
+                  <td>
+                    <span class="badge" [ngClass]="getClaseDiasAbierto(orden.diasAbierto)">
+                      {{ orden.diasAbierto || 0 }} días
+                    </span>
+                  </td>
+                  <td>
+                    <small class="text-muted d-block">{{ orden.oficinaId }}</small>
+                    <strong>{{ orden.oficinaNombre }}</strong>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">{{ orden.numero }}</span>
+                    <small class="text-muted d-block">{{ orden.estado }}</small>
+                  </td>
+                  <td>{{ formatearFecha(orden.fechaSolicitud) }}</td>
+                  <td>
+                    <div class="text-truncate" style="max-width: 180px;" 
+                         [title]="orden.clienteNombre">
+                      {{ orden.clienteNombre || 'N/A' }}
+                    </div>
+                    <small class="text-muted">{{ orden.clienteCedula }}</small>
+                  </td>
+                  <td>
+                    <small class="text-monospace">{{ orden.chasis || 'N/A' }}</small>
+                  </td>
+                  <td>
+                    <div class="text-truncate" style="max-width: 200px;" 
+                         [title]="orden.articuloDescripcion">
+                      <strong>{{ orden.articuloDescripcion || 'N/A' }}</strong>
+                    </div>
+                    <small class="text-muted">{{ orden.articuloId }}</small>
+                  </td>
+                  <td>
+                    <small class="d-block">{{ orden.articuloClase || 'N/A' }}</small>
+                    <small class="text-muted">{{ orden.articuloGrupo || 'N/A' }}</small>
+                  </td>
+                  <td class="text-end">
+                    <span class="badge bg-info">{{ orden.cantidad || 0 }}</span>
+                  </td>
+                  <td class="text-end">
+                    {{ formatearMoneda(orden.precioUnitario) }}
+                  </td>
+                  <td class="text-end">
+                    <strong>{{ formatearMoneda(orden.precioTotal) }}</strong>
+                  </td>
+                  <td class="text-end">
+                    <strong class="text-primary">{{ formatearMoneda(orden.total) }}</strong>
+                  </td>
+                  <td class="text-center">
+                    <button class="btn btn-sm btn-outline-info" 
+                            (click)="verDetalle(orden)"
+                            title="Ver detalle completo">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!loading && ordenesPaginadas.length === 0">
+                  <td colspan="13" class="text-center py-5">
+                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                    <p class="text-muted mb-0">No se encontraron órdenes de auto consumo</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        <div class="card-footer bg-light" *ngIf="ordenesFiltradas.length > 0">
+          <div class="row align-items-center">
+            <div class="col-md-6">
+              <p class="mb-0 text-muted">
+                Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
+                {{ Math.min(paginaActual * itemsPorPagina, ordenesFiltradas.length) }} 
+                de {{ ordenesFiltradas.length }} registros
+              </p>
+            </div>
+            <div class="col-md-6">
+              <nav>
+                <ul class="pagination justify-content-end mb-0">
+                  <li class="page-item" [class.disabled]="paginaActual === 1">
+                    <a class="page-link" (click)="cambiarPagina(1)">
+                      <i class="fas fa-angle-double-left"></i>
+                    </a>
+                  </li>
+                  <li class="page-item" [class.disabled]="paginaActual === 1">
+                    <a class="page-link" (click)="cambiarPagina(paginaActual - 1)">
+                      <i class="fas fa-angle-left"></i>
+                    </a>
+                  </li>
+                  <li class="page-item" *ngFor="let pagina of paginasArray" 
+                      [class.active]="pagina === paginaActual">
+                    <a class="page-link" (click)="cambiarPagina(pagina)">
+                      {{ pagina }}
+                    </a>
+                  </li>
+                  <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                    <a class="page-link" (click)="cambiarPagina(paginaActual + 1)">
+                      <i class="fas fa-angle-right"></i>
+                    </a>
+                  </li>
+                  <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+                    <a class="page-link" (click)="cambiarPagina(totalPaginas)">
+                      <i class="fas fa-angle-double-right"></i>
+                    </a>
+                  </li>
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<div class="modal fade" [class.show]="mostrarDetalleExpandido" 
+     [style.display]="mostrarDetalleExpandido ? 'block' : 'none'"
+     tabindex="-1" *ngIf="ordenSeleccionada">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-file-invoice me-2"></i>
+          Detalle de Orden {{ ordenSeleccionada.numero }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarDetalle()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6 mb-3">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title text-primary">
+                  <i class="fas fa-info-circle me-2"></i>Información General
+                </h6>
+                <hr>
+                <p class="mb-2"><strong>Oficina:</strong> {{ ordenSeleccionada.oficinaNombre }}</p>
+                <p class="mb-2"><strong>Estado:</strong> 
+                  <span class="badge bg-warning text-dark">{{ ordenSeleccionada.estado }}</span>
+                </p>
+                <p class="mb-2"><strong>Tipo:</strong> {{ ordenSeleccionada.tipo }}</p>
+                <p class="mb-2"><strong>Fecha:</strong> {{ formatearFecha(ordenSeleccionada.fechaSolicitud) }}</p>
+                <p class="mb-0"><strong>Días Abierto:</strong> 
+                  <span class="badge" [ngClass]="getClaseDiasAbierto(ordenSeleccionada.diasAbierto)">
+                    {{ ordenSeleccionada.diasAbierto }} días
+                  </span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6 mb-3">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title text-primary">
+                  <i class="fas fa-user me-2"></i>Cliente
+                </h6>
+                <hr>
+                <p class="mb-2"><strong>Nombre:</strong> {{ ordenSeleccionada.clienteNombre }}</p>
+                <p class="mb-2"><strong>Cédula/RUC:</strong> {{ ordenSeleccionada.clienteCedula }}</p>
+                <p class="mb-0"><strong>Chasis:</strong> {{ ordenSeleccionada.chasis }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title text-primary">
+                  <i class="fas fa-box me-2"></i>Detalle del Artículo
+                </h6>
+                <hr>
+                <div class="row">
+                  <div class="col-md-6">
+                    <p class="mb-2"><strong>Artículo:</strong> {{ ordenSeleccionada.articuloDescripcion }}</p>
+                    <p class="mb-2"><strong>Código:</strong> {{ ordenSeleccionada.articuloId }}</p>
+                    <p class="mb-2"><strong>Clase:</strong> {{ ordenSeleccionada.articuloClase }}</p>
+                  </div>
+                  <div class="col-md-6">
+                    <p class="mb-2"><strong>Grupo:</strong> {{ ordenSeleccionada.articuloGrupo }}</p>
+                    <p class="mb-2"><strong>Cantidad:</strong> 
+                      <span class="badge bg-info">{{ ordenSeleccionada.cantidad }}</span>
+                    </p>
+                    <p class="mb-0"><strong>Precio Unit.:</strong> {{ formatearMoneda(ordenSeleccionada.precioUnitario) }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12 mb-3">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title text-primary">
+                  <i class="fas fa-dollar-sign me-2"></i>Totales
+                </h6>
+                <hr>
+                <div class="row">
+                  <div class="col-md-4">
+                    <p class="mb-2"><strong>Precio Total Art.:</strong></p>
+                    <h5 class="text-success">{{ formatearMoneda(ordenSeleccionada.precioTotal) }}</h5>
+                  </div>
+                  <div class="col-md-4">
+                    <p class="mb-2"><strong>Monto Base:</strong></p>
+                    <h5>{{ formatearMoneda(ordenSeleccionada.monto) }}</h5>
+                  </div>
+                  <div class="col-md-4">
+                    <p class="mb-2"><strong>Total Orden:</strong></p>
+                    <h4 class="text-primary">{{ formatearMoneda(ordenSeleccionada.total) }}</h4>
+                  </div>
+                </div>
+                <p class="mb-0 mt-2"><strong>Tasa IVA:</strong> {{ ordenSeleccionada.tasaIva }}%</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-12">
+            <div class="card bg-light">
+              <div class="card-body">
+                <h6 class="card-title text-primary">
+                  <i class="fas fa-clipboard me-2"></i>Información Adicional
+                </h6>
+                <hr>
+                <p class="mb-2"><strong>Motivo:</strong></p>
+                <p class="mb-3">{{ ordenSeleccionada.motivo || 'Sin motivo especificado' }}</p>
+                <p class="mb-1"><strong>Usuario Creación:</strong> {{ ordenSeleccionada.usuarioCreacion }}</p>
+                <p class="mb-0" *ngIf="ordenSeleccionada.usuarioActualizacion">
+                  <strong>Usuario Actualización:</strong> {{ ordenSeleccionada.usuarioActualizacion }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarDetalle()">
+          <i class="fas fa-times me-2"></i>Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="mostrarDetalleExpandido" 
+     *ngIf="mostrarDetalleExpandido" (click)="cerrarDetalle()"></div>

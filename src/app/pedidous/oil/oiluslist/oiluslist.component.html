@@ -1,0 +1,317 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Mis Pedidos de Aceite</div>
+      <div class="contenedor-busqueda">
+        <input
+          type="text"
+          class="busqueda"
+          placeholder="Buscar código, descripción, presentación o proveedor"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="applyFiltersAndSearch()">
+        <button class="boton-buscar" (click)="applyFiltersAndSearch()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+      </div>
+      <div class="acciones">
+        <button class="boton boton-primario" (click)="individual()">
+          <i class="fa fa-plus"></i> Crear Pedido
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Mis Pedidos de Aceite</h1>
+      <p class="panel-subtitulo">Consulta de los pedidos de aceite realizados</p>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-error" style="background-color: #fee; border: 1px solid #fcc; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c00;">
+      {{ errorMessage }}
+    </div>
+  <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica all"
+          [ngClass]="{'activa-all': selectedStatusFilter === null}"
+          (click)="clearStatusFilter()">
+        <div class="valor-estadistica">TODOS</div>
+      </div>
+        <div class="tarjeta-estadistica pendiente"
+          [ngClass]="{'activa-pendiente': selectedStatusFilter === 'PENDIENTE'}"
+          (click)="pendiente()">
+        <div class="valor-estadistica">PENDIENTE</div>
+      </div>
+        <div class="tarjeta-estadistica asignado"
+        [ngClass]="{'activa-asignado': selectedStatusFilter === 'ASIGNADO'}"
+        (click)="asignado()">
+        <div class="valor-estadistica">ASIGNADO</div>
+      </div>
+      <div class="tarjeta-estadistica proceso"
+        [ngClass]="{'activa-proceso': selectedStatusFilter === 'PROCESO'}"
+        (click)="proceso()">
+        <div class="valor-estadistica">EN PROCESO</div>
+      </div>
+
+      <div class="tarjeta-estadistica revisados"
+        [ngClass]="{'activa-revisados': selectedStatusFilter === 'ENVIADO'}"
+        (click)="enviado()">
+        <div class="valor-estadistica">ENVIADOS</div>
+      </div>
+      <div class="tarjeta-estadistica error"
+        [ngClass]="{'activa-error': selectedStatusFilter === 'CANCELADO'}"
+        (click)="error()">
+        <div class="valor-estadistica">CANCELADO</div>
+      </div>
+       <div class="tarjeta-estadistica individual"
+          [ngClass]="{'activa-individual': paginaActual === 'individual'}"
+          (click)="individual()">
+        <div class="valor-estadistica">CREAR PEDIDO</div>
+      </div>
+      </div>
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">Detalles de Pedidos</div>
+        <div class="acciones-tabla">
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label for="startDate">Desde:</label>
+              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyFiltersAndSearch()">
+            </div>
+            <div class="fecha-hasta">
+              <label for="endDate">Hasta:</label>
+              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyFiltersAndSearch()">
+            </div>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear Fechas</button>
+          </div>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">CSV (.csv)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha Pedido</th>
+              <th>Proveedor</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="loading">
+              <td colspan="4" style="text-align: center; padding: 20px;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando pedidos de aceite...
+              </td>
+            </tr>
+
+            <tr *ngIf="!loading && (!lista || lista.length === 0)">
+              <td colspan="4" style="text-align: center; padding: 20px;">
+                <span *ngIf="!errorMessage">No se encontraron pedidos de aceite.</span>
+                <span *ngIf="errorMessage">{{ errorMessage }}</span>
+              </td>
+            </tr>
+
+            <tr *ngFor="let group of lista; trackBy: trackByGroupKey" class="fila-datos">
+              <td data-label="Fecha Pedido">
+                {{ group.fechaPedido ? (group.fechaPedido | date:'dd/MM/yyyy') : '-' }}
+              </td>
+              <td data-label="Proveedor">{{ group.nombreProveedor || '-' }}</td>
+              <td data-label="Estado">{{ group.estadoPedido  || '-' }}</td>
+              <td data-label="Acciones">
+                <div class="acciones-container">
+                  <button class="boton-accion-ver"
+                          (click)="viewPedidoDetails(group)"
+                          title="Ver Detalles del Pedido">
+                    </button>
+                  <button class="boton-accion"
+                          (click)="openObservacionesModal(group)"
+                          title="Ver Observaciones">
+                    <i class="fa fa-comments"></i>
+                  </button>
+
+                  <ng-container *ngIf="group.tiposIncluidos && group.tiposIncluidos.length > 0">
+                    <button *ngIf="group.tiposIncluidos.includes('lubricantes')"
+                            class="boton-accion"
+                            (click)="viewLubricantesDetails(group)"
+                            title="Ver Detalles de Lubricantes">
+                      <i class="fa fa-oil-can"></i>
+                    </button>
+
+                    <button *ngIf="group.tiposIncluidos.includes('filtros')"
+                            class="boton-accion"
+                            (click)="viewFiltrosDetails(group)"
+                            title="Ver Detalles de Filtros">
+                      <i class="fa fa-filter"></i>
+                    </button>
+
+                    <button *ngIf="group.tiposIncluidos.includes('insumos')"
+                            class="boton-accion"
+                            (click)="viewInsumosDetails(group)"
+                            title="Ver Detalles de Insumos">
+                      <i class="fa fa-wrench"></i>
+                    </button>
+                  </ng-container>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pie-tabla" *ngIf="!loading && lista && lista.length > 0">
+        <div class="items-count">
+          Mostrando {{ lista.length }} de {{ filteredData?.length || 0 }} pedidos
+          <span *ngIf="allData && allData.length !== filteredData?.length">
+            ({{ allData.length }} total)
+          </span>
+        </div>
+        <div class="paginacion" *ngIf="totalPages > 1">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button
+            *ngFor="let page of getPaginationArray()"
+            class="boton-pagina"
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <app-observacionesoilus
+      [pedido]="selectedPedido"
+      [currentUserId]="id"
+      [userRole]="usuario?.rol || ''"
+      [modalVisible]="observacionesModalVisible"
+      (closeModalEvent)="closeObservacionesModal()">
+    </app-observacionesoilus>
+
+    <style>
+      /* ... (keep existing styles) ... */
+
+      .acciones-container { /* New style for button group in action column */
+        display: flex;
+        gap: 8px; /* Space between buttons */
+        flex-wrap: wrap; /* Allow buttons to wrap on smaller screens */
+        justify-content: center; /* Center buttons horizontally */
+      }
+
+      .boton-accion-ver {
+          background: linear-gradient(135deg, var(--color-primario) 0%, var(--color-primario-hover) 100%);
+          color: rgb(25, 1, 1);
+          border: none;
+          border-radius: 4px;
+          padding: 8px 12px;
+          cursor: pointer;
+          font-size: 14px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          transition: all 0.2s ease;
+          min-width: 32px; /* Ensure button is not too small if only icon */
+          height: 32px; /* Fixed height for consistent look */
+      }
+
+      .boton-accion-ver:hover {
+          opacity: 0.9;
+          transform: translateY(-1px);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      }
+
+      /* Eye icon for view button */
+      .boton-accion-ver::before {
+          font-family: 'Font Awesome 5 Free'; /* Or your specific Font Awesome font family */
+          font-weight: 900; /* For solid icons */
+          content: "\f06e"; /* Unicode for eye icon */
+      }
+      /* Ensure other .boton-accion styles are defined as needed. If 'boton-accion' is meant for general actions, and 'boton-accion-ver' for view, keep them separate. */
+
+      .btn-action { /* existing btn-action */
+        background: transparent;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        width: 32px;
+        height: 32px;
+        display: inline-flex; /* Changed to inline-flex for better icon centering */
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .btn-action i {
+        font-size: 16px;
+        color: inherit;
+      }
+
+      .btn-chat { /* existing btn-chat for comments */
+        color: #007bff;
+        border-color: #007bff;
+      }
+
+      /* Add or adjust styles for the new 'all' status card if needed */
+      .tarjeta-estadistica.all {
+          /* Add specific styles for the 'Todos' card if different from default */
+      }
+      .tarjeta-estadistica.activa-all {
+          background-color: var(--color-primario); /* Example active style */
+          color: white;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      }
+
+    </style>
+</main>
+
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Detalles del Pedido ({{ selectedGroupedPedidoForDetails?.fechaPedido | date:'dd/MM/yyyy' }})</h2>
+      <button class="modal-close-button" (click)="closeDetailsModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Proveedor:</strong> {{ selectedGroupedPedidoForDetails?.nombreProveedor }}</p>
+      <p><strong>Estado General:</strong> {{ selectedGroupedPedidoForDetails?.estadoPedido | uppercase }}</p>
+      <p class="modal-subtitle">Ítems del Pedido:</p>
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Presentación</th>
+              <th>Cantidad</th>
+              <th>Estado Ítem</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="!selectedGroupedPedidoForDetails?.items">
+              <td colspan="5" style="text-align: center; padding: 20px;">No se encontraron ítems para este pedido.</td>
+            </tr>
+            <tr *ngFor="let itemDetail of selectedGroupedPedidoForDetails?.items">
+              <td>{{ itemDetail.codigoOil }}</td>
+              <td>{{ itemDetail.descripcionOil }}</td>
+              <td>{{ itemDetail.presentacionOil || '-' }}</td>
+              <td>{{ itemDetail.cantidadSolicitada }}</td>
+              <td>{{ itemDetail.estadoPedido || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="boton boton-contorno" (click)="downloadModalExcel()">Exportar Excel</button>
+      <button class="boton boton-contorno" (click)="downloadModalCSV()">Exportar CSV</button>
+      <button class="boton boton-secundario" (click)="closeDetailsModal()">Cerrar</button>
+    </div>
+  </div>
+</div>

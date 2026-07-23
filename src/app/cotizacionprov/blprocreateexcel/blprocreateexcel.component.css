@@ -1,0 +1,120 @@
+.cabecera { /* ... */ }
+.contenedor { /* ... */ }
+.panel { /* ... */ }
+.panel-cabecera { /* ... */ }
+.panel-titulo { /* ... */ }
+.panel-subtitulo { /* ... */ }
+.card {
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+.card-header {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    background-color: var(--color-primario);
+}
+.invoicebl-detail-card .card-body {
+    padding: 25px;
+}
+.invoicebl-detail-card strong {
+    color: var(--color-primario);
+}
+
+/* Copia los estilos .estado desde dashboardbl.component.css */
+.estado {
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 13px;
+    display: inline-block;
+}
+.estado.pendiente { background-color: #fff3e0; color: #ff9800; }
+.estado.transito { background-color: #e3f2fd; color: #2196f3; }
+.estado.activa { background-color: #e8f5e9; color: #4caf50; }
+.estado.embarque { background-color: #fce4ec; color: #e91e63; }
+.estado.aduana { background-color: #ede7f6; color: #673ab7; }
+.estado.liquidado { background-color: #e0f7fa; color: #00bcd4; }
+.estado.aprobada { background-color: #e8f5e9; color: #4caf50; }
+.estado.revision { background-color: #ffe0b2; color: #ff9800; }
+.estado.entregada { background-color: #e0f2f7; color: #00bcd4; }
+.estado.anulada { background-color: #ffebee; color: #f44336; }
+
+/* Copia los estilos de tabla y acciones de dashboardbl.component.css */
+.contenedor-tabla {
+    overflow-x: auto;
+    margin-top: 20px;
+}
+.tabla-pedidos {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+.tabla-pedidos th,
+.tabla-pedidos td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--gris-2);
+}
+.tabla-pedidos thead {
+    background-color: var(--color-primario);
+    color: white;
+}
+.tabla-pedidos tbody tr:hover {
+    background-color: var(--gris-1);
+}
+.acciones-celda {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-start;
+}
+.boton-accion {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    font-size: 16px;
+}
+.boton-accion.editar {
+    color: var(--color-primario);
+}
+.boton-accion.editar:hover {
+    background-color: rgba(10, 132, 255, 0.1);
+}
+.boton-accion.eliminar {
+    color: var(--color-peligro);
+}
+.boton-accion.eliminar:hover {
+    background-color: rgba(255, 69, 58, 0.1);
+}
+.boton-accion.detalles {
+    color: var(--color-secundario);
+}
+.boton-accion.detalles:hover {
+    background-color: rgba(48, 209, 88, 0.1);
+}
+.boton-primario {
+  background-color: var(--color-secundario);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.boton-primario:hover {
+  background-color: var(--color-secundario-hover);
+}

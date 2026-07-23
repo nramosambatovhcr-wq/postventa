@@ -1,0 +1,737 @@
+/* ================================================
+   REPORTE DE VEHÍCULOS - Estilos Unificados
+   ================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+:host {
+  display: block;
+  background: #f0f2f5;
+  min-height: 100vh;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+/* ─── WRAPPER ─── */
+.reporte-wrapper {
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: 32px 24px;
+}
+
+/* ─── HEADER ─── */
+.reporte-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1a1f2e;
+  color: white;
+  padding: 24px 32px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-icon {
+  font-size: 2.5rem;
+  background: rgba(255,255,255,0.1);
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.reporte-titulo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  letter-spacing: -0.3px;
+}
+
+.reporte-subtitulo {
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.55);
+  margin: 4px 0 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-accion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.btn-exportar {
+  background: #22c55e;
+  color: white;
+}
+.btn-exportar:hover { background: #16a34a; }
+
+.btn-imprimir {
+  background: rgba(255,255,255,0.12);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.btn-imprimir:hover { background: rgba(255,255,255,0.22); }
+
+.btn-volver {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.75);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.btn-volver:hover { background: rgba(255,255,255,0.15); color: white; }
+
+/* ─── DROPDOWN EXPORTAR ─── */
+.dropdown-export {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  min-width: 180px;
+  z-index: 1000;
+  margin-top: 4px;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s ease;
+}
+
+.dropdown-menu.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: white;
+  color: #374151;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.dropdown-item:hover {
+  background: #f3f4f6;
+}
+
+.dropdown-item span {
+  font-size: 1rem;
+}
+
+.dropdown-item + .dropdown-item {
+  border-top: 1px solid #e5e7eb;
+}
+
+/* ─── TARJETAS RESUMEN ─── */
+.resumen-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.resumen-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  border-top: 4px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+  transition: transform 0.15s;
+}
+.resumen-card:hover { transform: translateY(-2px); }
+
+.card-total     { border-top-color: #64748b; }
+.card-asignados { border-top-color: #3b82f6; }
+.card-en-revision { border-top-color: #f59e0b; }
+.card-completados { border-top-color: #22c55e; }
+.card-sin-revision { border-top-color: #e5e7eb; }
+.card-repuestos-total { 
+  background: linear-gradient(135deg, #4f46e5, #7c3aed); 
+  color: #fff; 
+  border-top-color: #3730a3;
+}
+.card-repuestos-revisados { 
+  background: linear-gradient(135deg, #059669, #10b981); 
+  color: #fff; 
+  border-top-color: #047857;
+}
+
+.card-valor {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1a1f2e;
+  line-height: 1;
+  margin-bottom: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+.card-repuestos-total .card-valor,
+.card-repuestos-revisados .card-valor {
+  color: white;
+}
+
+.card-label {
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.card-repuestos-total .card-label,
+.card-repuestos-revisados .card-label {
+  color: rgba(255,255,255,0.85);
+}
+
+/* ─── FILTROS ─── */
+.filtros-bar {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  background: white;
+  padding: 16px 20px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  flex-wrap: wrap;
+}
+
+.filtro-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+  min-width: 160px;
+}
+
+.filtro-grupo label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.filtro-input,
+.filtro-select {
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #f9fafb;
+  transition: border-color 0.15s;
+  outline: none;
+}
+.filtro-input:focus,
+.filtro-select:focus {
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.12);
+}
+
+.btn-limpiar {
+  padding: 9px 16px;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  color: #6b7280;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+.btn-limpiar:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
+
+/* ─── TABLA ─── */
+.tabla-wrapper {
+  background: white;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+  overflow-x: auto;
+}
+
+.tabla-reporte {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.tabla-reporte thead {
+  background: #1a1f2e;
+}
+
+.tabla-reporte thead th {
+  padding: 14px 16px;
+  text-align: left;
+  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  border: none;
+}
+
+.th-num { width: 48px; text-align: center; }
+
+.th-sort {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s;
+}
+.th-sort:hover { color: white; }
+
+.sort-icon {
+  font-size: 0.7rem;
+  opacity: 0.6;
+  margin-left: 4px;
+}
+
+.tabla-reporte tbody tr {
+  border-bottom: 1px solid #f1f3f5;
+  transition: background 0.12s;
+}
+.tabla-reporte tbody tr:hover {
+  background: #f8faff;
+}
+.tabla-reporte tbody td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  color: #374151;
+}
+
+.td-num {
+  text-align: center;
+  color: #9ca3af;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+}
+
+/* Vehículo */
+.vehiculo-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.badge-linea {
+  display: inline-block;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.4px;
+  width: fit-content;
+}
+.vehiculo-modelo {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+/* Chasis */
+.chasis-text {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  color: #374151;
+  background: #f3f4f6;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+/* Usuarios */
+.usuario-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.usuario-chip:last-child { margin-bottom: 0; }
+
+.usuario-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.usuario-nombre {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1f2937;
+  line-height: 1.2;
+}
+
+/* Fechas */
+.fecha-valor {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #1f2937;
+}
+.fecha-hora {
+  display: block;
+  font-size: 0.75rem;
+  color: #9ca3af;
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Tiempo revisión vehículo */
+.tiempo-valor {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #f0fdf4;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid #bbf7d0;
+}
+
+.tiempo-en-curso {
+  font-size: 0.8rem;
+  color: #d97706;
+  background: #fffbeb;
+  padding: 3px 8px;
+  border-radius: 5px;
+  border: 1px solid #fde68a;
+}
+
+.sin-dato {
+  color: #d1d5db;
+  font-size: 0.85rem;
+}
+
+/* ─── COLUMNAS DE REPUESTOS FECHAS ─── */
+.th-repuestos-fechas {
+  min-width: 100px;
+  text-align: center;
+  background: rgba(99, 102, 241, 0.15) !important;
+  color: #c7d2fe !important;
+  border-left: 1px solid rgba(255,255,255,0.1);
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+
+.td-repuestos-fechas {
+  vertical-align: middle;
+  text-align: center;
+  min-width: 100px;
+  background: #fafbfc;
+  border-left: 1px solid #f1f5f9;
+  border-right: 1px solid #f1f5f9;
+}
+
+.tiempo-repuestos-valor {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.tiempo-corto {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.tiempo-medio {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.tiempo-largo {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.tiempo-repuestos-dias {
+  display: block;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  margin-top: 2px;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+
+/* Hover effect para las nuevas columnas */
+.tabla-reporte tbody tr:hover .td-repuestos-fechas {
+  background: #f0f4f8;
+}
+
+/* ─── COLUMNAS DE REPUESTOS ─── */
+.th-repuestos { min-width: 90px; }
+.td-repuestos { vertical-align: middle; }
+
+.rep-resumen { display: flex; align-items: baseline; gap: 4px; }
+.rep-numero  { font-size: 1rem; font-weight: 600; color: #1e293b; }
+.rep-sub     { font-size: 0.7rem; color: #64748b; }
+
+.barra-contenedor {
+  height: 5px;
+  background: #e2e8f0;
+  border-radius: 99px;
+  margin-top: 4px;
+  width: 80px;
+  overflow: hidden;
+}
+.barra-progreso {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .4s ease;
+}
+.barra-completa { background: #10b981; }
+.barra-parcial  { background: #f59e0b; }
+.barra-baja     { background: #ef4444; }
+
+.rep-chips { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 2px; }
+.chip-revisado  { 
+  font-size: 0.7rem; 
+  background: #d1fae5; 
+  color: #065f46; 
+  padding: 2px 6px; 
+  border-radius: 99px; 
+  font-weight: 500; 
+}
+.chip-pendiente { 
+  font-size: 0.7rem; 
+  background: #fef3c7; 
+  color: #92400e; 
+  padding: 2px 6px; 
+  border-radius: 99px; 
+  font-weight: 500; 
+}
+.rep-porcentaje { font-size: 0.68rem; color: #94a3b8; }
+
+/* ─── BOTÓN EXPANDIR ─── */
+.th-detalle, .td-detalle { text-align: center; width: 56px; }
+.btn-expandir {
+  border: none;
+  background: #f1f5f9;
+  color: #475569;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: background .15s;
+}
+.btn-expandir:hover { background: #e2e8f0; }
+.fila-expandida-activa { background: #f8fafc !important; }
+
+/* ─── FILA DETALLE ─── */
+.fila-detalle td { padding: 0 !important; border-top: none !important; }
+.detalle-wrapper {
+  background: #f8fafc;
+  border-left: 3px solid #6366f1;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 16px 20px;
+}
+.detalle-header   { margin-bottom: 12px; }
+.detalle-titulo   { 
+  font-size: 0.9rem; 
+  font-weight: 600; 
+  color: #1e293b; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 4px; 
+}
+.detalle-subtitle { 
+  font-size: 0.75rem; 
+  color: #64748b; 
+  font-weight: 400; 
+}
+
+/* ─── TABLA DETALLE INTERNA ─── */
+.tabla-detalle {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.tabla-detalle th {
+  background: #e2e8f0;
+  padding: 6px 10px;
+  text-align: left;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+.tabla-detalle td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #e9eef5;
+  color: #374151;
+  vertical-align: middle;
+}
+.tabla-detalle tr:last-child td { border-bottom: none; }
+.tabla-detalle tr:hover td { background: #f1f5f9; }
+
+.td-cantidad { text-align: center; font-weight: 600; }
+.td-obs      { font-size: 0.75rem; color: #64748b; max-width: 200px; }
+
+.codigo-chip {
+  background: #e0e7ff;
+  color: #3730a3;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.75rem;
+}
+
+.usuario-chip-sm  { font-size: 0.8rem; }
+.usuario-avatar-sm {
+  width: 22px;
+  height: 22px;
+  font-size: 0.6rem;
+}
+
+/* ─── BADGES DE ESTADO REPUESTO ─── */
+.badge-rep {
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.badge-rep-ok       { background: #d1fae5; color: #065f46; }
+.badge-rep-pendiente{ background: #fef3c7; color: #92400e; }
+
+/* Badges de estado */
+.badge-estado {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.badge-sin-revision {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.badge-en-proceso {
+  background: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.badge-completado {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* Sin resultados */
+.sin-resultados {
+  padding: 60px 24px;
+  text-align: center;
+}
+.sin-resultados-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.sin-resultados-inner span { font-size: 2rem; }
+.sin-resultados-inner p {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+/* ─── FOOTER ─── */
+.reporte-footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #9ca3af;
+  padding: 0 4px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ─── PRINT ─── */
+@media print {
+  .header-actions,
+  .filtros-bar,
+  .btn-accion,
+  .dropdown-menu { display: none !important; }
+
+  .reporte-wrapper { padding: 0; }
+  .reporte-header { border-radius: 0; }
+  .tabla-wrapper { box-shadow: none; }
+
+  .tabla-reporte tbody tr { page-break-inside: avoid; }
+}
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1200px) {
+  .th-repuestos-fechas,
+  .td-repuestos-fechas {
+    min-width: 80px;
+    font-size: 0.75rem;
+  }
+  
+  .tiempo-repuestos-valor {
+    font-size: 0.7rem;
+    padding: 2px 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .reporte-header { flex-direction: column; align-items: flex-start; }
+  .resumen-grid { grid-template-columns: repeat(2, 1fr); }
+  .filtros-bar { flex-direction: column; }
+  .filtro-grupo { min-width: 100%; }
+  .dropdown-menu { right: auto; left: 0; }
+}

@@ -1,0 +1,587 @@
+<!-- ============================================
+     VISTA 1: LISTADO DE B/Ls PARA SELECCIONAR
+     ============================================ -->
+<div class="container-fluid animate-fade-in" *ngIf="viewMode === 'list'">
+
+  <!-- Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <div class="page-header mb-0">
+        <h2 class="mb-0">
+          <i class="fas fa-clipboard-check"></i> Revisión de Vehículos
+        </h2>
+        <p class="subtitle mb-0">Selecciona un B/L para iniciar o continuar la revisión</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loadingList" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando B/Ls...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="listError && !loadingList" class="alert alert-danger">
+    <h6><i class="fas fa-exclamation-triangle"></i> Error</h6>
+    <p class="mb-0">{{ listError }}</p>
+  </div>
+
+  <ng-container *ngIf="!loadingList && !listError">
+
+    <!-- Filtros -->
+    <div class="card mb-3 animate-fade-in">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-center">
+          <div class="col-auto">
+            <small class="fw-bold text-muted"><i class="fas fa-filter"></i> Buscar:</small>
+          </div>
+          <div class="col-md-3">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control"
+                     placeholder="N° B/L..."
+                     [(ngModel)]="blSearchTerm">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="fas fa-ship"></i></span>
+              <input type="text" class="form-control"
+                     placeholder="Buque..."
+                     [(ngModel)]="blSearchVessel">
+            </div>
+          </div>
+          <div class="col-auto" *ngIf="blSearchTerm || blSearchVessel">
+            <button class="btn btn-sm btn-outline-secondary" (click)="clearBlSearch()">
+              <i class="fas fa-times"></i> Limpiar
+            </button>
+          </div>
+          <div class="col-auto" *ngIf="blSearchTerm || blSearchVessel">
+            <small class="text-primary fw-bold">{{ filteredBlList.length }} B/L(s)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de BLs -->
+    <div class="card animate-fade-in">
+      <div class="table-container">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>N° B/L</th>
+                <th>Buque</th>
+                <th>Puerto Carga</th>
+                <th>Puerto Descarga</th>
+                <th class="text-center">Contenedores</th>
+                <th class="text-center">Chasis</th>
+                <th class="text-center">Cabinas</th>
+                <th class="text-center">Motores</th>
+                <th class="text-center" style="min-width:120px;">Progreso</th>
+                <th class="text-center">Acción</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let bl of filteredBlList; let i = index"
+                  class="clickable"
+                  (dblclick)="selectBl(bl)">
+                <td class="text-muted small">{{ i + 1 }}</td>
+                <td><strong>{{ bl.blNumber }}</strong></td>
+                <td>{{ bl.vesselName || '—' }}</td>
+                <td>{{ bl.portOfLoading || '—' }}</td>
+                <td>{{ bl.portOfDischarge || '—' }}</td>
+                <td class="text-center">
+                  <span class="badge primary">{{ bl.totalContainers || 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge secondary">{{ bl.chassisCount || 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge info">{{ bl.cabCount || 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <span class="badge success">{{ bl.engineCount || 0 }}</span>
+                </td>
+                <td class="text-center">
+                  <ng-container *ngIf="getBlProgress(bl.id) as prog">
+                    <div class="d-flex align-items-center gap-1">
+                      <div class="progress flex-grow-1" style="height:8px;">
+                        <div class="progress-bar"
+                             [class.bg-success]="prog.percent === 100"
+                             [class.bg-primary]="prog.percent > 0 && prog.percent < 100"
+                             [class.bg-secondary]="prog.percent === 0"
+                             [style.width]="prog.percent + '%'">
+                        </div>
+                      </div>
+                      <small class="text-muted fw-bold" style="white-space:nowrap;">
+                        {{ prog.percent | number:'1.0-0' }}%
+                      </small>
+                    </div>
+                  </ng-container>
+                  <span *ngIf="!getBlProgress(bl.id)" class="text-muted small">Sin inicio</span>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-primary"
+                          (click)="selectBl(bl); $event.stopPropagation()"
+                          [disabled]="(bl.chassisCount || 0) + (bl.cabCount || 0) + (bl.engineCount || 0) === 0"
+                          title="Iniciar / continuar revisión">
+                    <i class="fas fa-play"></i>
+                    {{ getBlProgress(bl.id) ? 'Continuar' : 'Iniciar' }}
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="filteredBlList.length === 0">
+                <td colspan="11">
+                  <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No hay B/Ls disponibles</p>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+
+<!-- ============================================
+     VISTA 2: REVISIÓN DEL B/L SELECCIONADO
+     ============================================ -->
+<div class="container-fluid animate-fade-in" *ngIf="viewMode === 'revision'">
+
+  <!-- Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <button class="btn btn-outline-secondary mb-2" (click)="backToList()">
+        <i class="fas fa-arrow-left"></i> Volver a lista de B/Ls
+      </button>
+      <div class="page-header mb-0">
+        <h2 class="mb-0">
+          <i class="fas fa-clipboard-check"></i> Revisión de Vehículos
+        </h2>
+        <p class="subtitle mb-0" *ngIf="blInfo">
+          <i class="fas fa-ship"></i> B/L: <strong>{{ blInfo.blNumber }}</strong> &nbsp;|&nbsp;
+          {{ blInfo.vesselName }} &nbsp;|&nbsp;
+          {{ blInfo.portOfLoading }} → {{ blInfo.portOfDischarge }}
+        </p>
+      </div>
+    </div>
+    <div class="col-md-6 text-end">
+      <div class="btn-toolbar justify-content-end flex-wrap gap-1">
+        <!-- Indicador de guardado automático -->
+        <span *ngIf="isSaving" class="text-muted small align-self-center me-2">
+          <i class="fas fa-spinner fa-spin"></i> Guardando...
+        </span>
+        <span *ngIf="saveSuccess" class="text-success small align-self-center me-2 animate-fade-in">
+          <i class="fas fa-check-circle"></i> Guardado
+        </span>
+        <button class="btn btn-outline-secondary" (click)="exportRevision()" title="Exportar a Excel">
+          <i class="fas fa-file-excel"></i> Exportar
+        </button>
+        <button class="btn btn-outline-warning" (click)="resetRevision()" title="Resetear estados">
+          <i class="fas fa-undo"></i> Resetear
+        </button>
+        <button class="btn btn-success" (click)="markAllVisible()"
+                [disabled]="filteredItems.length === 0"
+                title="Marcar todos los visibles como revisado">
+          <i class="fas fa-check-double"></i> Marcar Visibles
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando datos del B/L...</p>
+  </div>
+
+  <!-- Error -->
+  <div *ngIf="error && !loading" class="alert alert-danger">
+    <h6><i class="fas fa-exclamation-triangle"></i> Error</h6>
+    <p class="mb-0">{{ error }}</p>
+  </div>
+
+  <ng-container *ngIf="!loading && !error">
+
+    <!-- Tarjetas de progreso -->
+    <div class="row mb-4">
+
+      <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card stat-card primary">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h3 class="mb-0">{{ totalItems }}</h3>
+                <small>TOTAL ÍTEMS</small>
+              </div>
+              <i class="fas fa-list fa-2x opacity-50"></i>
+            </div>
+            <div class="progress mt-2" style="height:6px;">
+              <div class="progress-bar bg-white" [style.width]="progressPercent + '%'"></div>
+            </div>
+            <small class="d-block mt-1">{{ progressPercent | number:'1.0-0' }}% revisado</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card stat-card" style="border-left:4px solid #6c757d;background:linear-gradient(135deg,#6c757d,#495057);">
+          <div class="card-body" style="color:white;">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h3 class="mb-0">{{ chassisItems.length }}</h3>
+                <small>CHASIS</small>
+              </div>
+              <i class="fas fa-truck fa-2x opacity-50"></i>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <small>{{ getRevisadoCount('chassis') }} revisados</small>
+              <small class="fw-bold"
+                     [style.color]="getCountValidation('chassis').ok ? '#a8ffb0' : '#ffcaca'">
+                {{ getCountValidation('chassis').label }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card stat-card info">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h3 class="mb-0">{{ cabItems.length }}</h3>
+                <small>CABINAS</small>
+              </div>
+              <i class="fas fa-car fa-2x opacity-50"></i>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <small>{{ getRevisadoCount('cab') }} revisadas</small>
+              <small class="fw-bold"
+                     [style.color]="getCountValidation('cab').ok ? '#a8ffb0' : '#ffcaca'">
+                {{ getCountValidation('cab').label }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 col-sm-6 mb-2">
+        <div class="card stat-card success">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <h3 class="mb-0">{{ engineItems.length }}</h3>
+                <small>MOTORES</small>
+              </div>
+              <i class="fas fa-cogs fa-2x opacity-50"></i>
+            </div>
+            <div class="d-flex justify-content-between mt-1">
+              <small>{{ getRevisadoCount('engine') }} revisados</small>
+              <small class="fw-bold"
+                     [style.color]="getCountValidation('engine').ok ? '#a8ffb0' : '#ffcaca'">
+                {{ getCountValidation('engine').label }}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Alerta de discrepancias -->
+    <div class="alert alert-warning animate-fade-in mb-3" *ngIf="countDiscrepancies.length > 0">
+      <h6 class="mb-2">
+        <i class="fas fa-exclamation-triangle"></i>
+        {{ countDiscrepancies.length }} contenedor(es) con discrepancia en cantidades
+      </h6>
+      <div class="table-responsive">
+        <table class="table table-sm table-warning mb-0">
+          <thead>
+            <tr>
+              <th>Contenedor</th>
+              <th>Invoice</th>
+              <th class="text-center">Chasis Decl.</th>
+              <th class="text-center">Chasis Enc.</th>
+              <th class="text-center">Cabinas Decl.</th>
+              <th class="text-center">Cabinas Enc.</th>
+              <th class="text-center">Motores Decl.</th>
+              <th class="text-center">Motores Enc.</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let d of countDiscrepancies">
+              <td><code class="code small">{{ d.containerNumber }}</code></td>
+              <td><span class="badge secondary small">{{ d.invoiceNumber || '—' }}</span></td>
+              <td class="text-center">{{ d.chassisDeclared }}</td>
+              <td class="text-center fw-bold" [class.text-danger]="d.chassisDeclared !== d.chassisFound">{{ d.chassisFound }}</td>
+              <td class="text-center">{{ d.cabDeclared }}</td>
+              <td class="text-center fw-bold" [class.text-danger]="d.cabDeclared !== d.cabFound">{{ d.cabFound }}</td>
+              <td class="text-center">{{ d.engineDeclared }}</td>
+              <td class="text-center fw-bold" [class.text-danger]="d.engineDeclared !== d.engineFound">{{ d.engineFound }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Barra de estado -->
+    <div class="card mb-3 animate-fade-in">
+      <div class="card-body py-2">
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+          <span class="badge success"><i class="fas fa-check"></i> {{ statusCount('revisado') }} Revisados</span>
+          <span class="badge warning"><i class="fas fa-exclamation"></i> {{ statusCount('observacion') }} Con obs.</span>
+          <span class="badge danger"><i class="fas fa-times"></i> {{ statusCount('faltante') }} Faltantes</span>
+          <span class="badge secondary"><i class="fas fa-clock"></i> {{ statusCount('pendiente') }} Pendientes</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filtros y Tabs -->
+    <div class="card mb-3 animate-fade-in">
+      <div class="card-body py-2">
+        <div class="row g-2 align-items-center flex-wrap">
+
+          <!-- Tabs tipo -->
+          <div class="col-auto">
+            <div class="btn-group btn-group-sm" role="group">
+              <button type="button" class="btn"
+                      [class.btn-dark]="activeTab === 'todos'"
+                      [class.btn-outline-dark]="activeTab !== 'todos'"
+                      (click)="setTab('todos')">
+                <i class="fas fa-layer-group"></i> Todos
+                <span class="badge ms-1"
+                      [class.bg-white]="activeTab==='todos'" [class.text-dark]="activeTab==='todos'"
+                      [class.bg-dark]="activeTab!=='todos'">{{ totalItems }}</span>
+              </button>
+              <button type="button" class="btn"
+                      [class.btn-secondary]="activeTab === 'chassis'"
+                      [class.btn-outline-secondary]="activeTab !== 'chassis'"
+                      (click)="setTab('chassis')">
+                <i class="fas fa-truck"></i> Chasis
+                <span class="badge ms-1"
+                      [class.bg-white]="activeTab==='chassis'" [class.text-dark]="activeTab==='chassis'"
+                      [class.bg-secondary]="activeTab!=='chassis'">{{ chassisItems.length }}</span>
+              </button>
+              <button type="button" class="btn"
+                      [class.btn-info]="activeTab === 'cab'"
+                      [class.btn-outline-info]="activeTab !== 'cab'"
+                      (click)="setTab('cab')">
+                <i class="fas fa-car"></i> Cabinas
+                <span class="badge ms-1"
+                      [class.bg-white]="activeTab==='cab'" [class.text-dark]="activeTab==='cab'"
+                      [class.bg-info]="activeTab!=='cab'">{{ cabItems.length }}</span>
+              </button>
+              <button type="button" class="btn"
+                      [class.btn-success]="activeTab === 'engine'"
+                      [class.btn-outline-success]="activeTab !== 'engine'"
+                      (click)="setTab('engine')">
+                <i class="fas fa-cogs"></i> Motores
+                <span class="badge ms-1"
+                      [class.bg-white]="activeTab==='engine'" [class.text-dark]="activeTab==='engine'"
+                      [class.bg-success]="activeTab!=='engine'">{{ engineItems.length }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="col-auto"><div class="vr" style="height:32px;"></div></div>
+
+          <!-- Filtros -->
+          <div class="col-auto">
+            <select class="form-select form-select-sm" [(ngModel)]="filterStatus" style="min-width:150px;">
+              <option value="">Todos los estados</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="revisado">Revisados</option>
+              <option value="observacion">Con Observación</option>
+              <option value="faltante">Faltantes</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Contenedor..." [(ngModel)]="filterContainer" style="min-width:130px;">
+          </div>
+          <div class="col-auto">
+            <input type="text" class="form-control form-control-sm"
+                   placeholder="Invoice..." [(ngModel)]="filterInvoice" style="min-width:110px;">
+          </div>
+          <div class="col">
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="fas fa-search"></i></span>
+              <input type="text" class="form-control"
+                     placeholder="Buscar número (chasis / cabina / motor)..."
+                     [(ngModel)]="searchTerm">
+              <button class="btn btn-outline-secondary" *ngIf="searchTerm" (click)="searchTerm=''" type="button">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-auto" *ngIf="hasAnyFilter">
+            <button class="btn btn-sm btn-outline-secondary" (click)="clearFilters()">
+              <i class="fas fa-times"></i> Limpiar
+            </button>
+          </div>
+          <div class="col-auto" *ngIf="hasAnyFilter">
+            <small class="text-primary fw-bold">{{ filteredItems.length }} ítem(s)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de ítems -->
+    <div class="card animate-fade-in">
+      <div class="table-container">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th style="width:40px;">#</th>
+                <th>Número</th>
+                <th>Tipo</th>
+                <th>Contenedor</th>
+                <th>Invoice</th>
+                <th class="text-center">Estado</th>
+                <th>Observación</th>
+                <th class="text-center" style="width:170px;">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of filteredItems; let i = index"
+                  [class.table-success]="item.status === 'revisado'"
+                  [class.table-warning]="item.status === 'observacion'"
+                  [class.table-danger]="item.status === 'faltante'">
+
+                <td class="text-muted small">{{ i + 1 }}</td>
+                <td><code class="code fw-bold">{{ item.number }}</code></td>
+                <td>
+                  <span class="badge"
+                        [class.secondary]="item.type === 'chassis'"
+                        [class.info]="item.type === 'cab'"
+                        [class.success]="item.type === 'engine'">
+                    <i class="fas"
+                       [class.fa-truck]="item.type === 'chassis'"
+                       [class.fa-car]="item.type === 'cab'"
+                       [class.fa-cogs]="item.type === 'engine'"></i>
+                    {{ item.type === 'chassis' ? 'Chasis' : item.type === 'cab' ? 'Cabina' : 'Motor' }}
+                  </span>
+                </td>
+                <td><code class="code small">{{ item.containerNumber }}</code></td>
+                <td><span class="badge secondary small">{{ item.invoiceNumber || '—' }}</span></td>
+                <td class="text-center">
+                  <span class="badge"
+                        [class.secondary]="item.status === 'pendiente'"
+                        [class.success]="item.status === 'revisado'"
+                        [class.warning]="item.status === 'observacion'"
+                        [class.danger]="item.status === 'faltante'">
+                    <i class="fas"
+                       [class.fa-clock]="item.status === 'pendiente'"
+                       [class.fa-check]="item.status === 'revisado'"
+                       [class.fa-exclamation-triangle]="item.status === 'observacion'"
+                       [class.fa-times-circle]="item.status === 'faltante'"></i>
+                    {{ getStatusLabel(item.status) }}
+                  </span>
+                </td>
+                <td>
+                  <small class="text-muted fst-italic" *ngIf="!item.editingNote">{{ item.note || '—' }}</small>
+                  <div *ngIf="item.editingNote" class="d-flex gap-1">
+                    <input type="text" class="form-control form-control-sm"
+                           [(ngModel)]="item.tempNote"
+                           (keyup.enter)="saveNote(item)"
+                           (keyup.escape)="cancelNote(item)"
+                           placeholder="Escribir observación..."
+                           style="min-width:180px;">
+                    <button class="btn btn-xs btn-success" (click)="saveNote(item)"><i class="fas fa-check"></i></button>
+                    <button class="btn btn-xs btn-outline-secondary" (click)="cancelNote(item)"><i class="fas fa-times"></i></button>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <div class="btn-toolbar justify-content-center">
+                    <button class="btn btn-xs btn-success"
+                            (click)="setStatus(item, 'revisado')"
+                            [class.active]="item.status === 'revisado'"
+                            title="Revisado">
+                      <i class="fas fa-check"></i>
+                    </button>
+                    <button class="btn btn-xs btn-warning"
+                            (click)="setStatus(item, 'observacion')"
+                            [class.active]="item.status === 'observacion'"
+                            title="Observación">
+                      <i class="fas fa-exclamation"></i>
+                    </button>
+                    <button class="btn btn-xs btn-danger"
+                            (click)="setStatus(item, 'faltante')"
+                            [class.active]="item.status === 'faltante'"
+                            title="Faltante">
+                      <i class="fas fa-times"></i>
+                    </button>
+                    <button class="btn btn-xs btn-outline-secondary"
+                            (click)="startEditNote(item)"
+                            title="Observación">
+                      <i class="fas fa-comment-alt"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+
+              <tr *ngIf="filteredItems.length === 0">
+                <td colspan="8">
+                  <div class="empty-state">
+                    <i class="fas fa-clipboard-check"></i>
+                    <p>No se encontraron ítems</p>
+                    <small class="text-muted" *ngIf="hasAnyFilter">Prueba cambiando los filtros</small>
+                    <small class="text-muted" *ngIf="!hasAnyFilter">
+                      Este B/L no tiene chasis, cabinas ni motores registrados
+                    </small>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Footer tabla -->
+      <div class="card-footer d-flex justify-content-between align-items-center py-2"
+           *ngIf="filteredItems.length > 0">
+        <small class="text-muted">
+          Mostrando {{ filteredItems.length }} de {{ totalItems }} ítems
+        </small>
+        <div>
+          <span class="badge success me-1">{{ statusCount('revisado') }} <i class="fas fa-check"></i></span>
+          <span class="badge warning me-1">{{ statusCount('observacion') }} <i class="fas fa-exclamation"></i></span>
+          <span class="badge danger me-1">{{ statusCount('faltante') }} <i class="fas fa-times"></i></span>
+          <span class="badge secondary">{{ statusCount('pendiente') }} <i class="fas fa-clock"></i></span>
+        </div>
+      </div>
+    </div>
+
+  </ng-container>
+</div>
+
+
+<!-- MODAL: Reset -->
+<div class="modal-overlay" *ngIf="showResetModal" (click)="closeResetModal()">
+  <div class="modal-content" style="max-width:420px;" (click)="$event.stopPropagation()">
+    <div class="modal-header warning">
+      <h5 class="modal-title"><i class="fas fa-undo"></i> Resetear Revisión</h5>
+      <button type="button" class="btn-close" (click)="closeResetModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p>¿Estás seguro de que deseas resetear todos los estados de revisión?</p>
+      <p class="text-muted small">Se perderán todos los estados y observaciones marcados del B/L actual.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeResetModal()">Cancelar</button>
+      <button class="btn btn-warning" (click)="confirmReset()">
+        <i class="fas fa-undo"></i> Sí, resetear
+      </button>
+    </div>
+  </div>
+</div>

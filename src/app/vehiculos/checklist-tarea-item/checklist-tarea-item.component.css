@@ -1,0 +1,325 @@
+/*
+ * ============================================================
+ *  checklist-tarea-item.component.css
+ *  Variables: --primary, --success, --warning, --border, etc.
+ *
+ *  DISEÑO: Toda la fila es la zona de clic.
+ *  El checkbox es grande, visible y con affordance clara.
+ * ============================================================
+ */
+
+/* ── Contenedor del ítem ── */
+.tarea-item {
+  display       : flex;
+  flex-direction: column;
+  border-bottom : 1px solid #f1f5f9;
+  transition    : background var(--t);
+  position      : relative;
+}
+.tarea-item:last-child { border-bottom: none; }
+
+/* ── Fila principal: toda es clickeable ── */
+.tarea-row {
+  display    : flex;
+  align-items: center;
+  gap        : 0;
+  cursor     : pointer;
+  padding    : 0;
+  min-height : 52px;
+  transition : background var(--t);
+}
+.tarea-row:hover { background: #f0f7ff; }
+
+/* Estado hover muestra sombra interna azul a la izquierda */
+.tarea-item:not(.completada) .tarea-row:hover {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+/* ── ZONA CHECKBOX — ancha y bien visible ── */
+.tarea-checkbox {
+  flex-shrink : 0;
+  width       : 56px;
+  height      : 52px;
+  display     : flex;
+  align-items : center;
+  justify-content: center;
+  cursor      : pointer;
+}
+
+/* Ocultar input nativo */
+.tarea-checkbox input[type="checkbox"] {
+  position     : absolute;
+  opacity      : 0;
+  width        : 0;
+  height       : 0;
+  pointer-events: none;
+}
+
+/* Label = cuadrado visible grande */
+.tarea-checkbox label {
+  width         : 24px;
+  height        : 24px;
+  border        : 2.5px solid #94a3b8;   /* gris visible, no transparente */
+  border-radius : 7px;
+  background    : #fff;
+  cursor        : pointer;
+  display       : flex;
+  align-items   : center;
+  justify-content: center;
+  transition    : all var(--t);
+  flex-shrink   : 0;
+  position      : relative;
+  box-shadow    : 0 1px 3px rgba(0,0,0,.1);  /* sombra para dar profundidad */
+}
+
+/* Hover en la label */
+.tarea-checkbox label:hover {
+  border-color: var(--primary);
+  background  : var(--primary-lt);
+  transform   : scale(1.1);
+  box-shadow  : 0 0 0 4px rgba(59,130,246,.15);
+}
+
+/* Checkmark SVG inline */
+.tarea-checkbox label::after {
+  content   : '';
+  position  : absolute;
+  left      : 6px;
+  top       : 3px;
+  width     : 8px;
+  height    : 13px;
+  border    : 2.5px solid transparent;
+  border-top: none;
+  border-left: none;
+  transform : rotate(45deg);
+  transition: border-color var(--t);
+}
+
+/* Estado: MARCADO ✓ */
+.tarea-checkbox input:checked + label {
+  background  : var(--success);
+  border-color: var(--success);
+  box-shadow  : 0 2px 6px rgba(34,197,94,.4);
+  animation   : checkPop .2s ease;
+}
+.tarea-checkbox input:checked + label::after {
+  border-color: #fff;
+}
+
+@keyframes checkPop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ── Info de la tarea ── */
+.tarea-info {
+  flex       : 1;
+  display    : flex;
+  align-items: center;
+  gap        : 10px;
+  min-width  : 0;
+  padding    : 14px 16px 14px 0;
+}
+
+.tarea-numero {
+  flex-shrink   : 0;
+  font-size     : 11px;
+  font-weight   : 700;
+  color         : var(--text-lt);
+  background    : #f1f5f9;
+  padding       : 2px 8px;
+  border-radius : 99px;
+  white-space   : nowrap;
+  min-width     : 26px;
+  text-align    : center;
+  font-family   : 'Courier New', monospace;
+}
+
+.tarea-descripcion {
+  font-size  : 13px;
+  font-weight: 500;
+  color      : var(--text);
+  line-height: 1.45;
+}
+
+/* Completada: tachado y gris */
+.tarea-item.completada .tarea-descripcion {
+  text-decoration      : line-through;
+  text-decoration-color: #94a3b8;
+  color                : var(--text-lt);
+}
+
+/* ── Estado COMPLETADA — fondo verde pálido ── */
+.tarea-item.completada {
+  background: #f0fdf4;
+}
+.tarea-item.completada .tarea-row:hover {
+  background: #dcfce7;
+  box-shadow: inset 3px 0 0 var(--success);
+}
+
+/* ── Estado EN EDICIÓN — resaltado azul ── */
+.tarea-item.en-confirmacion {
+  background: #eff6ff;
+  border-left: 3px solid var(--primary);
+}
+.tarea-item.en-confirmacion .tarea-row {
+  cursor: default;
+}
+
+/* ── Hint visual "clic para marcar" solo visible en hover ── */
+.tarea-row:hover .tarea-descripcion::after {
+  content    : ' ← clic para marcar';
+  font-size  : 10px;
+  color      : var(--primary);
+  font-style : italic;
+  font-weight: 400;
+  opacity    : .7;
+}
+.tarea-item.completada .tarea-row:hover .tarea-descripcion::after {
+  content: ' ← clic para desmarcar';
+  color  : var(--text-lt);
+}
+
+/* ── Botón editar detalles ── */
+.btn-editar-detalle {
+  flex-shrink  : 0;
+  background   : none;
+  border       : 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding      : 4px 10px;
+  margin-right : 12px;
+  cursor       : pointer;
+  color        : var(--text-lt);
+  font-size    : 12px;
+  white-space  : nowrap;
+  transition   : all var(--t);
+  display      : flex;
+  align-items  : center;
+  gap          : 4px;
+  opacity      : 0;
+}
+.tarea-item:hover .btn-editar-detalle,
+.tarea-item.completada .btn-editar-detalle { opacity: 1; }
+.btn-editar-detalle:hover {
+  background  : var(--primary-lt);
+  border-color: var(--primary);
+  color       : var(--primary);
+}
+
+/* ── Meta: realizador + fecha ── */
+.tarea-meta {
+  display    : flex;
+  gap        : 10px;
+  flex-wrap  : wrap;
+  padding    : 0 16px 10px 56px;
+  align-items: center;
+}
+.tarea-realizador,
+.tarea-fecha { font-size: 11px; color: var(--success-dk); display: flex; align-items: center; gap: 3px; font-weight: 600; }
+.tarea-sin-detalle { font-size: 11px; color: var(--text-lt); font-style: italic; }
+.tarea-sin-detalle a { color: var(--primary); cursor: pointer; text-decoration: underline; }
+
+/* ── Observación ── */
+.tarea-observacion {
+  padding    : 0 16px 10px 56px;
+  font-size  : 12px;
+  color      : var(--text-md);
+  display    : flex;
+  align-items: flex-start;
+  gap        : 4px;
+}
+
+/* ── Panel de detalles inline ── */
+.tarea-confirm-form {
+  margin    : 0 16px 12px 56px;
+  background: #f0fdf4;
+  border    : 1.5px solid var(--success);
+  border-radius: var(--r-md);
+  padding   : 12px 14px;
+  animation : confirmIn .18s ease;
+}
+@keyframes confirmIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.confirm-header {
+  display      : flex;
+  align-items  : center;
+  gap          : 6px;
+  font-size    : 12px;
+  font-weight  : 600;
+  color        : var(--success-dk);
+  margin-bottom: 10px;
+}
+.confirm-header span { flex: 1; }
+
+.confirm-close {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; color: var(--text-lt); line-height: 1;
+  padding: 0 2px; transition: color var(--t);
+}
+.confirm-close:hover { color: var(--danger); }
+
+.confirm-fields { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+
+.form-control {
+  width        : 100%;
+  padding      : 7px 11px;
+  border       : 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  font-size    : 13px;
+  color        : var(--text);
+  background   : var(--surface);
+  outline      : none;
+  font-family  : inherit;
+  transition   : border-color var(--t), box-shadow var(--t);
+  box-sizing   : border-box;
+}
+.form-control:focus {
+  border-color: var(--primary);
+  box-shadow  : 0 0 0 3px rgba(59,130,246,.15);
+}
+.form-control-sm { padding: 5px 9px; font-size: 12px; }
+
+.confirm-actions { display: flex; gap: 8px; align-items: center; }
+
+/* Botones dentro del panel */
+.btn {
+  display     : inline-flex;
+  align-items : center;
+  gap         : 5px;
+  border      : none;
+  border-radius: var(--r-md);
+  font-size   : 13px;
+  font-weight : 600;
+  cursor      : pointer;
+  transition  : all var(--t);
+  padding     : 7px 14px;
+  white-space : nowrap;
+  font-family : inherit;
+  line-height : 1;
+}
+.btn:active  { transform: scale(.97); }
+.btn-xs      { padding: 4px 10px; font-size: 11px; border-radius: var(--r-sm); }
+.btn-sm      { padding: 5px 12px; font-size: 12px; }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { background: var(--success-dk); }
+.btn-secondary { background: #f1f5f9; color: var(--text-md); border: 1.5px solid var(--border); }
+.btn-secondary:hover { background: #e2e8f0; }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .tarea-checkbox        { width: 44px; }
+  .tarea-confirm-form    { margin-left: 0; }
+  .tarea-meta            { padding-left: 44px; }
+  .tarea-observacion     { padding-left: 44px; }
+  .confirm-actions       { flex-direction: column; }
+  .confirm-actions .btn  { width: 100%; justify-content: center; }
+  /* En móvil el hint siempre visible */
+  .btn-editar-detalle    { opacity: 1; }
+  /* Ocultar hint de texto en móvil */
+  .tarea-row:hover .tarea-descripcion::after { display: none; }
+}

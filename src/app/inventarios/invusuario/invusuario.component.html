@@ -1,0 +1,448 @@
+<div class="invusuarios-root">
+
+  <!-- ══════════════════════════════════════════════
+       TABS
+  ══════════════════════════════════════════════ -->
+  <div class="tabs-bar">
+    <button class="tab-btn" [class.active]="tabActiva === 'asignaciones'"
+      (click)="cambiarTab('asignaciones')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      Asignaciones por bodega
+    </button>
+    <button class="tab-btn" [class.active]="tabActiva === 'personas'"
+      (click)="cambiarTab('personas')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      Personas
+      <span class="tab-count">{{ personas.length }}</span>
+    </button>
+    <button class="tab-btn" [class.active]="tabActiva === 'slots'"
+      (click)="cambiarTab('slots')">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+      Usuarios de login
+      <span class="tab-count">{{ slots.length }}</span>
+    </button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
+       TAB 1: ASIGNACIONES POR CAMPAÑA + BODEGA
+  ══════════════════════════════════════════════ -->
+  <div class="tab-panel" *ngIf="tabActiva === 'asignaciones'">
+
+    <div class="panel-intro">
+      <p>
+        Cada <strong>usuario de login</strong> (userinv…) es un slot fijo. Aquí defines
+        <strong>qué persona real lo usa</strong> en cada campaña y bodega. Al cambiar de bodega,
+        reasigna los slots al nuevo equipo — el historial queda auditado.
+      </p>
+    </div>
+
+    <!-- Selectores de contexto -->
+    <div class="contexto-bar">
+      <div class="ctx-field">
+        <label>Campaña</label>
+        <select [(ngModel)]="campanaSeleccionada" (ngModelChange)="onContextoChange()">
+          <option [ngValue]="null">Selecciona campaña…</option>
+          <option *ngFor="let c of campanas" [ngValue]="c.id">
+            {{ c.nombre }} <ng-container *ngIf="(c.estado || '').toLowerCase() === 'activa'">● activa</ng-container>
+          </option>
+        </select>
+      </div>
+      <div class="ctx-field">
+        <label>Bodega / Agencia</label>
+        <select [(ngModel)]="agenciaSeleccionada" (ngModelChange)="onContextoChange()">
+          <option [ngValue]="null">Selecciona bodega…</option>
+          <option *ngFor="let a of agencias" [ngValue]="a.idAgencia ? +a.idAgencia : a.idSerial">
+            {{ a.nombre }} ({{ a.codigoAgencia }})
+          </option>
+        </select>
+      </div>
+      <div class="ctx-resumen" *ngIf="filasSlots.length">
+        <span class="ctx-chip vigentes">{{ asignacionesVigentes }} asignados</span>
+        <span class="ctx-chip libres">{{ filasSlots.length - asignacionesVigentes }} libres</span>
+      </div>
+    </div>
+
+    <!-- Mensajes -->
+    <div class="msg-ok" *ngIf="mensajeOk">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+        stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      {{ mensajeOk }}
+    </div>
+    <div class="msg-error" *ngIf="errorAsignaciones">{{ errorAsignaciones }}</div>
+
+    <!-- Estado vacío / loader -->
+    <div class="panel-empty" *ngIf="(!campanaSeleccionada || !agenciaSeleccionada) && !cargandoAsignaciones">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      <p>Selecciona campaña y bodega para gestionar el equipo de conteo</p>
+    </div>
+    <div class="panel-loader" *ngIf="cargandoAsignaciones">
+      <div class="spinner"></div><span>Cargando…</span>
+    </div>
+
+    <!-- Grilla de slots -->
+    <div class="tabla-wrap" *ngIf="filasSlots.length && !cargandoAsignaciones">
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Usuario de login</th>
+            <th>Persona asignada</th>
+            <th>Rol</th>
+            <th>Desde</th>
+            <th>Estado</th>
+            <th class="th-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let fila of filasSlots"
+            [class.row-libre]="!fila.asignacion"
+            [class.row-bloqueado]="!fila.slot.activo">
+
+            <!-- Slot -->
+            <td class="td-slot">
+              <span class="slot-name">{{ fila.slot.nombre_usuario }}</span>
+              <span class="slot-id">idimport {{ fila.slot.idimport }}</span>
+              <span class="slot-lock" *ngIf="!fila.slot.activo" title="Login bloqueado en importaciones">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                  stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                bloqueado
+              </span>
+            </td>
+
+            <!-- Persona: normal o editor inline -->
+            <td class="td-persona">
+              <ng-container *ngIf="slotEditando !== fila.slot.idimport; else editorPersona">
+                <div class="persona-cell" *ngIf="fila.asignacion; else sinAsignar">
+                  <div class="persona-avatar">{{ getInicialesPersona(fila.asignacion.nombre_completo) }}</div>
+                  <div class="persona-meta">
+                    <span class="persona-nombre">{{ fila.asignacion.nombre_completo }}</span>
+                    <span class="persona-cedula" *ngIf="fila.asignacion.cedula">CI {{ fila.asignacion.cedula }}</span>
+                  </div>
+                </div>
+                <ng-template #sinAsignar>
+                  <span class="sin-asignar">— Sin asignar —</span>
+                </ng-template>
+              </ng-container>
+
+              <ng-template #editorPersona>
+                <div class="editor-inline">
+                  <select [(ngModel)]="personaParaAsignar" class="select-persona">
+                    <option [ngValue]="null">Selecciona persona…</option>
+                    <option *ngFor="let p of personasActivas" [ngValue]="p.id">
+                      {{ p.nombre_completo }}<ng-container *ngIf="p.especialidad"> — {{ p.especialidad }}</ng-container>
+                    </option>
+                  </select>
+                  <button class="btn-mini ok" [disabled]="!personaParaAsignar || guardandoAsignacion"
+                    (click)="guardarAsignacion(fila)">
+                    <div class="mini-spinner" *ngIf="guardandoAsignacion"></div>
+                    <ng-container *ngIf="!guardandoAsignacion">Guardar</ng-container>
+                  </button>
+                  <button class="btn-mini" (click)="cancelarAsignacion()">Cancelar</button>
+                </div>
+              </ng-template>
+            </td>
+
+            <td>{{ fila.asignacion?.rol || '—' }}</td>
+            <td class="td-fecha">
+              {{ fila.asignacion ? (fila.asignacion.fecha_asignacion | date:'dd/MM/yy HH:mm') : '—' }}
+            </td>
+
+            <td>
+              <span class="badge-estado"
+                [class.badge-asignado]="fila.asignacion"
+                [class.badge-libre]="!fila.asignacion">
+                {{ fila.asignacion ? 'ASIGNADO' : 'LIBRE' }}
+              </span>
+            </td>
+
+            <!-- Acciones -->
+            <td class="td-acciones">
+              <ng-container *ngIf="fila.asignacion && confirmBajaId === fila.asignacion.id; else botonesNormales">
+                <span class="confirm-text">¿Liberar slot?</span>
+                <button class="btn-confirm-si" (click)="confirmarBaja(fila.asignacion!)">Sí</button>
+                <button class="btn-confirm-no" (click)="cancelarBaja()">No</button>
+              </ng-container>
+              <ng-template #botonesNormales>
+                <button class="btn-mini accion"
+                  [disabled]="!fila.slot.activo || slotEditando !== null"
+                  (click)="iniciarAsignacion(fila)">
+                  {{ fila.asignacion ? 'Reasignar' : 'Asignar' }}
+                </button>
+                <button class="btn-mini peligro" *ngIf="fila.asignacion"
+                  [disabled]="slotEditando !== null"
+                  (click)="pedirBaja(fila.asignacion!)">
+                  Liberar
+                </button>
+              </ng-template>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Historial -->
+    <div class="historial-section" *ngIf="filasSlots.length && !cargandoAsignaciones">
+      <button class="btn-historial" (click)="mostrarHistorial = !mostrarHistorial">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        {{ mostrarHistorial ? 'Ocultar' : 'Ver' }} historial de esta bodega ({{ historial.length }})
+      </button>
+
+      <div class="tabla-wrap" *ngIf="mostrarHistorial && historial.length">
+        <table class="modal-table historial-table">
+          <thead>
+            <tr>
+              <th>Usuario de login</th>
+              <th>Persona</th>
+              <th>Desde</th>
+              <th>Hasta</th>
+              <th>Asignó</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let h of historial">
+              <td class="td-slot"><span class="slot-name">{{ getNombreSlot(h.idimport) }}</span></td>
+              <td>{{ h.nombre_completo }}</td>
+              <td class="td-fecha">{{ h.fecha_asignacion | date:'dd/MM/yy HH:mm' }}</td>
+              <td class="td-fecha">{{ h.fecha_baja | date:'dd/MM/yy HH:mm' }}</td>
+              <td>{{ h.usuario_asigno || '—' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="historial-vacio" *ngIf="mostrarHistorial && !historial.length">
+        Sin cambios de asignación registrados en esta bodega.
+      </p>
+    </div>
+
+  </div><!-- /tab asignaciones -->
+
+  <!-- ══════════════════════════════════════════════
+       TAB 2: PERSONAS
+  ══════════════════════════════════════════════ -->
+  <div class="tab-panel" *ngIf="tabActiva === 'personas'">
+
+    <div class="panel-intro">
+      <p>
+        Catálogo de <strong>personas reales</strong> que participan en los inventarios.
+        Crear o editar aquí <strong>no toca la base de importaciones</strong>: el login
+        se gestiona en la pestaña "Usuarios de login".
+      </p>
+    </div>
+
+    <div class="acciones-bar">
+      <div class="inline-search-wrap">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="inline-search-input" type="text" placeholder="Buscar por nombre, cédula o especialidad…"
+          [(ngModel)]="busquedaPersona" autocomplete="off">
+      </div>
+      <button class="btn-primario" (click)="nuevaPersona()" *ngIf="!mostrarFormPersona">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Nueva persona
+      </button>
+    </div>
+
+    <div class="msg-error" *ngIf="errorPersonas">{{ errorPersonas }}</div>
+
+    <!-- Formulario crear/editar -->
+    <div class="form-card" *ngIf="mostrarFormPersona">
+      <h4>{{ personaEditandoId ? 'Editar persona' : 'Nueva persona' }}</h4>
+      <div class="form-grid">
+        <div class="form-field full">
+          <label>Nombre completo *</label>
+          <input type="text" [(ngModel)]="formPersona.nombreCompleto" placeholder="Ej: MAURICIO ANDRADE">
+        </div>
+        <div class="form-field">
+          <label>Cédula</label>
+          <input type="text" [(ngModel)]="formPersona.cedula" placeholder="Opcional">
+        </div>
+        <div class="form-field">
+          <label>Teléfono</label>
+          <input type="text" [(ngModel)]="formPersona.telefono" placeholder="Opcional">
+        </div>
+        <div class="form-field">
+          <label>Email</label>
+          <input type="email" [(ngModel)]="formPersona.email" placeholder="Opcional">
+        </div>
+        <div class="form-field">
+          <label>Especialidad</label>
+          <input type="text" [(ngModel)]="formPersona.especialidad" placeholder="Ej: repuestos pesados">
+        </div>
+        <div class="form-field full">
+          <label>Observaciones</label>
+          <input type="text" [(ngModel)]="formPersona.observaciones" placeholder="Opcional">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-primario" [disabled]="guardandoPersona" (click)="guardarPersona()">
+          <div class="mini-spinner" *ngIf="guardandoPersona"></div>
+          <ng-container *ngIf="!guardandoPersona">{{ personaEditandoId ? 'Guardar cambios' : 'Crear persona' }}</ng-container>
+        </button>
+        <button class="btn-secundario" (click)="cancelarFormPersona()">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="panel-loader" *ngIf="cargandoPersonas">
+      <div class="spinner"></div><span>Cargando…</span>
+    </div>
+
+    <div class="tabla-wrap" *ngIf="!cargandoPersonas">
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Persona</th>
+            <th>Cédula</th>
+            <th>Teléfono</th>
+            <th>Especialidad</th>
+            <th>Estado</th>
+            <th class="th-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of personasFiltradas" [class.row-inactiva]="!p.estado">
+            <td>
+              <div class="persona-cell">
+                <div class="persona-avatar">{{ getInicialesPersona(p.nombre_completo) }}</div>
+                <div class="persona-meta">
+                  <span class="persona-nombre">{{ p.nombre_completo }}</span>
+                  <span class="persona-cedula" *ngIf="p.email">{{ p.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td>{{ p.cedula || '—' }}</td>
+            <td>{{ p.telefono || '—' }}</td>
+            <td>{{ p.especialidad || '—' }}</td>
+            <td>
+              <span class="badge-estado"
+                [class.badge-asignado]="p.estado"
+                [class.badge-inactivo]="!p.estado">
+                {{ p.estado ? 'ACTIVA' : 'INACTIVA' }}
+              </span>
+            </td>
+            <td class="td-acciones">
+              <ng-container *ngIf="confirmEstadoPersonaId === p.id; else botonesPersona">
+                <span class="confirm-text">{{ p.estado ? '¿Desactivar?' : '¿Activar?' }}</span>
+                <button class="btn-confirm-si" (click)="confirmarCambioEstadoPersona(p)">Sí</button>
+                <button class="btn-confirm-no" (click)="cancelarCambioEstadoPersona()">No</button>
+              </ng-container>
+              <ng-template #botonesPersona>
+                <button class="btn-mini accion" (click)="editarPersona(p)">Editar</button>
+                <button class="btn-mini" [class.peligro]="p.estado"
+                  (click)="pedirCambioEstadoPersona(p)">
+                  {{ p.estado ? 'Desactivar' : 'Activar' }}
+                </button>
+              </ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="personasFiltradas.length === 0">
+            <td colspan="6" class="td-empty">No hay personas registradas con ese criterio.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab personas -->
+
+  <!-- ══════════════════════════════════════════════
+       TAB 3: USUARIOS DE LOGIN (SLOTS)
+  ══════════════════════════════════════════════ -->
+  <div class="tab-panel" *ngIf="tabActiva === 'slots'">
+
+    <div class="panel-intro aviso">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+      </svg>
+      <p>
+        Estos usuarios viven en la base de <strong>importaciones</strong> y son los que
+        permiten el login en la app. Bloquear aquí afecta <strong>ambas bases</strong>:
+        el login queda deshabilitado y sus asignaciones en la campaña activa se suspenden.
+      </p>
+    </div>
+
+    <div class="msg-error" *ngIf="errorSlots">{{ errorSlots }}</div>
+
+    <div class="panel-loader" *ngIf="cargandoSlots">
+      <div class="spinner"></div><span>Cargando…</span>
+    </div>
+
+    <div class="tabla-wrap" *ngIf="!cargandoSlots">
+      <table class="modal-table">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Correo</th>
+            <th>Último acceso</th>
+            <th>Login</th>
+            <th class="th-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let s of slots" [class.row-bloqueado]="!s.activo">
+            <td class="td-slot">
+              <span class="slot-name">{{ s.nombre_usuario }}</span>
+              <span class="slot-id">idimport {{ s.idimport }}</span>
+            </td>
+            <td>{{ s.correo || '—' }}</td>
+            <td class="td-fecha">{{ s.ultimo_acceso ? (s.ultimo_acceso | date:'dd/MM/yy HH:mm') : 'Nunca' }}</td>
+            <td>
+              <span class="badge-estado"
+                [class.badge-asignado]="s.activo"
+                [class.badge-faltante]="!s.activo">
+                {{ s.activo ? 'HABILITADO' : 'BLOQUEADO' }}
+              </span>
+            </td>
+            <td class="td-acciones">
+              <ng-container *ngIf="confirmSlotId === s.idimport; else botonSlot">
+                <span class="confirm-text">
+                  {{ s.activo ? '¿Bloquear login?' : '¿Habilitar login?' }}
+                </span>
+                <button class="btn-confirm-si" (click)="confirmarCambioSlot(s)">Sí</button>
+                <button class="btn-confirm-no" (click)="cancelarCambioSlot()">No</button>
+              </ng-container>
+              <ng-template #botonSlot>
+                <button class="btn-mini" [class.peligro]="s.activo" [class.accion]="!s.activo"
+                  [disabled]="cambiandoSlotId !== null"
+                  (click)="pedirCambioSlot(s)">
+                  <div class="mini-spinner" *ngIf="cambiandoSlotId === s.idimport"></div>
+                  <ng-container *ngIf="cambiandoSlotId !== s.idimport">
+                    {{ s.activo ? 'Bloquear' : 'Habilitar' }}
+                  </ng-container>
+                </button>
+              </ng-template>
+            </td>
+          </tr>
+          <tr *ngIf="slots.length === 0">
+            <td colspan="5" class="td-empty">No se encontraron usuarios de login.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /tab slots -->
+
+</div>

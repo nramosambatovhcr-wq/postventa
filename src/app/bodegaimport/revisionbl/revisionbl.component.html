@@ -1,0 +1,487 @@
+<div class="conteo-container">
+
+  <!-- ══ LOADING OVERLAY ════════════════════════════════════════════════════ -->
+  <div class="loading-overlay" *ngIf="isLoading && loadedCount === 0">
+    <div class="loading-card">
+      <div class="loading-spinner"></div>
+      <p class="loading-title">Cargando liquidaciones...</p>
+      <p class="loading-sub">Conectando con el servidor</p>
+    </div>
+  </div>
+
+  <!-- ══ BARRA DE PROGRESO STREAMING (aparece cuando ya empiezan a llegar filas) ══ -->
+  <div class="stream-progress-bar" *ngIf="isLoading && loadedCount > 0">
+    <div class="stream-progress-track">
+      <div class="stream-progress-fill"
+           [style.width.%]="totalCount > 0 ? (loadedCount / totalCount * 100) : 0">
+      </div>
+    </div>
+    <span class="stream-progress-label">
+      Cargando {{ loadedCount }} de {{ totalCount }} registros...
+    </span>
+  </div>
+
+  <!-- ── Toast notifications (reemplaza los alert()) ── -->
+  <div class="toast-container">
+    <div 
+      *ngFor="let toast of toasts" 
+      class="toast"
+      [class.toast-success]="toast.type === 'success'"
+      [class.toast-error]="toast.type === 'error'"
+      [class.toast-info]="toast.type === 'info'">
+      <span class="toast-icon">
+        <ng-container [ngSwitch]="toast.type">
+          <span *ngSwitchCase="'success'">✅</span>
+          <span *ngSwitchCase="'error'">❌</span>
+          <span *ngSwitchDefault>ℹ️</span>
+        </ng-container>
+      </span>
+      <span class="toast-message">{{ toast.message }}</span>
+      <button class="toast-close" (click)="dismissToast(toast.id)">✕</button>
+    </div>
+  </div>
+
+  <!-- ── Upload progress overlay ── -->
+  <div class="upload-overlay" *ngIf="uploadQueue.length > 0">
+    <div class="upload-panel">
+      <div class="upload-panel-header">
+        <span>📤 Subiendo imágenes...</span>
+        <span class="upload-total-pct">{{ totalUploadProgress }}%</span>
+      </div>
+
+      <!-- Barra total -->
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" [style.width.%]="totalUploadProgress"></div>
+      </div>
+
+      <!-- Detalle por archivo -->
+      <div class="upload-file-list">
+        <div *ngFor="let f of uploadQueue" class="upload-file-row">
+          <span class="upload-file-icon">
+            <ng-container [ngSwitch]="f.status">
+              <span *ngSwitchCase="'success'">✅</span>
+              <span *ngSwitchCase="'error'">❌</span>
+              <span *ngSwitchCase="'uploading'">⏳</span>
+              <span *ngSwitchDefault>🕐</span>
+            </ng-container>
+          </span>
+          <div class="upload-file-info">
+            <span class="upload-file-name" [title]="f.fileName">{{ f.fileName }}</span>
+            <span *ngIf="f.status === 'error'" class="upload-file-error">{{ f.errorMsg }}</span>
+          </div>
+          <div class="upload-file-progress-track">
+            <div 
+              class="upload-file-progress-fill"
+              [class.fill-success]="f.status === 'success'"
+              [class.fill-error]="f.status === 'error'"
+              [style.width.%]="f.progress">
+            </div>
+          </div>
+          <span class="upload-file-pct">{{ f.progress | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SECCIÓN ESTÁTICA SUPERIOR (no se desplaza) ══════════════════════════ -->
+  <div class="page-static-top">
+
+  <!-- ── Header ── -->
+  <div class="page-header">
+    <h2 class="page-title">Liquidaciones Detalladas</h2>
+    <div class="invoice-badge" *ngIf="apiData && apiData.length > 0">
+      <span class="invoice-label">📦 Invoice:</span>
+      <span class="invoice-name">{{ currentInvoiceName }}</span>
+    </div>
+  </div>
+
+  <!-- ── Cards de resumen ── -->
+  <div class="summary-cards" *ngIf="apiData && apiData.length > 0">
+
+    <div class="summary-card card-revisados">
+      <div class="summary-card-icon">✅</div>
+      <div class="summary-card-body">
+        <span class="summary-card-label">Códigos Revisados</span>
+        <span class="summary-card-value">{{ totalCodigosRevisados }}</span>
+        <div class="summary-card-sub">
+          de {{ totalCodigos }} totales &nbsp;
+          <strong class="summary-card-pct">{{ porcentajeRevisado }}%</strong>
+        </div>
+        <div class="summary-card-bar">
+          <div class="summary-card-bar-fill bar-verde"
+               [style.width.%]="porcentajeRevisado"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card card-cantidad">
+      <div class="summary-card-icon">📦</div>
+      <div class="summary-card-body">
+        <span class="summary-card-label">Cantidad Total Revisada</span>
+        <span class="summary-card-value">{{ totalCantidadRevisada | number }}</span>
+        <div class="summary-card-sub">unidades verificadas</div>
+      </div>
+    </div>
+
+    <div class="summary-card card-total">
+      <div class="summary-card-icon">📋</div>
+      <div class="summary-card-body">
+        <span class="summary-card-label">Total Registros</span>
+        <span class="summary-card-value">{{ totalCodigos }}</span>
+        <div class="summary-card-sub">
+          {{ filteredData?.length !== totalCodigos
+              ? (filteredData?.length + ' filtrados')
+              : 'todos visibles' }}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Búsqueda ── -->
+  <div class="search-container" *ngIf="apiData && apiData.length > 0">
+    <div class="search-row">
+      <div class="search-input-group">
+        <select 
+          class="search-select" 
+          [(ngModel)]="searchField" 
+          (change)="onSearchFieldChange()"
+          title="Seleccionar campo de búsqueda">
+          <option *ngFor="let field of searchFields" [value]="field.value">
+            {{ field.label }}
+          </option>
+        </select>
+
+        <div class="search-input-wrapper">
+          <input 
+            type="text" 
+            class="search-input" 
+            [(ngModel)]="searchTerm" 
+            (input)="onSearch()"
+            placeholder="Buscar..."
+            title="Escriba para buscar">
+          <button 
+            class="search-clear-btn" 
+            *ngIf="searchTerm" 
+            (click)="clearSearch()"
+            title="Limpiar búsqueda">✕</button>
+        </div>
+      </div>
+
+      <div class="search-info">
+        <span class="search-results">
+          Mostrando {{ filteredData?.length || 0 }} de {{ apiData?.length || 0 }} registros
+          <span *ngIf="searchTerm" class="search-term">— Búsqueda: "{{ searchTerm }}"</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Filtros por Estado y Estado 2 ── -->
+    <div class="filters-row">
+      <div class="filter-group">
+        <label class="filter-label" for="filtro-estado">🏷️ Estado:</label>
+        <select
+          id="filtro-estado"
+          class="filter-select"
+          [(ngModel)]="filterEstado"
+          (change)="onFilterChange()"
+          title="Filtrar por estado">
+          <option value="">Todos ({{ apiData.length }})</option>
+          <option *ngFor="let e of estadoOptions" [value]="e">
+            {{ e | uppercase }} ({{ countByEstado(e) }})
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label" for="filtro-estado2">🏷️ Estado 2:</label>
+        <select
+          id="filtro-estado2"
+          class="filter-select"
+          [(ngModel)]="filterEstado2"
+          (change)="onFilterChange()"
+          title="Filtrar por estado 2">
+          <option value="">Todos ({{ apiData.length }})</option>
+          <option *ngFor="let e of estado2Options" [value]="e">
+            {{ e | uppercase }} ({{ countByEstado2(e) }})
+          </option>
+          <option value="__sin__" *ngIf="countSinEstado2 > 0">
+            SIN ASIGNAR ({{ countSinEstado2 }})
+          </option>
+        </select>
+      </div>
+
+      <button
+        class="btn-clear-filters"
+        *ngIf="filterEstado || filterEstado2"
+        (click)="clearFilters()"
+        title="Quitar filtros de estado">
+        ✕ Limpiar filtros
+      </button>
+
+      <!-- Chips de filtros activos -->
+      <div class="active-filter-chips" *ngIf="filterEstado || filterEstado2">
+        <span class="filter-chip" *ngIf="filterEstado">
+          Estado: <strong>{{ filterEstado | uppercase }}</strong>
+        </span>
+        <span class="filter-chip" *ngIf="filterEstado2">
+          Estado 2: <strong>{{ filterEstado2 === '__sin__' ? 'SIN ASIGNAR' : (filterEstado2 | uppercase) }}</strong>
+        </span>
+        <span class="filter-chip filter-chip--count">
+          {{ filteredData?.length || 0 }} resultado(s)
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Barra de acciones ── -->
+  <div *ngIf="filteredData && filteredData.length > 0"
+       style="text-align:right; margin-bottom:15px; display:flex; justify-content:flex-end; gap:10px; align-items:center;">
+
+    <button class="btn-refresh" (click)="refreshData()" [disabled]="isRefreshing" title="Recargar datos">
+      <span *ngIf="!isRefreshing">🔄 Actualizar tabla</span>
+      <span *ngIf="isRefreshing">⏳ Actualizando...</span>
+    </button>
+
+    <button 
+      class="btn-edit-mode" 
+      [class.active]="editModeEnabled"
+      (click)="toggleEditMode()"
+      [title]="editModeEnabled ? 'Desactivar edición' : 'Activar edición de Cód. VHCR, Estado2 y Observación'">
+      <span *ngIf="!editModeEnabled">✏️ Habilitar edición</span>
+      <span *ngIf="editModeEnabled">🔒 Deshabilitar edición</span>
+    </button>
+
+    <button class="btn-download" (click)="downloadData()"
+      [title]="hasActiveFilters ? 'Descargar informe con los filtros aplicados' : 'Descargar todos los registros'">
+      Descargar datos
+      <span *ngIf="hasActiveFilters" class="download-info">({{ filteredData.length }} filtrados)</span>
+    </button>
+  </div>
+
+  </div><!-- /page-static-top -->
+
+  <!-- ══ ÁREA SCROLLABLE (tabla + sin datos) ══════════════════════════════════ -->
+  <div class="tabla-scroll-area">
+
+  <!-- ── Tabla ── -->
+  <div *ngIf="filteredData && filteredData.length > 0; else noData">
+    <div class="table-responsive">
+      <table class="liquidacion-table">
+        <thead>
+          <tr>
+            <th>Factura</th>
+            <th>Código</th>
+            <th>Cod. VHCR</th>
+            <th>Descripción</th>
+            <th>Ubicacion P.</th>
+            <th>Ubicacion F.</th>
+            <th>Ubicacion B.</th>
+            <th>Cant.</th>
+            <th>Verificacion</th>
+            <th>Estado</th>
+            <th>Estado2</th>
+            <th>Observación</th>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Imágenes</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of filteredData">
+            <td data-label="Factura">{{ item.invoiceBlNombre }}</td>
+            <td data-label="Código Producto">{{ item.codigoProducto }}</td>
+
+            <!-- Cod. VHCR -->
+            <td data-label="Código VHCR">
+              <ng-container *ngIf="editModeEnabled; else vhcrReadonly">
+                <input type="text" [(ngModel)]="item.codigoVhcr" style="width:90px;" class="edit-mode-input" placeholder="Cód. VHCR">
+              </ng-container>
+              <ng-template #vhcrReadonly>{{ item.codigoVhcr }}</ng-template>
+            </td>
+
+            <!-- Descripción -->
+            <td data-label="Descripción"
+                [title]="hasDescripcionActualizada(item) ? 'Descripción actualizada - Original: ' + item.descripcionOriginal : 'Descripción original'">
+              <div class="descripcion-container">
+                <textarea [(ngModel)]="item.descripcionFinal" rows="4" cols="30"
+                  [class.descripcion-actualizada]="hasDescripcionActualizada(item)"
+                  placeholder="Editar descripción..."></textarea>
+                <small *ngIf="hasDescripcionActualizada(item)" class="descripcion-status">✏️ Actualizada</small>
+                <small *ngIf="!hasDescripcionActualizada(item)" class="descripcion-status original">📄 Original</small>
+              </div>
+            </td>
+
+            <td data-label="Ubicacion P.">{{ item.ubicacion }}</td>
+            <td data-label="Ubicacion F."><input type="text" [(ngModel)]="item.ubicacionf" style="width:80px;"></td>
+            <td data-label="Ubicacion B.">{{ item.ubicacionOracle }}</td>
+            <td data-label="Cantidad">{{ item.cantidad }}</td>
+
+            <!-- Verificación -->
+            <td data-label="Verificacion">
+              <div *ngIf="item.cantidadVerificada != 0; else verificInput">
+                {{ item.cantidadVerificada }}
+              </div>
+              <ng-template #verificInput>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <input type="checkbox" [(ngModel)]="item.verificacionChecked"
+                    (change)="toggleVerificacion(item)"
+                    [id]="'verif-' + item.idLiquidacion"
+                    title="Marcar para verificación"
+                    style="transform:scale(1.3);">
+                  <input *ngIf="item.verificacionChecked" type="number"
+                    [(ngModel)]="item.cantidadVerificada"
+                    placeholder="Cant. verificada"
+                    style="width:80px; text-align:right;">
+                  <span *ngIf="!item.verificacionChecked">{{ item.cantidad }}</span>
+                  <span *ngIf="item.verificacionChecked && item.cantidadVerificada !== null && item.cantidadVerificada != item.cantidad"
+                        style="color:red; font-weight:bold;"
+                        title="Cantidad Original: {{ item.cantidad }}">
+                    ({{ item.cantidadVerificada }})
+                  </span>
+                </div>
+              </ng-template>
+            </td>
+
+            <!-- Estado -->
+            <!-- Estado -->
+            <td data-label="Estado">
+              <span class="badge" [ngClass]="{
+                'badge-success': item.estado === 'bueno',
+                'badge-warning': item.estado === 'pendiente',
+                'badge-danger':  item.estado === 'malo' || item.estado === 'averiado'
+              }">{{ item.estado | uppercase }}</span>
+            </td>
+
+            <!-- Estado2 -->
+            <td data-label="Estado2">
+              <ng-container *ngIf="editModeEnabled; else estado2Readonly">
+                <select [(ngModel)]="item.estado2" class="edit-mode-select" title="Seleccionar estado 2">
+                  <option value="">-- Seleccionar --</option>
+                  <option *ngFor="let state of availableStates2" [value]="state">{{ state | uppercase }}</option>
+                </select>
+              </ng-container>
+              <ng-template #estado2Readonly>
+              <span class="badge" [ngClass]="estado2BadgeClass[item.estado2] || 'badge-neutral'">
+                {{ item.estado2 | uppercase }}
+              </span>
+            </ng-template>
+            </td>
+
+            <!-- Observación -->
+            <td data-label="Observación">
+              <ng-container *ngIf="editModeEnabled; else obsReadonly">
+                <textarea [(ngModel)]="item.observacion" rows="3" cols="25"
+                  class="edit-mode-textarea" placeholder="Ingrese observación..."></textarea>
+              </ng-container>
+              <ng-template #obsReadonly>{{ item.observacion || 'N/A' }}</ng-template>
+            </td>
+
+            <td data-label="Fecha">{{ item.fecha | date:'dd/MM/yyyy h:mm a' }}</td>
+            <td data-label="Usuario">{{ item.nombreUsuario || 'N/A' }}</td>
+
+            <!-- ── Imágenes con revelado secuencial en segundo plano ── -->
+            <td data-label="Imágenes">
+              <div *ngIf="item.imagenes && item.imagenes.length > 0; else noImages" class="image-container">
+                <div class="image-thumbnails">
+                  <div *ngFor="let image of item.imagenes; let i = index" class="image-wrapper">
+
+                    <!-- Skeleton: visible hasta que la imagen sea revelada Y cargada -->
+                    <div class="image-skeleton"
+                         *ngIf="!isImageVisible(getImageUrl(image.url)) || !isImageLoaded(getImageUrl(image.url))">
+                    </div>
+
+                    <!-- Placeholder de error -->
+                    <div class="image-error-placeholder"
+                         *ngIf="isImageVisible(getImageUrl(image.url)) && isImageError(getImageUrl(image.url))"
+                         title="No se pudo cargar la imagen">
+                      🖼️<br><small>Error</small>
+                    </div>
+
+                    <!-- Imagen real: solo se monta cuando fue autorizada por el timer -->
+                    <img
+                      *ngIf="isImageVisible(getImageUrl(image.url)) && !isImageError(getImageUrl(image.url))"
+                      [src]="getImageUrl(image.url)"
+                      [alt]="'Imagen: ' + (image.nombreArchivo || 'imagen_' + (i + 1))"
+                      class="thumbnail-image img-reveal"
+                      [class.img-hidden]="!isImageLoaded(getImageUrl(image.url))"
+                      (load)="onImageLoad(getImageUrl(image.url))"
+                      (error)="onImageError(getImageUrl(image.url))"
+                      (click)="openImageModal(image, item)"
+                      title="Click para ampliar">
+                  </div>
+                </div>
+                <span class="image-count">{{ item.imagenes.length }} imagen(es)</span>
+              </div>
+
+              <ng-template #noImages>
+                <div class="no-images-container">
+                  <span class="no-images">Sin imágenes</span>
+                  <input type="file" #fileInput
+                    (change)="onFileSelected($event, item)"
+                    style="display:none;"
+                    accept="image/*"
+                    multiple>
+                  <button class="btn-upload" (click)="fileInput.click()" [disabled]="isUploading">
+                    {{ isUploading ? 'Subiendo...' : 'Subir imágenes' }}
+                  </button>
+                </div>
+              </ng-template>
+            </td>
+
+            <td data-label="Acciones">
+              <button class="btn-update" (click)="updateItem(item)">Actualizar</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Sin datos ── -->
+  <ng-template #noData>
+    <div class="no-data-container">
+      <!-- El loading overlay global ya cubre este caso cuando isLoading && loadedCount === 0 -->
+      <p class="loading-message" *ngIf="isLoading && loadedCount === 0">Cargando datos...</p>
+      <div *ngIf="!isLoading && apiData && apiData.length === 0" class="no-data-message">
+        <p>No se encontraron liquidaciones detalladas.</p>
+      </div>
+      <div *ngIf="!isLoading && apiData && apiData.length > 0 && (!filteredData || filteredData.length === 0)" class="no-results-message">
+        <p *ngIf="searchTerm">No se encontraron resultados para la búsqueda "{{ searchTerm }}"</p>
+        <p *ngIf="!searchTerm && (filterEstado || filterEstado2)">
+          No hay registros con los filtros de estado seleccionados.
+        </p>
+        <button class="btn-clear-search" (click)="clearSearch()">Mostrar todos los registros</button>
+      </div>
+    </div>
+  </ng-template>
+
+  </div><!-- /tabla-scroll-area -->
+
+  <!-- ── Modal imagen ── -->
+  <div class="image-modal" *ngIf="showImageModal" (click)="closeImageModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ selectedImage?.nombreArchivo || 'Imagen' }}</h3>
+        <button class="close-btn" (click)="closeImageModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <img 
+          [src]="getImageUrl(selectedImage?.url)"
+          [alt]="selectedImage?.nombreArchivo"
+          class="modal-image"
+          *ngIf="selectedImage">
+        <div class="image-info" *ngIf="selectedItem">
+          <p><strong>Producto:</strong> {{ selectedItem.codigoProducto }}</p>
+          <p><strong>Descripción:</strong> {{ selectedItem.descripcionFinal }}</p>
+          <p *ngIf="hasDescripcionActualizada(selectedItem)"><strong>Descripción Original:</strong> {{ selectedItem.descripcionOriginal }}</p>
+          <p><strong>Estado:</strong> {{ selectedItem.estado }}</p>
+        </div>
+      </div>
+      <div class="modal-footer" *ngIf="selectedImage">
+        <button class="btn-download-image" (click)="downloadImage(selectedImage)">Descargar Imagen</button>
+      </div>
+    </div>
+  </div>
+</div>

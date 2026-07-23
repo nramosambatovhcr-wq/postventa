@@ -1,0 +1,529 @@
+<nav class="main-nav" [class.active]="showMenu" *ngIf="usuario">
+  <div class="nav-container">
+    <!-- Logo + Usuario (Izquierda) -->
+    <div class="nav-left">
+      <div class="brand">IMPORTACIONES</div>
+      
+      <div class="user-under-logo">
+        <i class="bi bi-person-circle"></i>
+        <span class="user-name">{{ getUserDisplayName() }}</span>
+        <span class="user-role">{{ getRoleName() }}</span>
+      </div>
+    </div>
+
+    <!-- Menú a la derecha -->
+    <div class="nav-right">
+      <button class="menu-toggle" (click)="toggleMenu()">
+        <fa-icon [icon]="faBars"></fa-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- MENÚ DESPLEGABLE -->
+  <ul class="nav-links" [class.active]="isMenuActive">
+
+    <!-- ========================================
+         ADMIN
+         ======================================== -->
+    <ng-container *ngIf="usuario?.rol === 'admin'">
+
+      <!-- 0: Dashboard Admin -->
+      <li class="nav-item" style="--item-index: 0;">
+        <a class="nav-link" routerLink="/admindashboard" routerLinkActive="active">
+          <i class="bi bi-speedometer"></i> Dashboard Admin
+        </a>
+      </li>
+
+      <!-- 1: Configuración & Maestros -->
+      <li class="nav-item dropdown" style="--item-index: 1;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(1)">
+          <i class="bi bi-gear"></i> Configuración & Maestros
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(1)">
+          <li><a class="submenu-link" routerLink="/tutorials"   routerLinkActive="active">Líneas</a></li>
+          <li><a class="submenu-link" routerLink="/categoria"   routerLinkActive="active">Categorías</a></li>
+          <li><a class="submenu-link" routerLink="/proveedor"   routerLinkActive="active">Proveedores</a></li>
+          <li><a class="submenu-link" routerLink="/producto"    routerLinkActive="active">Productos</a></li>
+          <li><a class="submenu-link" routerLink="/pagos"       routerLinkActive="active">Pagos</a></li>
+        </ul>
+      </li>
+
+      <!-- 2: Importaciones & Procesos -->
+      <li class="nav-item dropdown" style="--item-index: 2;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(2)">
+          <i class="bi bi-ship"></i> Importaciones & Procesos
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(2)">
+          <li class="submenu-title">-- Flujo General --</li>
+          <li><a class="submenu-link" routerLink="/dashboard"        routerLinkActive="active">Dashboard General</a></li>
+          <li><a class="submenu-link" routerLink="/searchdashboard"  routerLinkActive="active">Search</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardcot"     routerLinkActive="active">Orden</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardinvoi"   routerLinkActive="active">Invoice</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardbl"      routerLinkActive="active">BL</a></li>
+          <li class="submenu-title">-- VHCR --</li>
+          <li><a class="submenu-link" routerLink="/dashboardblVhcr"      routerLinkActive="active">Importaciones VHCR</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardbprocesos"   routerLinkActive="active">Procesos VHCR</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardagenda"      routerLinkActive="active">Agenda VHCR</a></li>
+          <li class="submenu-title">-- Proveedores --</li>
+          <li><a class="submenu-link" routerLink="/dashboardcotpro"  routerLinkActive="active">Cotizaciones Proveedor</a></li>
+          <li><a class="submenu-link" routerLink="/liquidado"        routerLinkActive="active">Historial Cotizaciones</a></li>
+          <li><a class="submenu-link" routerLink="/invoicepro"       routerLinkActive="active">Invoice Proveedor</a></li>
+          <li><a class="submenu-link" routerLink="/blpro"            routerLinkActive="active">BL Proveedor</a></li>
+          <li class="submenu-title">-- Proveedores Externos --</li>
+          <li><a class="submenu-link" routerLink="/dashboardpedidos" routerLinkActive="active">Pedidos Proveedores</a></li>
+        </ul>
+      </li>
+
+      <!-- 3: Bodega & WMS -->
+      <li class="nav-item dropdown" style="--item-index: 3;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(3)">
+          <i class="bi bi-box-seam"></i> Bodega & WMS
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(3)">
+          <li class="submenu-title">-- Bodega Repuestos --</li>
+          <li><a class="submenu-link" routerLink="/pedidobod"       routerLinkActive="active">Pedidos</a></li>
+          <li><a class="submenu-link" routerLink="/pedidosbod"      routerLinkActive="active">Pedidos Usuarios</a></li>
+          <li><a class="submenu-link" routerLink="/sugeridosad"     routerLinkActive="active">Sugeridos Admin</a></li>
+          <li><a class="submenu-link" routerLink="/sugeridos"       routerLinkActive="active">Sugeridos</a></li>
+          <li><a class="submenu-link" routerLink="/soporteslabo"    routerLinkActive="active">Soportes Laboratorio</a></li>
+          <li><a class="submenu-link" routerLink="/permisopedido"   routerLinkActive="active">Permisos Pedidos</a></li>
+          <li class="submenu-title">-- Productos Específicos --</li>
+          <li><a class="submenu-link" routerLink="/oillist"         routerLinkActive="active">Lubricantes Admin</a></li>
+          <li><a class="submenu-link" routerLink="/oiluslist"       routerLinkActive="active">Lubricantes Usuario</a></li>
+          <li><a class="submenu-link" routerLink="/filterlist"      routerLinkActive="active">Filtros Admin</a></li>
+          <li><a class="submenu-link" routerLink="/filteruslist"    routerLinkActive="active">Filtros Usuario</a></li>
+          <li><a class="submenu-link" routerLink="/insumolist"      routerLinkActive="active">Insumos Admin</a></li>
+          <li><a class="submenu-link" routerLink="/insumouslist"    routerLinkActive="active">Insumos Usuario</a></li>
+          <li><a class="submenu-link" routerLink="/vidrioslist"     routerLinkActive="active">Vidrios Admin</a></li>
+          <li><a class="submenu-link" routerLink="/vidriosuslist"   routerLinkActive="active">Vidrios Usuario</a></li>
+          <li class="submenu-title">-- Bodega Importaciones / WMS --</li>
+          <li><a class="submenu-link" routerLink="/dashboardbodimp" routerLinkActive="active">Pedidos WMS</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardblbod"  routerLinkActive="active">BL WMS</a></li>
+          <li><a class="submenu-link" routerLink="/bodega"          routerLinkActive="active">Inventario Bodega</a></li>
+          <li><a class="submenu-link" routerLink="/transferencias"  routerLinkActive="active">Transferencias</a></li>
+          <li><a class="submenu-link" routerLink="/blus"            routerLinkActive="active">BL Usuarios</a></li>
+          <li><a class="submenu-link" routerLink="/inspecblarrivo"  routerLinkActive="active">Inspección BL Arrivo</a></li>
+          <li><a class="submenu-link" routerLink="/agenciabod"      routerLinkActive="active">Revisión Traslados</a></li>
+          <li><a class="submenu-link" routerLink="/extraccionbod"   routerLinkActive="active">Extracción Partes Bodega</a></li>
+          <li class="submenu-title">-- Gestión Inventario --</li>
+          <li><a class="submenu-link" routerLink="/gestioninv"      routerLinkActive="active">Paqtana</a></li>
+          <li><a class="submenu-link" routerLink="/invenpaq"        routerLinkActive="active">Inventario Paqtana</a></li>
+          <li><a class="submenu-link" routerLink="/ventaspaq"       routerLinkActive="active">Ventas</a></li>
+          <li><a class="submenu-link" routerLink="/businv"          routerLinkActive="active">Búsqueda Repuestos</a></li>
+          <li class="submenu-title">-- Inventario / PDI --</li>
+          <li><a class="submenu-link" routerLink="/dashboardinv"           routerLinkActive="active">Dashboard Inventario</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardpedidospdibod" routerLinkActive="active">Pedidos PDI Bodega</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardpedidospdius"  routerLinkActive="active">Pedidos PDI Usuario</a></li>
+        </ul>
+      </li>
+
+      <!-- 4: Laboratorio & Garantías -->
+      <li class="nav-item dropdown" style="--item-index: 4;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(4)">
+          <i class="bi bi-tools"></i> Laboratorio & Garantías
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(4)">
+          <li class="submenu-title">-- Laboratorio --</li>
+          <li><a class="submenu-link" routerLink="/laboratorio"      routerLinkActive="active">Dashboard Laboratorio</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardsugelab" routerLinkActive="active">Sugeridos</a></li>
+          <li><a class="submenu-link" routerLink="/laboratoriorev"   routerLinkActive="active">Revisado</a></li>
+          <li><a class="submenu-link" routerLink="/laboratoriovehi"  routerLinkActive="active">Vehículo</a></li>
+          <li><a class="submenu-link" routerLink="/soporteslab"      routerLinkActive="active">Soporte</a></li>
+          <li><a class="submenu-link" routerLink="/repotenciacion"   routerLinkActive="active">Repotenciación</a></li>
+          <li><a class="submenu-link" routerLink="/extraccionvehi"   routerLinkActive="active">Extracción Partes Vehículos</a></li>
+          <li><a class="submenu-link" routerLink="/extraccionbod"    routerLinkActive="active">Extracción Partes Bodega</a></li>
+          <li><a class="submenu-link" routerLink="/labots"           routerLinkActive="active">Garantía (OTS)</a></li>
+          <li class="submenu-title">-- Resumen Garantías --</li>
+          <li><a class="submenu-link" routerLink="/otgrt"            routerLinkActive="active">OTS-RESUMEN</a></li>
+          <li><a class="submenu-link" routerLink="/otgrtresumen"     routerLinkActive="active">OTS Detalle</a></li>
+        </ul>
+      </li>
+
+      <!-- 5: Vehículos & Planta (NUEVO - antes solo en taller) -->
+      <li class="nav-item dropdown" style="--item-index: 5;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(5)">
+          <i class="bi bi-truck"></i> Vehículos & Planta
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(5)">
+          <li class="submenu-title">-- Vehículos Importaciones --</li>
+          <li><a class="submenu-link" routerLink="/invoicevehi"         routerLinkActive="active">Invoice Vehículos</a></li>
+          <li><a class="submenu-link" routerLink="/blvehi"              routerLinkActive="active">BL Vehículos</a></li>
+          <li class="submenu-title">-- Planta Ensamblaje --</li>
+          <li><a class="submenu-link" routerLink="/recepcionvehiplanta" routerLinkActive="active">Recepción BL</a></li>
+          <li><a class="submenu-link" routerLink="/revisionblvehi"      routerLinkActive="active">Revisión BL</a></li>
+          <li><a class="submenu-link" routerLink="/emsamblajevehi"      routerLinkActive="active">Ensamblaje</a></li>
+        </ul>
+      </li>
+
+      <!-- 6: PDI -->
+      <li class="nav-item dropdown" style="--item-index: 6;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(6)">
+          <i class="bi bi-clipboard2-check"></i> PDI
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(6)">
+          <li><a class="submenu-link" routerLink="/dashboardinv"           routerLinkActive="active">Dashboard Inventario</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardpedidospdibod" routerLinkActive="active">Pedidos PDI Bodega</a></li>
+          <li><a class="submenu-link" routerLink="/dashboardpedidospdius"  routerLinkActive="active">Pedidos PDI Usuario</a></li>
+        </ul>
+      </li>
+
+      <!-- 7: Otros Módulos -->
+      <li class="nav-item dropdown" style="--item-index: 7;">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(7)">
+          <i class="bi bi-grid"></i> Otros Módulos
+        </a>
+        <ul class="submenu" [class.show]="isSubmenuActive(7)">
+          <li><a class="submenu-link" routerLink="/dashboardtaller" routerLinkActive="active">Dashboard Taller</a></li>
+          <li><a class="submenu-link" routerLink="/compraslc"       routerLinkActive="active">Compras Locales</a></li>
+          <li><a class="submenu-link" routerLink="/bitacora"        routerLinkActive="active">Bitácora Actividades</a></li>
+        </ul>
+      </li>
+
+    </ng-container>
+
+    <!-- ========================================
+         USUARIOS NO ADMIN
+         ======================================== -->
+    <ng-container *ngIf="usuario?.rol !== 'admin'">
+
+      <!-- Importaciones -->
+      <li class="nav-item dropdown" style="--item-index: 1;"
+          *ngIf="['repuestos','usuario','laboratorio1','laboratorio2','repuestoslv','repuestoslk','repuestoslsc'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(1)">Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(1)">
+        <!--  <li *ngIf="usuario?.rol != 'importaciones'"><a class="submenu-link" routerLink="/dashboard"       routerLinkActive="active">Dashboard</a></li>
+          <li *ngIf="usuario?.rol != 'repuestoslv' && usuario?.rol != 'importaciones'"><a class="submenu-link" routerLink="/searchdashboard" routerLinkActive="active">Search</a></li>-->
+          <li *ngIf="usuario?.rol != 'importaciones'"><a class="submenu-link" routerLink="/dashboardcot"   routerLinkActive="active">Cotizacion</a></li>
+          <li *ngIf="usuario?.rol != 'importaciones'"><a class="submenu-link" routerLink="/dashboardinvoi" routerLinkActive="active">Orden de Compra</a></li>
+          <li *ngIf="usuario?.rol != 'importaciones'"><a class="submenu-link" routerLink="/dashboardbl"    routerLinkActive="active">Invoice</a></li>
+        </ul>
+      </li>
+
+      <!-- Productos -->
+      <li class="nav-item"
+          *ngIf="['repuestos','usuario','laboratorio1','laboratorio2','repuestoslv','repuestoslk','repuestoslsc','paqtana'].includes(usuario?.rol ?? '')">
+        <a class="nav-link" routerLink="/producto" routerLinkActive="active">Productos</a>
+      </li>
+
+      <!-- Proveedores -->
+      <li class="nav-item" *ngIf="usuario?.rol === 'repuestos'">
+        <a class="nav-link" routerLink="/proveedor" routerLinkActive="active">Proveedores</a>
+      </li>
+
+      <!-- Bodega (repuestos) -->
+      <li class="nav-item dropdown"
+          *ngIf="['repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio1','laboratorio2','bodegapdi2'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(10)">Bodega</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(10)">
+          <li><a class="submenu-link" routerLink="/pedidobod"     routerLinkActive="active">Pedidos</a></li>
+          <li><a class="submenu-link" routerLink="/pedidobodunif"     routerLinkActive="active">Pedidos UNIFICADO</a></li>
+          <li><a class="submenu-link" routerLink="/sugeridosad"   routerLinkActive="active">Sugeridos</a></li>
+          <li><a class="submenu-link" routerLink="/oillist"       routerLinkActive="active">Lubricantes</a></li>
+          <li><a class="submenu-link" routerLink="/filterlist"    routerLinkActive="active">Filtros</a></li>
+          <li><a class="submenu-link" routerLink="/insumolist"    routerLinkActive="active">Insumos</a></li>
+          <li><a class="submenu-link" routerLink="/vidrioslist"   routerLinkActive="active">Vidrios</a></li>
+          <li><a class="submenu-link" routerLink="/permisopedido" routerLinkActive="active">Permisos</a></li>
+        </ul>
+      </li>
+
+      <!-- Gestión Bodega -->
+      <li class="nav-item dropdown"
+          *ngIf="['repuestos','repuestoslv','repuestoslk','repuestoslsc'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(43)">Gestion Bodega</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(43)">
+          <li><a class="submenu-link" routerLink="/gestioninv" routerLinkActive="active">Paqtana</a></li>
+          <li><a class="submenu-link" routerLink="/invenpaq"   routerLinkActive="active">Inventario</a></li>
+          <li><a class="submenu-link" routerLink="/ventaspaq"  routerLinkActive="active">Ventas</a></li>
+        </ul>
+      </li>
+
+      <!-- Bodega (bodega/bodegaped/bodegapdi1) — Repuestos -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodega','bodegaped','bodegapdi1','bodegapdi2'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(40)">Repuestos</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(40)">
+          <li><a class="submenu-link" routerLink="/pedidosbod" routerLinkActive="active">Emergentes</a></li>
+          <li><a class="submenu-link" routerLink="/sugeridos"  routerLinkActive="active">Sugeridos</a></li>
+        <li><a class="submenu-link" routerLink="/repotenciacionag"  routerLinkActive="active">Repotenciacion Cajas</a></li>
+        
+        
+        </ul>
+      </li>
+
+      <!-- Bodega (bodega/bodegaped/bodegapdi1) — Pedidos -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodega','bodegaped','bodegapdi1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(41)">Pedidos</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(41)">
+          <li><a class="submenu-link" routerLink="/oiluslist"    routerLinkActive="active">Lubricantes</a></li>
+          <li><a class="submenu-link" routerLink="/filteruslist" routerLinkActive="active">Filtros</a></li>
+          <li><a class="submenu-link" routerLink="/insumouslist" routerLinkActive="active">Insumos</a></li>
+          <li><a class="submenu-link" routerLink="/vidriouslist" routerLinkActive="active">Vidrios</a></li>
+        </ul>
+      </li>
+
+      <!-- Bodega (bodega/bodegaped/bodegapdi1) — Inventario -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodega','bodegaped','bodegapdi1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(42)">Inventario</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(42)">
+          <li><a class="submenu-link" routerLink="/businv" routerLinkActive="active">Busqueda Repuestos</a></li>
+           <li><a class="submenu-link" routerLink="/danados" routerLinkActive="active">Repuestos Dañados</a></li>
+       <li><a class="submenu-link" routerLink="/ecommerce" routerLinkActive="active">Repuestos</a></li>
+      
+          </ul>
+      </li>
+
+      <!-- Laboratorio -->
+      <li class="nav-item dropdown"
+          *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','repuestoslv','repuestoslk','repuestoslsc','garantias'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(18)">Laboratorio</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(18)">
+          <li *ngIf="['laboratorio1','laboratorio2','laboratorio3','repuestos'].includes(usuario?.rol ?? '')">
+            <a class="submenu-link" routerLink="/dashboardsugelab" routerLinkActive="active">Sugeridos</a>
+          </li>
+          <li><a class="submenu-link" routerLink="/laboratorio"    routerLinkActive="active">Dashboard</a></li>
+          <li><a class="submenu-link" routerLink="/laboratoriorev" routerLinkActive="active">Revisado</a></li>
+          <li><a class="submenu-link" routerLink="/laboratoriovehi" routerLinkActive="active">Vehículo</a></li>
+          <li *ngIf="usuario?.rol !== 'repuestoslv'"><a class="submenu-link" routerLink="/soporteslab"   routerLinkActive="active">Soporte</a></li>
+          <li *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','garantias'].includes(usuario?.rol ?? '')"><a class="submenu-link" routerLink="/repotenciacion" routerLinkActive="active">Repotenciación</a></li>
+          <li *ngIf="usuario?.rol !== 'repuestoslv'"><a class="submenu-link" routerLink="/extraccionvehi" routerLinkActive="active">Extraccion Partes Vehiculos</a></li>
+          <li *ngIf="usuario?.rol !== 'repuestoslv'"><a class="submenu-link" routerLink="/extraccionbod"  routerLinkActive="active">Extraccion Partes Bodega</a></li>
+          
+        </ul>
+      </li>
+
+      
+
+      <!-- Garantías -->
+      <li class="nav-item dropdown"
+          *ngIf="['repuestos','laboratorio1','laboratorio2'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(19)">Garantías</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(19)">
+          <!--<li><a class="submenu-link" routerLink="/otgrt"        routerLinkActive="active">OTS-RESUMEN</a></li>-->
+          <li><a class="submenu-link" routerLink="/otgrtresumen" routerLinkActive="active">OTS</a></li>
+          <li><a class="submenu-link" routerLink="/otaut"        routerLinkActive="active">AUTOCONSUMO</a></li>
+          <li><a class="submenu-link" routerLink="/otautresumen" routerLinkActive="active">AUT. DETALLE</a></li>
+           <li><a class="submenu-link" routerLink="/otgrtfact"        routerLinkActive="active">OTS-FACTURAS</a></li>
+          <li><a class="submenu-link" routerLink="/otgrtfactdetalle" routerLinkActive="active">OTS-FACT-DETALLE</a></li>
+       <li><a class="submenu-link" routerLink="/otgrtskus" routerLinkActive="active">OTS-SKUS</a></li>
+        </ul>
+      </li>
+
+      <!-- Compras -->
+      <li class="nav-item dropdown" *ngIf="usuario?.rol === 'repuestos'">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(20)">Compras</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(20)">
+          <li><a class="submenu-link" routerLink="/compraslc" routerLinkActive="active">LOCALES</a></li>
+        </ul>
+      </li>
+
+      <!-- Bitácora -->
+      <li class="nav-item dropdown"
+          *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','laboratorio4'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(21)">Bitácora</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(21)">
+          <li><a class="submenu-link" routerLink="/bitacora" routerLinkActive="active">Actividades</a></li>
+        </ul>
+      </li>
+
+      <!-- Repuestos (equivalentes) -->
+      <li class="nav-item dropdown"
+          *ngIf="['repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio1','laboratorio2','laboratorio3','laboratorio4','paqtana'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(22)">Repuestos</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(22)">
+          <li><a class="submenu-link" routerLink="/equivalentes" routerLinkActive="active">Equivalentes</a></li>
+          <li><a class="submenu-link" routerLink="/danadosclase" routerLinkActive="active">Dañados</a></li>
+      
+        </ul>
+      </li>
+
+      <!-- Bodega Importaciones / WMS -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodegaimpor','bodegaimpor1','bodegaimpor2'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(30)">Bodega Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(30)">
+          <li><a class="submenu-link" routerLink="/dashboardblbod"  routerLinkActive="active">BL WMS</a></li>
+          <li><a class="submenu-link" routerLink="/bodega"          routerLinkActive="active">Inventario Bodega</a></li>
+          <li><a class="submenu-link" routerLink="/blus"            routerLinkActive="active">BL Usuarios</a></li>
+          <li><a class="submenu-link" routerLink="/inspecblarrivo"  routerLinkActive="active">Inspección BL Arrivo</a></li>
+        </ul>
+      </li>
+
+      <!-- Pedidos Bodega Importaciones -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodegaimpor','bodegaimpor1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(31)">Pedidos Bodega Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(31)">
+          <li><a class="submenu-link" routerLink="/dashboardbodimp" routerLinkActive="active">Pedidos WMS</a></li>
+          <li><a class="submenu-link" routerLink="/transferencias"  routerLinkActive="active">Transferencias</a></li>
+          <li><a class="submenu-link" routerLink="/soporteslabo"    routerLinkActive="active">Soportes</a></li>
+          <li><a class="submenu-link" routerLink="/extraccionbod"   routerLinkActive="active">Extraccion Partes Bodega</a></li>
+          <li><a class="submenu-link" routerLink="/conjuntosarmados"   routerLinkActive="active">Conjuntos Armados</a></li>
+        </ul>
+      </li>
+
+      <!-- Sugeridos Bodega Importaciones -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodegaimpor','bodegaimpor1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(32)">Sugeridos Bodega Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(32)">
+          <li><a class="submenu-link" routerLink="/sugeridos" routerLinkActive="active">Sugeridos WMS</a></li>
+          <li><a class="submenu-link" routerLink="/laboratorio"    routerLinkActive="active">Dashboard</a></li>
+          <li><a class="submenu-link" routerLink="/laboratoriorev" routerLinkActive="active">Revisado</a></li>
+          <li><a class="submenu-link" routerLink="/laboratoriovehi" routerLinkActive="active">Vehículo</a></li>
+        </ul>
+      </li>
+
+      <!-- Traslados Bodega Importaciones -->
+      <li class="nav-item dropdown"
+          *ngIf="['bodegaimpor','bodegaimpor1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(35)">Traslados Bodega Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(35)">
+          <li><a class="submenu-link" routerLink="/agenciabod" routerLinkActive="active">Revisión</a></li>
+          <li><a class="submenu-link" routerLink="/danados" routerLinkActive="active">Repuestos Dañados</a></li>
+       <li><a class="submenu-link" routerLink="/ecommerce" routerLinkActive="active">Repuestos</a></li>
+        </ul>
+      </li>
+
+      <li class="nav-item dropdown"
+          *ngIf="['bodegaimpor3'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(35)">Traslados Bodega Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(35)">
+          <li><a class="submenu-link" routerLink="/agenciabod" routerLinkActive="active">Revisión</a></li>
+       <li><a class="submenu-link" routerLink="/ecommerce" routerLinkActive="active">Repuestos</a></li>
+        </ul>
+      </li>
+
+      <!-- Taller: Vehículos Importaciones  ← CORREGIDO: era 36, ahora 36 único -->
+      <li class="nav-item dropdown"
+          *ngIf="['vehiculo','vehiculo1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(36)">Vehículos Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(36)">
+            <li><a class="submenu-link" routerLink="/vehidash" routerLinkActive="active">Dashboard</a></li>
+        
+          <li><a class="submenu-link" routerLink="/invoicevehi" routerLinkActive="active">Invoice</a></li>
+          <li><a class="submenu-link" routerLink="/blvehi"      routerLinkActive="active">BL</a></li>
+          <li><a class="submenu-link" routerLink="/transitovehi"      routerLinkActive="active">Transito</a></li>
+        </ul>
+      </li>
+
+      <!-- Taller: Planta Ensamblaje  ← CORREGIDO: era 36, ahora 37 -->
+      <li class="nav-item dropdown"
+          *ngIf="['vehiculo','vehiculo1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(37)">Planta Ensamblaje</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(37)">
+          <li><a class="submenu-link" routerLink="/recepcionvehiplanta" routerLinkActive="active">Recepción BL</a></li>
+          <li><a class="submenu-link" routerLink="/revisionblvehi"      routerLinkActive="active">Revisión BL</a></li>
+          <li><a class="submenu-link" routerLink="/emsamblajevehi"      routerLinkActive="active">Ensamblaje</a></li>
+        </ul>
+      </li>
+
+      <!-- Taller: PDI  ← CORREGIDO: era 36, ahora 38 -->
+      <li class="nav-item dropdown"
+          *ngIf="['vehiculo','vehiculo1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(38)">PDI</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(38)">
+          <li><a class="submenu-link" routerLink="/revpdi" routerLinkActive="active">Recepción Vehiculos</a></li>
+          <!-- Agregar rutas PDI de taller aquí cuando estén disponibles -->
+        </ul>
+      </li>
+
+
+       <!-- Taller: PDI  ← CORREGIDO: era 36, ahora 38 -->
+      <li class="nav-item dropdown"
+          *ngIf="['jefe','tecnico','encargado'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(48)">GARANTIAS</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(48)">
+          <li><a class="submenu-link" routerLink="/tecnico" routerLinkActive="active">Recepción tecnico</a></li>
+          <li><a class="submenu-link" routerLink="/jefe" routerLinkActive="active">Recepción jefe</a></li>
+          <li><a class="submenu-link" routerLink="/agenvhcr" routerLinkActive="active">Recepción ENCARGADO</a></li>
+          
+          <!-- Agregar rutas PDI de taller aquí cuando estén disponibles -->
+        </ul>
+      </li>
+
+      <!-- PDI Bodega (bodegapdi) -->
+      <li class="nav-item dropdown" *ngIf="['bodegapdi','bodegapdi2'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(33)">PDI</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(33)">
+          <li><a class="submenu-link" routerLink="/dashboardpedidospdius" routerLinkActive="active">Pedidos PDI Usuario</a></li>
+        </ul>
+      </li>
+
+      <!-- PDI Bodega (bodegapdi1) -->
+      <li class="nav-item dropdown" *ngIf="['bodegapdi1'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(44)">Pedidos PDI</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(44)">
+          <li><a class="submenu-link" routerLink="/dashboardpedidospdibod" routerLinkActive="active">Pedidos PDI Bodega</a></li>
+        </ul>
+      </li>
+ <li class="nav-item dropdown" style="--item-index: 1;"
+          *ngIf="['paqtana'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(46)">Importaciones</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(46)">
+         <!-- <li ><a class="submenu-link" routerLink="/dashboard"       routerLinkActive="active">Dashboard</a></li>-->
+          <li ><a class="submenu-link" routerLink="/dashboardbl"    routerLinkActive="active">Invoice</a></li>
+          <li ><a class="submenu-link" routerLink="/businv"    routerLinkActive="active">Buscar</a></li>
+         </ul>
+      </li>
+       <li class="nav-item dropdown" *ngIf="['paqtana'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(45)">Orden de Compras</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(45)">
+          <li><a class="submenu-link" routerLink="/invoice-paqtana" routerLinkActive="active">Ordenes-Paqtana</a></li>
+        </ul>
+      </li>
+
+       <li class="nav-item dropdown" *ngIf="usuario?.rol === 'repuestos'">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(47)">Abastecimiento</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(47)">
+          <li><a class="submenu-link" routerLink="/clasificacion" routerLinkActive="active">Clasificacion</a></li>
+        <li><a class="submenu-link" routerLink="/forecast" routerLinkActive="active">Forecast</a></li>
+        <li><a class="submenu-link" routerLink="/rotacion" routerLinkActive="active">Rotacion</a></li>
+        <li><a class="submenu-link" routerLink="/transito" routerLinkActive="active">Transito</a></li>
+         <li><a class="submenu-link" routerLink="/maestropartes" routerLinkActive="active">Maestro Partes</a></li>
+        </ul>
+      </li>
+
+       <li class="nav-item dropdown"
+          *ngIf="['gerencia'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(48)">Garantías</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(48)">
+       
+          <li><a class="submenu-link" routerLink="/otgrtresumen" routerLinkActive="active">OTS</a></li>
+          
+        </ul>
+      </li>
+
+      <li class="nav-item dropdown"
+          *ngIf="['talleres'].includes(usuario?.rol ?? '')">
+        <a class="nav-link dropdown-toggle" (click)="toggleSubmenu(49)">Garantías</a>
+        <ul class="submenu" [class.show]="isSubmenuActive(49)">
+       
+          <li><a class="submenu-link" routerLink="/otgrtresumen" routerLinkActive="active">OTS</a></li>
+          
+        </ul>
+      </li>
+        
+
+      <!-- Proveedor (links directos) -->
+      <li *ngIf="['proveedor'].includes(usuario?.rol ?? '')">
+        <a class="submenu-link" routerLink="/dashboardcotpro" routerLinkActive="active">Cotizaciones Proveedor</a>
+      </li>
+      <li *ngIf="['proveedor'].includes(usuario?.rol ?? '')">
+        <a class="submenu-link" routerLink="/invoicepro" routerLinkActive="active">Invoice Proveedor</a>
+      </li>
+      <li *ngIf="['proveedor'].includes(usuario?.rol ?? '')">
+        <a class="submenu-link" routerLink="/blpro" routerLinkActive="active">BL Proveedor</a>
+      </li>
+
+    </ng-container>
+
+    <!-- Salir -->
+    <li class="nav-item">
+      <button class="btn btn-link nav-link logout-btn" (click)="logout()">
+        <i class="bi bi-box-arrow-right"></i> Salir
+      </button>
+    </li>
+  </ul>
+</nav>

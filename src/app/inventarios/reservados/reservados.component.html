@@ -1,0 +1,87 @@
+<div class="conteo-container">
+  <button class="back-button" (click)="goBack()">
+    <i class="fas fa-arrow-left"></i> Regresar
+  </button>
+  <h2>Reservados - {{ nombreAgencia }}</h2>
+<div class="stats-row">
+    <div class="stat-card stat-primary" (click)="conteos()" >
+      <div class="stat-value"></div>
+      <div class="stat-label">Conteos</div>
+    </div>
+    <div 
+        class="stat-card stat-warning" 
+        [ngClass]="{'clickable-card': canClickReservados()}"
+        (click)="canClickReservados() && goToReservadosDetail()"
+    >
+        <div class="stat-value">{{ totalreservado }}</div>
+        <div class="stat-label">RESERVADOS</div>
+    </div>
+
+    <div 
+        class="stat-card stat-warning" 
+        [ngClass]="{'clickable-card': canClickReservados()}"
+        (click)="canClickReservados() && goToReservadosDetail()"
+    >
+        <div class="stat-value">{{ costoTotalReservado | number: '1.2-2' }}</div>
+        <div class="stat-label">COSTO TOTAL</div>
+    </div>
+    
+    </div>
+  <div class="search-and-actions-container">
+    <div class="search-container full-width">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="applyFilter()"
+        placeholder="Buscar por código o descripción"
+        class="search-input"
+      />
+    </div>
+    </div>
+
+  <div *ngIf="isLoading" class="loading-state">
+    <i class="fas fa-spinner fa-spin"></i> Cargando inventario reservado...
+  </div>
+
+  <div *ngIf="errorMessage || errorInventario" class="alert alert-danger">
+    <i class="fas fa-exclamation-triangle"></i> {{ errorMessage || errorInventario }}
+  </div>
+
+  <div class="table-responsive" *ngIf="!isLoading && !errorMessage && filteredReservados.length > 0">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>STOCK RESERVADO</th>
+          <th>COSTO PROMEDIO</th>
+          <th>TOTAL</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredReservados">
+          <td><strong>{{ item.articulo }}</strong></td>
+          <td>{{ item.nombre }}</td>
+          <td>
+            <span class="badge badge-dark">{{ item.stock_reservado }}</span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="item.stock_disponible > 0 ? 'badge-success' : 'badge-danger'">
+              {{ item.costo_promedio | number: '1.2-2' }} </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="item.stock_disponible > 0 ? 'badge-success' : 'badge-danger'">
+              {{ item.costo_promedio * item.stock_reservado | number: '1.2-2'}}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div *ngIf="!isLoading && !errorMessage && filteredReservados.length === 0" class="no-results">
+    <i class="fas fa-box-open"></i>
+    <p>No se encontraron repuestos reservados en esta agencia.</p>
+  </div>
+
+</div>

@@ -1,0 +1,77 @@
+<!-- import-edit.component.html -->
+<div class="container">
+    <div class="header">
+      <a class="back-link" (click)="goBack()">Volver al Dashboard</a>
+      <h1>Importación #{{importId}}</h1>
+      <p class="subtitle">Detalles completos y seguimiento de la importación</p>
+    </div>
+  
+    <div class="actions-bar">
+      <button class="btn btn-secondary">Descargar</button>
+      <button class="btn btn-primary" (click)="onSubmit()">Actualizar</button>
+    </div>
+  
+    <div class="card">
+      <form [formGroup]="importForm" (ngSubmit)="onSubmit()">
+        <div class="section">
+          <h2>Información General</h2>
+          <div class="form-group">
+            <label for="status">Estado</label>
+            <select id="status" formControlName="status" class="form-control">
+              <option *ngFor="let option of statusOptions" [value]="option">
+                {{option}}
+              </option>
+            </select>
+          </div>
+        </div>
+  
+        <div class="section">
+          <div class="form-group">
+            <label for="proforma">Proforma</label>
+            <input type="text" id="proforma" formControlName="proforma" class="form-control" readonly>
+          </div>
+  
+          <div class="form-group">
+            <label for="invoiceNo">Invoice No.</label>
+            <input type="text" id="invoiceNo" formControlName="invoiceNo" class="form-control" readonly>
+          </div>
+  
+          <div class="form-group">
+            <label for="invoiceWithBl">Invoice con BL</label>
+            <input type="text" id="invoiceWithBl" formControlName="invoiceWithBl" class="form-control">
+          </div>
+  
+          <div class="form-group">
+            <label for="bl">BL</label>
+            <input type="text" id="bl" formControlName="bl" class="form-control">
+          </div>
+  
+          <div class="form-group">
+            <label for="container">Contenedor</label>
+            <input type="text" id="container" formControlName="container" class="form-control">
+          </div>
+  
+          <div class="form-group">
+            <label for="liquidation">Liquidación</label>
+            <select id="liquidation" formControlName="liquidation" class="form-control">
+              <option *ngFor="let option of statusOptions" [value]="option">
+                {{option}}
+              </option>
+            </select>
+          </div>
+        </div>
+  
+        <div *ngIf="submitError" class="alert alert-danger">
+          {{submitError}}
+        </div>
+  
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" (click)="goBack()">Cancelar</button>
+          <button type="submit" class="btn btn-primary" [disabled]="importForm.invalid || isLoading">
+            <span *ngIf="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Guardar Cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>

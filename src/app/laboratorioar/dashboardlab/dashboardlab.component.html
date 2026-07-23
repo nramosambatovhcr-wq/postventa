@@ -1,0 +1,223 @@
+<!-- Updated dashboard.component.html with date filtering -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Sugeridos Laboratorio</div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            placeholder="Buscar "
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+      </div>
+ 
+        
+   
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Sugeridos de Laboratorio</h1>
+        
+      </div>
+      
+        <div class="contenedor-estadisticas">
+     <div class="tarjeta-estadistica pendiente" 
+       [ngClass]="{'activa-pendiente': paginaActual === 'pendiente'}"
+       (click)="pendiente()">
+    <div class="valor-estadistica">PENDIENTE</div>
+     </div>
+  
+        <div class="tarjeta-estadistica revisados" 
+            [ngClass]="{'activa-revisados': paginaActual === 'revisados'}"
+            (click)="revisado()">
+            <div class="valor-estadistica">REVISADOS</div>
+        </div>  
+  
+        <div class="tarjeta-estadistica crear"
+            [ngClass]="{'activa-crear': paginaActual === 'crear'}"
+            (click)="individual()">
+            <div class="valor-estadistica">CREAR SUGERIDO</div>
+        </div>
+        
+        <div class="tarjeta-estadistica excel"
+            [ngClass]="{'activa-excel': paginaActual === 'excel'}"
+            (click)="excel()">
+            <div class="valor-estadistica">SUBIR EXCEL</div>
+        </div>
+        
+        <div class="contenedor-estadisticas1">
+            <div class="tarjeta-estadistica">
+            Total
+            <div class="valor-estadistica">{{cantidades}}</div>
+            </div>
+        </div>
+</div>
+      
+<!-- ====== PANELES INTERACTIVOS (clic para filtrar) ====== -->
+      <div class="analytics-grid">
+
+        <!-- Por Estado -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">📋 Por Estado <small>(clic para filtrar)</small></span>
+            <button *ngIf="estadoSel" class="chip-clear" (click)="seleccionarEstado(estadoSel)">
+              ✕ {{ estadoSel }}
+            </button>
+          </div>
+          <div class="panel-body scroll">
+            <div *ngFor="let e of rankingEstados; let i = index"
+                 class="rank-row"
+                 [class.active]="estadoSel === e.estado"
+                 (click)="seleccionarEstado(e.estado)">
+              <div class="rank-top">
+                <span class="rank-name"><b>{{ i + 1 }}.</b> {{ e.estado }}</span>
+                <span class="rank-value">{{ e.registros }}</span>
+              </div>
+              <div class="rank-bar"><div class="rank-fill estado" [style.width.%]="e.porcentaje"></div></div>
+              <div class="rank-sub">{{ e.cantidad }} unidades</div>
+            </div>
+            <div *ngIf="rankingEstados.length === 0" class="rank-empty">Sin datos</div>
+          </div>
+        </div>
+
+        <!-- Artículos más pedidos -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">
+              ⭐ Artículos más sugeridos
+              <small *ngIf="estadoSel">— {{ estadoSel }}</small>
+            </span>
+            <select class="top-select" [(ngModel)]="topN" (ngModelChange)="recomputarVista()">
+              <option *ngFor="let n of topNOpciones" [ngValue]="n">Top {{ n }}</option>
+            </select>
+          </div>
+          <div class="panel-body scroll">
+            <div *ngFor="let p of rankingCodigos; let i = index"
+                 class="rank-row"
+                 [class.active]="codigoSel === p.codigo"
+                 (click)="seleccionarCodigo(p.codigo)">
+              <div class="rank-top">
+                <span class="rank-name"><b>{{ i + 1 }}.</b> {{ p.descripcion || p.codigo }}</span>
+                <span class="rank-value">{{ p.cantidad }}</span>
+              </div>
+              <div class="rank-bar"><div class="rank-fill articulo" [style.width.%]="p.porcentaje"></div></div>
+              <div class="rank-sub">{{ p.codigo }} · {{ p.veces }} sugeridos(s)</div>
+            </div>
+            <div *ngIf="rankingCodigos.length === 0" class="rank-empty">Sin datos</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Chip de filtro activo (selección desde los paneles) -->
+      <div *ngIf="haySeleccion" class="filtro-activo">
+        <span>Filtrando:</span>
+        <span *ngIf="estadoSel" class="fa-chip">
+          Estado: {{ estadoSel }}
+          <button (click)="seleccionarEstado(estadoSel)">✕</button>
+        </span>
+        <span *ngIf="codigoSel" class="fa-chip">
+          Código: {{ codigoSel }}
+          <button (click)="seleccionarCodigo(codigoSel)">✕</button>
+        </span>
+        <button class="btn-clear-all" (click)="limpiarSeleccion()">Limpiar todo</button>
+      </div>
+
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Sugeridos Recientes</div>
+          <div class="acciones-tabla">
+            <!-- Filtro de fechas -->
+            <div class="filtro-fechas">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+              </div>
+              <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+            </div>
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Observacion</th>                 
+                <th class="hide-mobile">Fecha</th>
+                <th>Imagen</th>
+                <th>Estado</th>
+               
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Codigo">{{ item.codigo }}</td>
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                <td data-label="Observacion">
+                  {{ item.observaciones }}
+                    
+                    </td>
+                <td data-label="Fecha" class="hide-mobile">{{ item.fecha_creacion | date:'dd/MM/yyyy' }}</td>
+                <td data-label="Imagen">
+                    <div *ngFor="let imagePath of item.imagenes" class="image-container">
+                        <div *ngIf="imagePath!=null">
+                            <img [src]="getImageUrl(imagePath)" alt="Imagen del sugerido" (click)="openImageModal(getImageUrl(imagePath))" class="pedido-image" width="100px" height="100px">
+                     
+                        </div>
+                        </div>
+                  </td>
+                <td data-label="Estado">
+                  {{item.estado}}
+                   
+                </td>
+                 
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} sugeridos</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+          <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+        </div>
+      </div>
+  </main>

@@ -1,0 +1,171 @@
+<!-- Updated dashboard.component.html with date filtering -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Pedidos Bodega</div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            placeholder="Buscar "
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Pedidos Información Erronea de Bodega</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de los pedidos con Información Erronea desde bodega</p>
+      </div>
+      
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica" (click)="pendiente()">
+            <div class="valor-estadistica">PENDIENTE</div>
+      
+        </div>
+        <div class="tarjeta-estadistica" (click)="error()">
+            <div class="valor-estadistica">REVISADO</div>
+          
+        </div>
+        <div class="tarjeta-estadistica">
+         
+        </div>
+        <div class="tarjeta-estadistica">
+           
+        </div>
+      </div>
+      
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Pedidos Información Erronea Recientes</div>
+          <div class="acciones-tabla">
+            <!-- Filtro de fechas -->
+            <div class="filtro-fechas">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+              </div>
+              <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+            </div>
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Observacion</th>                 
+                <th class="hide-mobile">Fecha</th>
+                <th>Imagen</th>
+                <th>Estado</th>
+                 
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Codigo">{{ item.codigo }}</td>
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                <td data-label="Observacion">
+                    {{item.observaciones}}
+                    </td>
+                <td data-label="Fecha" class="hide-mobile">{{ item.fecha_creacion | date:'dd/MM/yyyy' }}</td>
+                <td data-label="Imagen">
+                    <div *ngFor="let imagePath of item.imagenes" class="image-container">
+                        <div *ngIf="imagePath!=null">
+                            <img [src]="getImageUrl(imagePath)" alt="Imagen del pedido" (click)="openImageModal(getImageUrl(imagePath))" class="pedido-image" width="100px" height="100px">
+                     
+                        </div>
+                        </div>
+                  </td>
+                <td data-label="Estado">
+                    {{item.estado}}
+                </td>
+                
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+          <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+        </div>
+      </div>
+      
+      <style>
+        .image-modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background-color: rgba(0, 0, 0, 0.7);
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          z-index: 1000;
+        }
+      
+        .image-modal-content {
+          position: relative;
+          background-color: white;
+          padding: 20px;
+          border-radius: 8px;
+          max-width: 90%;
+          max-height: 90%;
+        }
+      
+        .image-modal-close {
+          position: absolute;
+          top: 10px;
+          right: 10px;
+          font-size: 24px;
+          cursor: pointer;
+          color: #333;
+        }
+      
+        .image-modal-img {
+          max-width: 100%;
+          max-height: 80vh;
+          display: block;
+        }
+      </style>
+  </main>

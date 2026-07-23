@@ -1,0 +1,533 @@
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">{{ translate('orderDetails') }} - {{ resumenOrden?.ordenInvoicen || 'N/A' }}</div>
+
+        <div class="language-selector" *ngIf="isProveedorUser">
+          <button class="lang-btn" [class.active]="currentLanguage === 'es'" (click)="changeLanguage('es')" title="Español">🇪🇸 ES</button>
+          <button class="lang-btn" [class.active]="currentLanguage === 'en'" (click)="changeLanguage('en')" title="English">🇺🇸 EN</button>
+          <button class="lang-btn" [class.active]="currentLanguage === 'zh'" (click)="changeLanguage('zh')" title="中文">🇨🇳 中文</button>
+        </div>
+        <div class="contenedor-busqueda">
+          <input 
+            type="text" 
+            class="busqueda" 
+            [placeholder]="translate('searchPlaceholder')"
+            [(ngModel)]="searchTerm"
+            (keyup.enter)="searchImports()">
+        </div>
+      </div>
+    </div>
+</header>
+
+<main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">{{ translate('orderDetailsTitle') }} #{{ codigoCot }}</h1>
+        <p class="panel-subtitulo" *ngIf="resumenOrden">
+          {{ resumenOrden.totalItems }} {{ translate('itemsTotal') }} • 
+          {{ resumenOrden.itemsConInvoice }} {{ translate('both') }} • 
+          {{ resumenOrden.itemsSinInvoice }} {{ translate('onlyInOrder') }}
+        </p>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           PANEL DE MÉTRICAS UNIFICADO
+           ══════════════════════════════════════════════════════ -->
+      <div class="metricas-panel" *ngIf="resumenOrden">
+
+        <!-- Grupo: Cantidades -->
+        <div class="metricas-grupo">
+          <div class="metricas-grupo-titulo">📦 Cantidades</div>
+          <div class="metricas-fila">
+
+            <div class="metrica-item">
+              <div class="metrica-valor">{{ resumenOrden.totalItems }}</div>
+              <div class="metrica-etiqueta">Total ítems</div>
+            </div>
+
+            <div class="metrica-separador"></div>
+
+            <div class="metrica-item">
+              <div class="metrica-valor">{{ resumenOrden.estadisticasCantidades?.totalSolicitado | number:'1.0-0' }}</div>
+              <div class="metrica-etiqueta">Solicitado</div>
+            </div>
+
+            <div class="metrica-separador"></div>
+
+            <div class="metrica-item">
+              <div class="metrica-valor metrica-valor-verde">{{ resumenOrden.estadisticasCantidades?.totalFacturado | number:'1.0-0' }}</div>
+              <div class="metrica-etiqueta">Facturado</div>
+            </div>
+
+            <div class="metrica-separador"></div>
+
+            <!-- Cumplimiento cantidad con mini barra -->
+            <div class="metrica-item metrica-item-ancho">
+              <div class="metrica-cumplimiento-header">
+                <span class="metrica-valor">{{ resumenOrden.estadisticasCantidades?.porcentajeCumplimiento | number:'1.1-1' }}%</span>
+                <span class="metrica-etiqueta">Cumplimiento (cant.)</span>
+              </div>
+              <div class="metrica-barra">
+                <div class="metrica-barra-relleno metrica-barra-verde"
+                     [style.width.%]="resumenOrden.estadisticasCantidades?.porcentajeCumplimiento">
+                </div>
+              </div>
+              <div class="metrica-barra-detalle">
+                {{ resumenOrden.estadisticasCantidades?.totalFacturado | number:'1.0-0' }} de
+                {{ resumenOrden.estadisticasCantidades?.totalSolicitado | number:'1.0-0' }} uds.
+              </div>
+            </div>
+
+            <ng-container *ngIf="(resumenOrden?.invoicesAsociadas?.length ?? 0) > 0">
+              <div class="metrica-separador"></div>
+              <div class="metrica-item">
+                <div class="metrica-valor metrica-valor-azul">{{ resumenOrden?.invoicesAsociadas?.length }}</div>
+                <div class="metrica-etiqueta">Invoices</div>
+              </div>
+            </ng-container>
+
+          </div>
+        </div>
+
+        <!-- Grupo: Económico -->
+        <div class="metricas-grupo metricas-grupo-economico" *ngIf="resumenOrden?.estadisticasEconomicas">
+          <div class="metricas-grupo-titulo">💵 Económico (USD)</div>
+          <div class="metricas-fila">
+
+            <div class="metrica-item">
+              <div class="metrica-valor">$ {{ resumenOrden!.estadisticasEconomicas.totalMontoSolicitado | number:'1.2-2' }}</div>
+              <div class="metrica-etiqueta">Total solicitado</div>
+            </div>
+
+            <div class="metrica-separador"></div>
+
+            <div class="metrica-item">
+              <div class="metrica-valor metrica-valor-verde">$ {{ resumenOrden!.estadisticasEconomicas.totalMontoFacturado | number:'1.2-2' }}</div>
+              <div class="metrica-etiqueta">Total facturado</div>
+            </div>
+
+            <div class="metrica-separador"></div>
+
+            <div class="metrica-item">
+              <div class="metrica-valor metrica-valor-naranja">$ {{ resumenOrden!.estadisticasEconomicas.diferenciaPendiente | number:'1.2-2' }}</div>
+              <div class="metrica-etiqueta">Diferencia pendiente</div>
+            </div>
+
+            <div class="metrica-separador"></div>
+
+            <!-- Cumplimiento económico con mini barra -->
+            <div class="metrica-item metrica-item-ancho">
+              <div class="metrica-cumplimiento-header">
+                <span class="metrica-valor">{{ resumenOrden!.estadisticasEconomicas.porcentajeCumplimientoEconomico | number:'1.1-1' }}%</span>
+                <span class="metrica-etiqueta">Cumplimiento econ.</span>
+              </div>
+              <div class="metrica-barra">
+                <div class="metrica-barra-relleno metrica-barra-naranja"
+                     [style.width.%]="resumenOrden!.estadisticasEconomicas.porcentajeCumplimientoEconomico">
+                </div>
+              </div>
+              <div class="metrica-barra-detalle">
+                $ {{ resumenOrden!.estadisticasEconomicas.totalMontoFacturado | number:'1.2-2' }} de
+                $ {{ resumenOrden!.estadisticasEconomicas.totalMontoSolicitado | number:'1.2-2' }}
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Invoices asociadas -->
+      <div class="invoices-asociadas" *ngIf="resumenOrden?.invoicesAsociadas?.length || resumenOrden?.blsAsociados?.length">
+        <div class="asociadas-grupo" *ngIf="resumenOrden?.blsAsociados?.length">
+          <h3>BL Asociados</h3>
+          <div class="invoices-tags">
+            <span class="bl-tag" *ngFor="let bl of resumenOrden?.blsAsociados">
+              📦 {{ bl }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">{{ translate('orderDetailsTable') }}</div>
+          <div class="acciones-tabla">
+            <div class="filtros-orden">
+              <select [(ngModel)]="filtroOrigen" (change)="aplicarFiltroOrigen()" class="select-filtro">
+                <option value="">{{ translate('allOrigins') }}</option>
+                <option value="INVOICE_BL">{{ translate('onlyInvoiceBL') }}</option>
+                <option value="ORDEN_COMPRA">{{ translate('onlyPurchaseOrder') }}</option>
+                <option value="AMBOS">{{ translate('both') }}</option>
+              </select>
+              <select [(ngModel)]="filtroEstado" (change)="aplicarFiltroEstado()" class="select-filtro">
+                <option value="">{{ translate('allStates') }}</option>
+                <option value="EXCESO">⚠️ Exceso (&gt;100%)</option>
+                <option value="COMPLETO">{{ translate('complete') }}</option>
+                <option value="PENDIENTE">{{ translate('pending') }}</option>
+                <option value="SIN_SOLICITUD">{{ translate('withoutRequest') }}</option>
+                <option value="SIN_VALIDAR">❌ Sin validar en ERP</option>
+              </select>
+            </div>
+            <button class="boton boton-contorno" (click)="filterData()" [disabled]="modoEdicionTabla">{{ translate('filter') }}</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()" [disabled]="modoEdicionTabla">{{ translate('export') }}</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+                <a (click)="downloadExcelNoValidados()" class="export-no-validados">❌ Excel sin validar (.xlsx)</a>
+              </div>
+            </div>
+
+            <!-- Modo normal: agregar ítem y activar edición masiva -->
+            <ng-container *ngIf="!modoEdicionTabla">
+              <button class="boton boton-contorno boton-editar-tabla" (click)="activarEdicionTabla()">
+                ✏️ Editar tabla
+              </button>
+              <button class="boton boton-agregar" (click)="abrirModalItem()">
+                ＋ Agregar ítem nuevo
+              </button>
+            </ng-container>
+
+            <!-- Modo edición masiva: cancelar / guardar cambios -->
+            <ng-container *ngIf="modoEdicionTabla">
+              <button class="boton boton-contorno" (click)="cancelarEdicionTabla()" [disabled]="guardandoTabla">
+                ✖ Cancelar edición
+              </button>
+              <button class="boton boton-guardar-tabla"
+                      (click)="guardarEdicionTabla()"
+                      [disabled]="guardandoTabla || cantidadFilasModificadas === 0">
+                <span *ngIf="!guardandoTabla">💾 Guardar cambios ({{ cantidadFilasModificadas }})</span>
+                <span *ngIf="guardandoTabla">⏳ Guardando…</span>
+              </button>
+            </ng-container>
+          </div>
+        </div>
+
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ translate('code') }}</th>
+                <th>Cód. VHCR</th>
+                <th>{{ translate('code new') }}</th>                
+                <th>{{ translate('description') }}</th>
+                <th class="th-cantidad">{{ translate('requestedQty') }}</th>
+                <th class="th-cantidad">{{ translate('invoicedQty') }}</th>
+                <th class="th-cantidad">{{ translate('pendingQty') }}</th>
+                <th class="th-cantidad">FOB</th>
+                <th class="th-cantidad">TOTAL</th>
+                <th>{{ translate('status') }}</th>
+                <th>Validación</th>
+                <th>{{ translate('invoices') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos" 
+                  [ngClass]="getRowClass(item)"
+                  [class.fila-editada]="modoEdicionTabla && filaTieneCambios(item)">
+
+                <!-- CÓDIGO -->
+                <td [attr.data-label]="translate('code')">
+                  <div class="codigo-container" *ngIf="!modoEdicionTabla; else codigoEditable">
+                    <span class="codigo-badge" 
+                          [class.codigo-sin-validar]="!item.codigoValidado"
+                          [title]="item.codigoValidado ? '✅ Código validado correctamente' : getProblemasTooltip(item)">
+                      {{ item.codigo }}
+                      <span class="icono-validacion">
+                        {{ item.codigoValidado ? '✅' : '❌' }}
+                      </span>
+                    </span>
+                  </div>
+                  <ng-template #codigoEditable>
+                    <input type="text"
+                           class="campo-input input-tabla"
+                           [ngModel]="getValorEdicion(item, 'codigo')"
+                           (ngModelChange)="onEdicionTablaInput(item, 'codigo', $event)"
+                           placeholder="Código">
+                  </ng-template>
+                </td>
+
+                <!-- CÓDIGO VHCR -->
+                <td [attr.data-label]="'Cód. VHCR'">
+                  <ng-container *ngIf="item.codigoVhcr; else sinVhcr">
+                    <span class="codigo-badge vhcr-badge" 
+                          [class.vhcr-invalido]="!item.codigoVhcrValidado"
+                          [title]="item.codigoVhcrValidado ? '✅ Encontrado en ERP' : '⚠️ No encontrado en ERP'">
+                      {{ item.codigoVhcrValidado ? '✔' : '❌' }} {{ item.codigoVhcr }}
+                    </span>
+                  </ng-container>
+                  <ng-template #sinVhcr>
+                    <span class="codigo-badge vhcr-badge vhcr-sin-match" title="Sin coincidencia en ERP">
+                      ✖ N/A
+                    </span>
+                  </ng-template>
+                </td>
+
+                <!-- CÓDIGO NUEVO -->
+                <td [attr.data-label]="translate('code new')">
+                  <div class="codigo-container">
+                    <ng-container *ngIf="item.nuevoCodigo; else sinNuevoCodigo">
+                      <span class="codigo-badge"
+                            [class.codigo-sin-validar]="!item.codeNewValidado"
+                            [title]="item.codeNewValidado ? '✅ Código nuevo validado' : '⚠️ Código nuevo NO validado'">
+                        {{ item.nuevoCodigo }}
+                        <span class="icono-validacion">
+                          {{ item.codeNewValidado ? '✅' : '❌' }}
+                        </span>
+                      </span>
+                    </ng-container>
+                    <ng-template #sinNuevoCodigo>
+                      <span class="text-muted">—</span>
+                    </ng-template>
+                  </div>
+                </td>
+
+                <!-- Descripción -->
+                <td [attr.data-label]="translate('description')">{{ item.descripcion }}</td>
+
+                <!-- Cantidades -->
+                <td [attr.data-label]="translate('requestedQty')" class="cantidad-cell">
+                  <ng-container *ngIf="!modoEdicionTabla; else cantidadEditable">
+                    {{ (item.cantidadSolicitada || 0) | number:'1.0-0' }} 
+                  </ng-container>
+                  <ng-template #cantidadEditable>
+                    <input type="number"
+                           class="campo-input input-tabla input-tabla-num"
+                           min="0"
+                           step="1"
+                           [ngModel]="getValorEdicion(item, 'cantidad')"
+                           (ngModelChange)="onEdicionTablaInput(item, 'cantidad', $event)">
+                  </ng-template>
+                </td>
+                <td [attr.data-label]="translate('invoicedQty')" class="cantidad-cell">
+                   {{ (item.cantidadFacturada || 0) | number:'1.0-0' }} 
+                </td>
+                <td [attr.data-label]="translate('pendingQty')" class="cantidad-cell">
+                  <span class="cantidad-badge"
+                        [class.cantidad-pendiente]="getCantidadPendiente(item) > 0"
+                        [class.cantidad-cero]="getCantidadPendiente(item) <= 0">
+                    {{ getCantidadPendiente(item) | number:'1.0-0' }}
+                  </span>
+                </td>
+                <td class="cantidad-cell">
+                  <ng-container *ngIf="!modoEdicionTabla; else fobEditable">
+                    {{ (item.precioUnitarioOrden || 0) | number:'1.0-0' }}
+                  </ng-container>
+                  <ng-template #fobEditable>
+                    <input type="number"
+                           class="campo-input input-tabla input-tabla-num"
+                           min="0"
+                           step="0.01"
+                           [ngModel]="getValorEdicion(item, 'fob')"
+                           (ngModelChange)="onEdicionTablaInput(item, 'fob', $event)">
+                  </ng-template>
+                </td>
+                <td class="cantidad-cell">
+                  <ng-container *ngIf="!modoEdicionTabla">{{ (item.subtotalOrden || 0) | number:'1.0-0' }}</ng-container>
+                  <ng-container *ngIf="modoEdicionTabla">{{ getSubtotalEdicion(item) | number:'1.0-0' }}</ng-container>
+                </td>
+
+                <!-- Estado -->
+                <td [attr.data-label]="translate('status')">
+                  <span class="estado-badge" 
+                        [style.background-color]="getEstadoColor(item)"
+                        [ngClass]="'estado-' + getEstadoClassName(item)">
+                    <ng-container [ngSwitch]="getEstadoItem(item)">
+                      <span *ngSwitchCase="'EXCESO'">⚠️ Exceso</span>
+                      <span *ngSwitchCase="'COMPLETO'">✅ {{ translate('completeStatus') }}</span>
+                      <span *ngSwitchCase="'PENDIENTE'">⏳ {{ translate('pendingStatus') }}</span>
+                      <span *ngSwitchCase="'SIN_SOLICITUD'">➖ {{ translate('withoutRequestStatus') }}</span>
+                    </ng-container>
+                  </span>
+                  <div class="porcentaje-cumplimiento" *ngIf="getPorcentajeItem(item) !== null">
+                    {{ getPorcentajeItem(item)! | number:'1.0-0' }}%
+                  </div>
+                  <div class="porcentaje-cumplimiento" *ngIf="getPorcentajeItem(item) === null">
+                    N/A
+                  </div>
+                </td>
+
+                <!-- Validación -->
+                <td [attr.data-label]="'Validación'">
+                  <div class="validacion-badges">
+                    <span *ngIf="item.esDuplicadoConsolidado" 
+                          class="badge-validacion badge-consolidado" 
+                          title="🔗 Este ítem fue consolidado / unido desde múltiples líneas">
+                      🔗 Consolidado
+                    </span>
+                    <span *ngIf="item.tieneEquivalenteDuplicado" 
+                          class="badge-validacion badge-duplicado" 
+                          title="🔄 Este ítem tiene código equivalente duplicado">
+                      🔄 Equiv. Duplicado
+                    </span>
+                    <span *ngIf="showBadgeOk(item)" 
+                          class="badge-validacion badge-ok" 
+                          title="✅ Todas las validaciones correctas">
+                      ✅ OK
+                    </span>
+                    <span *ngIf="showBadgePendiente(item)" 
+                          class="badge-validacion badge-pendiente" 
+                          title="⚠️ Existen validaciones pendientes">
+                      ⚠️ Pendiente
+                    </span>
+                  </div>
+                </td>
+
+                <!-- Invoices -->
+                <td [attr.data-label]="translate('invoices')">
+                  <span *ngIf="item.invoicesAsociadas" class="invoices-mini">{{ item.invoicesAsociadas }}</span>
+                  <span *ngIf="!item.invoicesAsociadas" class="text-muted">-</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div *ngIf="lista.length === 0 && !loading" class="no-data">
+            <p>{{ translate('noDataFound') }}</p>
+          </div>
+          <div *ngIf="loading" class="loading-spinner">
+            <p>{{ translate('loadingOrderDetails') }}</p>
+          </div>
+        </div>
+
+        <div class="pie-tabla">
+          <div class="items-count">
+            {{ translate('showing') }} {{ lista?.length || 0 }} {{ translate('of') }} {{ filteredData?.length || 0 }} {{ translate('items') }}
+            <span *ngIf="resumenOrden?.estadisticasCantidades"> • 
+              {{ translate('requested') }} {{ resumenOrden?.estadisticasCantidades?.totalSolicitado | number:'1.0-0' }}
+              {{ translate('invoiced') }} {{ resumenOrden?.estadisticasCantidades?.totalFacturado | number:'1.0-0' }}
+            </span>
+            <span *ngIf="resumenOrden?.estadisticasEconomicas" class="resumen-economico-pie"> • 
+              Solicitado: ${{ resumenOrden?.estadisticasEconomicas?.totalMontoSolicitado | number:'1.2-2' }} |
+              Facturado: ${{ resumenOrden?.estadisticasEconomicas?.totalMontoFacturado | number:'1.2-2' }} |
+              Pendiente: ${{ resumenOrden?.estadisticasEconomicas?.diferenciaPendiente | number:'1.2-2' }}
+            </span>
+          </div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+</main>
+
+<!-- MODAL: Agregar ítem nuevo -->
+<div class="modal-overlay" *ngIf="modalItemAbierto" (click)="cerrarModalItem()">
+  <div class="modal-contenido" (click)="$event.stopPropagation()">
+    <div class="modal-cabecera">
+      <h2 class="modal-titulo">➕ Nuevo ítem</h2>
+      <button class="modal-cerrar" (click)="cerrarModalItem()">✕</button>
+    </div>
+
+    <div class="modal-alerta-existente" *ngIf="itemExistente">
+      <span class="alerta-icono">⚠️</span>
+      <div>
+        <strong>Este código ya existe en la orden.</strong>
+        <p>Descripción: <b>{{ itemExistente.descripcion }}</b> — cantidad actual: <b>{{ itemExistente.cantidadSolicitada }}</b>. Para modificarlo usa el botón "Editar tabla".</p>
+      </div>
+    </div>
+
+    <div class="modal-cuerpo">
+      <div class="campo-grupo">
+        <label class="campo-label">Código <span class="requerido">*</span></label>
+        <div class="campo-busqueda">
+          <input
+            type="text"
+            class="campo-input"
+            [(ngModel)]="itemForm.codigo"
+            (input)="onCodigoInput()"
+            placeholder="Ej: ABC-1234"
+            [class.campo-encontrado]="itemExistente"
+            autocomplete="off">
+          <span class="busqueda-estado" *ngIf="buscandoCodigo">🔍</span>
+          <span class="busqueda-estado encontrado" *ngIf="!buscandoCodigo && itemExistente">⚠️</span>
+        </div>
+        <small class="campo-ayuda" *ngIf="!itemExistente">Se verificará que no exista ya en la orden.</small>
+      </div>
+
+      <div class="campo-grupo">
+        <label class="campo-label">Código VHCR</label>
+        <input
+          type="text"
+          class="campo-input"
+          [(ngModel)]="itemForm.codigoVhcr"
+          placeholder="Ej: VH-5678 (opcional)"
+          autocomplete="off">
+        <small class="campo-ayuda">Se validará contra ERP al guardar.</small>
+      </div>
+
+      <div class="campo-grupo">
+        <label class="campo-label">Código Nuevo <span class="campo-opcional">(opcional)</span></label>
+        <input
+          type="text"
+          class="campo-input"
+          [(ngModel)]="itemForm.nuevoCodigo"
+          placeholder="Ej: ABC-1234-NEW"
+          autocomplete="off">
+        <small class="campo-ayuda">Código equivalente o de reemplazo.</small>
+      </div>
+
+      <div class="campo-grupo">
+        <label class="campo-label">Descripción <span class="requerido">*</span></label>
+        <input
+          type="text"
+          class="campo-input"
+          [(ngModel)]="itemForm.descripcion"
+          placeholder="Descripción del ítem"
+          autocomplete="off">
+      </div>
+
+      <div class="campo-grupo">
+        <label class="campo-label">Cantidad <span class="requerido">*</span></label>
+        <input
+          type="number"
+          class="campo-input"
+          [(ngModel)]="itemForm.cantidad"
+          min="1"
+          placeholder="0">
+      </div>
+
+      <div class="campo-grupo">
+        <label class="campo-label">
+          FOB (USD) <span class="requerido">*</span>
+        </label>
+        <input
+          type="number"
+          class="campo-input"
+          [(ngModel)]="itemForm.fob"
+          min="0"
+          step="0.01"
+          placeholder="0.00">
+      </div>
+    </div>
+
+    <div class="modal-aviso-error" *ngIf="avisoModalItem">
+      {{ avisoModalItem }}
+    </div>
+
+    <div class="modal-pie">
+      <button class="boton boton-cancelar" (click)="cerrarModalItem()" [disabled]="guardandoItem">
+        Cancelar
+      </button>
+      <button
+        class="boton boton-guardar"
+        (click)="guardarItem()"
+        [disabled]="guardandoItem || !itemFormValido()">
+        <span *ngIf="!guardandoItem">💾 Guardar nuevo</span>
+        <span *ngIf="guardandoItem">⏳ Guardando…</span>
+      </button>
+    </div>
+  </div>
+</div>

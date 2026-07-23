@@ -1,0 +1,119 @@
+<div class="container">
+  <h1>Recepción de Contenedor / Carga Suelta</h1>
+
+  <!-- Paso 1: Datos generales -->
+  <section class="card">
+    <h2>Datos generales</h2>
+    <div class="row">
+      <label>Empresa de Transporte
+        <input type="text" [(ngModel)]="recepcion.empresaTransporte" />
+      </label>
+      <label>Conductor / CI
+        <input type="text" [(ngModel)]="recepcion.conductorNombre" />
+        <input type="text" [(ngModel)]="recepcion.conductorCI" placeholder="CI" />
+      </label>
+      <label>Acompañante / CI
+        <input type="text" [(ngModel)]="recepcion.acompananteNombre" />
+        <input type="text" [(ngModel)]="recepcion.acompananteCI" placeholder="CI" />
+      </label>
+      <label>Placa unidad
+        <input type="text" [(ngModel)]="recepcion.placaUnidad" />
+      </label>
+      <label>Fecha arribo
+        <input type="date" [(ngModel)]="recepcion.fechaArribo" />
+      </label>
+      <label>Hora ingreso
+        <input type="time" [(ngModel)]="recepcion.horaIngreso" />
+      </label>
+      <label>Hora salida
+        <input type="time" [(ngModel)]="recepcion.horaSalida" />
+      </label>
+      <label>Observaciones generales
+        <textarea [(ngModel)]="recepcion.observacionesGenerales"></textarea>
+      </label>
+    </div>
+    <button class="btn primary" (click)="guardarRecepcion()">Guardar y continuar</button>
+  </section>
+
+  <!-- Paso 2: Inspección del contenedor -->
+  <section class="card" *ngIf="recepcionId">
+    <h2>Verificación del contenedor</h2>
+    <table class="check-table">
+      <thead>
+        <tr>
+          <th>Elemento</th>
+          <th>Bueno</th>
+          <th>Malo</th>
+          <th>Regular</th>
+          <th>Observación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of elementosContenedor">
+          <td>{{item.elemento}}</td>
+          <td><input type="radio" [name]="item.key" value="Bueno" [(ngModel)]="item.estado"></td>
+          <td><input type="radio" [name]="item.key" value="Malo" [(ngModel)]="item.estado"></td>
+          <td><input type="radio" [name]="item.key" value="Regular" [(ngModel)]="item.estado"></td>
+          <td><input type="text" [(ngModel)]="item.observacion" placeholder="Obs."></td>
+        </tr>
+      </tbody>
+    </table>
+    <button class="btn primary" (click)="guardarInspeccionContenedor()">Guardar inspección</button>
+  </section>
+
+  <!-- Paso 3: Sellos -->
+  <section class="card" *ngIf="recepcionId">
+    <h2>Verificación de sellos</h2>
+    <div class="row">
+      <label>Número de sello
+        <input type="text" [(ngModel)]="sello.numero">
+      </label>
+    </div>
+    <table class="check-table">
+      <thead>
+        <tr>
+          <th>Acción</th>
+          <th>Bueno</th>
+          <th>Malo</th>
+          <th>Regular</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let acc of accionesSello">
+          <td>{{acc.texto}}</td>
+          <td><input type="radio" [name]="acc.key" value="Bueno" [(ngModel)]="acc.estado"></td>
+          <td><input type="radio" [name]="acc.key" value="Malo" [(ngModel)]="acc.estado"></td>
+          <td><input type="radio" [name]="acc.key" value="Regular" [(ngModel)]="acc.estado"></td>
+        </tr>
+      </tbody>
+    </table>
+    <button class="btn primary" (click)="guardarSello()">Guardar sello</button>
+  </section>
+
+  <!-- Paso 4: Responsables -->
+  <section class="card" *ngIf="recepcionId">
+    <h2>Responsables de la descarga</h2>
+    <div class="row">
+      <label>Entregué conforme
+        <input type="text" [(ngModel)]="recepcion.entregueConforme">
+      </label>
+      <label>Recibí conforme
+        <input type="text" [(ngModel)]="recepcion.recibiConforme">
+      </label>
+    </div>
+    <button class="btn primary" (click)="guardarResponsables()">Guardar responsables</button>
+  </section>
+
+  <!-- Paso 5: Respaldo fotográfico -->
+  <section class="card" *ngIf="recepcionId">
+    <h2>Respaldo fotográfico OEA</h2>
+    <div class="gallery">
+      <div class="photo-box" *ngFor="let tipo of tiposFoto">
+        <label>{{tipo}}</label>
+        <input type="file" accept="image/*" (change)="onFileChange($event, tipo)" />
+        <img *ngIf="fotos[tipo]" [src]="fotos[tipo].url" />
+      </div>
+    </div>
+    <button class="btn primary" (click)="subirFotos()">Subir fotos</button>
+  </section>
+</div>

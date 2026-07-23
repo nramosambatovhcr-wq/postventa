@@ -1,0 +1,240 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Gestión de Insumos</div>
+      <div class="contenedor-busqueda" style="color: black;">
+        <input
+          type="text"
+          class="busqueda"
+          placeholder="Buscar código, descripción, presentación o proveedor"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="applyFiltersAndSearch()" style="color: black;">
+        <button class="boton-buscar" (click)="applyFiltersAndSearch()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+      </div>
+      <div class="acciones">
+        <button class="boton boton-primario" (click)="goToCreateOil()" style="color: black;">
+          <i class="fa fa-plus"></i> Nuevo Aceite
+        </button>
+         <button class="boton boton-primario" (click)="goToCreateFilter()" style="color: black;">
+          <i class="fa fa-plus"></i> Nuevo Filtro
+        </button>
+         <button class="boton boton-primario" (click)="goToCreateInsumo()" style="color: black;">
+          <i class="fa fa-plus"></i> Nuevo Insumo
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Insumos</h1>
+      <p class="panel-subtitulo">Monitoreo y gestión de los insumos en inventario</p>
+    </div>
+
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica pendiente"
+        [ngClass]="{'activa-pendiente': paginaActual === 'pendiente'}"
+        (click)="pendiente()">
+        <div class="valor-estadistica">PENDIENTE</div>
+      </div>
+      <div class="tarjeta-estadistica asignado"
+        [ngClass]="{'activa-asignado': paginaActual === 'asignado'}"
+        (click)="asignado()">
+        <div class="valor-estadistica">ASIGNADO</div>
+      </div>
+      <div class="tarjeta-estadistica proceso"
+        [ngClass]="{'activa-proceso': paginaActual === 'proceso'}"
+        (click)="proceso()">
+        <div class="valor-estadistica">EN PROCESO</div>
+      </div>
+      
+      <div class="tarjeta-estadistica revisados"
+        [ngClass]="{'activa-revisados': paginaActual === 'revisados'}"
+        (click)="revisado()">
+        <div class="valor-estadistica">FINALIZADOS</div>
+      </div>
+      <div class="tarjeta-estadistica error"
+        [ngClass]="{'activa-error': paginaActual === 'error'}"
+        (click)="error()">
+        <div class="valor-estadistica">INFORMACION ERRONEA</div>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="alert alert-error" style="background-color: #fee; border: 1px solid #fcc; padding: 10px; margin: 10px 0; border-radius: 4px; color: #c00;">
+      {{ errorMessage }}
+    </div>
+
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">Listado de Pedidos de Insumos</div> <div class="acciones-tabla">
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label for="startDate">Desde:</label>
+              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyFiltersAndSearch()">
+            </div>
+            <div class="fecha-hasta">
+              <label for="endDate">Hasta:</label>
+              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyFiltersAndSearch()">
+            </div>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear Fechas</button>
+          </div>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">CSV (.csv)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+     <!-- Sección de la tabla actualizada -->
+<div class="tabla-responsive">
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha Pedido</th>
+        <th>Proveedor</th>
+        <th>Solicitante</th>
+        <th>Agencia</th>
+        <th>Estado General</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngIf="loading">
+        <td colspan="5" style="text-align: center; padding: 20px;">
+          <i class="fa fa-spinner fa-spin"></i> Cargando pedidos de insumos...
+        </td>
+      </tr>
+
+      <tr *ngIf="!loading && (!lista || lista.length === 0)">
+        <td colspan="5" style="text-align: center; padding: 20px;">
+          <span *ngIf="!errorMessage">No se encontraron pedidos de insumos.</span>
+          <span *ngIf="errorMessage">{{ errorMessage }}</span>
+        </td>
+      </tr>
+
+      <tr *ngFor="let group of lista; trackBy: trackByGroupKey" class="fila-datos">
+        <td data-label="Fecha Pedido">
+          {{ group.fechaPedido ? (group.fechaPedido | date:'dd/MM/yyyy') : '-' }}
+        </td>
+        <td data-label="Proveedor">{{ group.nombreProveedor || '-' }}</td>
+        <td data-label="Solicitante">
+          <strong>{{ group.nombreUsuarioSolicitante || '-' }}</strong>
+          <small style="display: block; color: #666; font-size: 0.8em;">
+            {{ group.items.length }} ítem{{ group.items.length !== 1 ? 's' : '' }}
+          </small>
+        </td>
+         <td data-label="Agencia">{{ group.nombreAgencia || '-' }}</td>
+        <td data-label="Estado General">
+        <div *ngIf="usuario?.rol === 'admin' || usuario?.rol === 'repuestos' else contentPedido">
+            <select [(ngModel)]="group.estadoPedido" (change)="actualizarEstadoPedido(group)">
+            <option value="PENDIENTE">PENDIENTE</option>
+            <option value="ASIGNADO">ASIGNADO</option>
+            <option value="PROCESO">EN PROCESO</option>
+            <option value="ENVIADO">ENVIADO</option>
+            <option value="CANCELADO">CANCELADO</option>
+            </select>
+        </div>
+        <ng-template #contentPedido>
+            <span class="estado-badge" [ngClass]="'estado-' + (group.estadoPedido || '').toLowerCase().replace(' ', '-')">
+            {{ group.estadoPedido || '-' }}
+            </span>
+        </ng-template>
+        </td>
+        <td data-label="Acciones">
+          <div class="acciones-container">
+            <button class="boton-accion view-details-button" 
+                    (click)="viewPedidoDetails(group)" 
+                    title="Ver Detalles del Pedido">
+              <i class="fa fa-eye"></i> Ver
+            </button>
+             <button class="boton-accion" (click)="openObservacionesModal(group)" title="Ver Observaciones">
+            <i class="fa fa-comments"></i>
+          </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+      <div class="pie-tabla" *ngIf="!loading && lista && lista.length > 0">
+        <div class="items-count">
+          Mostrando {{ lista.length }} de {{ filteredData?.length || 0 }} pedidos
+          <span *ngIf="allData && allData.length !== filteredData?.length">
+            ({{ allData.length }} ítems individuales en total)
+          </span>
+        </div>
+        <div class="paginacion" *ngIf="totalPages > 1">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button
+            *ngFor="let page of getPaginationArray()"
+            class="boton-pagina"
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+    <app-observacionesinsumos
+      [pedido]="selectedPedido"
+      [currentUserId]="id"
+      [userRole]="usuario?.rol || ''"
+      [modalVisible]="observacionesModalVisible"
+      (closeModalEvent)="closeObservacionesModal()">
+    </app-observacionesinsumos>
+</main>
+
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2 class="modal-title">Detalles del Pedido ({{ selectedGroupedPedidoForDetails?.fechaPedido | date:'dd/MM/yyyy' }})</h2>
+      <button class="modal-close-button" (click)="closeDetailsModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p><strong>Proveedor:</strong> {{ selectedGroupedPedidoForDetails?.nombreProveedor }}</p>
+      <p><strong>Estado General:</strong> {{ selectedGroupedPedidoForDetails?.estadoPedido | uppercase }}</p>
+      <p class="modal-subtitle">Ítems del Pedido:</p>
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Presentación</th>
+              <th>Cantidad</th>
+              <th>Estado Ítem</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngIf="!selectedGroupedPedidoForDetails?.items">
+              <td colspan="5" style="text-align: center; padding: 20px;">No se encontraron ítems para este pedido.</td>
+            </tr>
+            <tr *ngFor="let itemDetail of selectedGroupedPedidoForDetails?.items">
+              <td>{{ itemDetail.codigoInsumo }}</td>
+              <td>{{ itemDetail.descripcionInsumo }}</td>
+              <td>{{ itemDetail.presentacionInsumo || '-' }}</td>
+              <td>{{ itemDetail.cantidadSolicitada }}</td>
+              <td>{{ itemDetail.estadoPedido || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="boton boton-contorno" (click)="downloadModalExcel()">Exportar Excel</button>
+      <button class="boton boton-contorno" (click)="downloadModalCSV()">Exportar CSV</button>
+      <button class="boton boton-secundario" (click)="closeDetailsModal()">Cerrar</button>
+    </div>
+  </div>
+</div>

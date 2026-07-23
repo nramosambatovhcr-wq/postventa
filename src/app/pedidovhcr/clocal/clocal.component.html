@@ -1,0 +1,277 @@
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Pedidos Bodega</div>
+        <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          placeholder="Buscar código, descripción u observaciones"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+       
+      </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Pedidos Pendientes de Bodega</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de los pedidos pendientes desde bodega</p>
+      </div>
+      
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica pendiente" 
+          [ngClass]="{'activa-pendiente': paginaActual === 'pendiente'}"
+          (click)="pendiente()">
+        <div class="valor-estadistica">PENDIENTE</div>
+      </div>
+        <div class="tarjeta-estadistica pendiente" 
+          [ngClass]="{'activa-pendiente': paginaActual === 'clocal'}"
+          (click)="clocal()">
+        <div class="valor-estadistica">COMPRA LOCAL</div>
+      </div>
+      
+      <div class="tarjeta-estadistica proceso" 
+       [ngClass]="{'activa-proceso': paginaActual === 'proceso'}"
+       (click)="proceso()">
+        <div class="valor-estadistica">EN PROCESO</div>
+      </div>
+      <div class="tarjeta-estadistica asignado" 
+       [ngClass]="{'activa-asignado': paginaActual === 'asignado'}"
+       (click)="asignado()">
+        <div class="valor-estadistica">ASIGNADO</div>
+      </div>
+        <div class="tarjeta-estadistica revisados" 
+       [ngClass]="{'activa-revisados': paginaActual === 'revisados'}"
+       (click)="revisado()">
+        <div class="valor-estadistica">FINALIZADOS</div>
+      </div>
+        <div class="tarjeta-estadistica error" 
+       [ngClass]="{'activa-error': paginaActual === 'error'}"
+       (click)="error()">
+        <div class="valor-estadistica">INFORMACION ERRONEA</div>
+      </div>
+          <div class="tarjeta-estadistica search-dashboard" 
+          (click)="openSearchModal()">
+        <div class="valor-estadistica">BUSCAR</div>
+      </div>  
+        
+         
+      </div>
+      
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Pedidos Pendientes Recientes</div>
+          <div class="acciones-tabla">
+            <div class="filtro-fechas">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+              </div>
+              <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+            </div>
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Descripcion</th>
+                <th>Cantidad</th>
+                <th>Cliente</th> 
+                <th>OT</th> 
+                <th>Usuario</th>                
+                <th class="hide-mobile">Fecha</th>
+                <th>Proveedor</th>
+                <th>F. Entrega</th>
+                <th>Imagen</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+                <th>Acción</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Codigo">{{ item.codigo }}</td>
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                <td data-label="Cliente">{{ item.cliente }}</td>
+                <td data-label="OT">{{ item.ot }}</td>
+                <td data-label="Usuario">{{ item.nombre }} {{item.apellido}}</td>
+                <td data-label="Fecha" class="hide-mobile">{{ item.fecha_creacion | date:'dd/MM/yyyy' }}</td>
+                <td data-label="Proveedor">{{ item.proveedor }}</td>
+                <td data-label="Fecha Entrega" class="hide-mobile">{{ item.fecha_entrega | date:'dd/MM/yyyy' }}</td>
+                <td data-label="Imagen">
+                    <div *ngFor="let imagePath of item.imagenes" class="image-container">
+                        <div *ngIf="imagePath!=null">
+                            <img [src]="getImageUrl(imagePath)" alt="Imagen del pedido" (click)="openImageModal(getImageUrl(imagePath))" class="pedido-image" width="100px" height="100px">
+                     
+                        </div>
+                        </div>
+                  </td>
+                <td data-label="Estado">
+                  <div *ngIf="usuario?.rol === 'admin'||usuario?.rol === 'repuestos' || usuario?.rol === 'repuestoslv'|| usuario?.rol === 'repuestoslk' || usuario?.rol === 'repuestosc'|| usuario?.rol === 'laboratorio1' || usuario?.rol === 'laboratorio2' else content">
+                    <select [(ngModel)]="item.estado" (change)="actualizarEstado(item)">
+                      <option value="PENDIENTE">PENDIENTE</option>
+                      <option value="PROCESO">EN PROCESO</option>
+                      <option value="ASIGNADO">ASIGNADO</option>
+                      <option value="ERRONEO">MAL PEDIDO</option>
+                      <option value="REVISADO">FINALIZADO</option>
+                       
+                  </select>
+                  </div>
+                  <ng-template #content>{{item.estado}}</ng-template>
+                </td>
+               <td data-label="Acciones">
+                <div class="acciones-container">
+                  <button class="boton-accion" (click)="openObservacionesModal(item)" title="Ver Observaciones">
+                    <i class="fa fa-comments"></i> Comentarios
+                  </button>   
+                  <button class="boton-accion view-details-button" (click)="verObservaciones(item.id_pedido)" title="Ver Detalles del Pedido">
+                    <i class="fa fa-info-circle"></i> Ver Detalles
+                  </button>              
+                </div>
+              </td>
+              <td data-label="Acción">
+               <button 
+            class="boton-check" 
+            [class.completed]="item.compra_local"
+            (click)="toggleCompraLocal(item)"
+            title="Alternar estado de compra local">
+            <i class="fa fa-check"></i>CL
+          </button>
+          <button (click)="openProveedorModal(item)" class="boton-accion view-details-button"   style="background-color: rgb(44, 15, 208);">
+            <i class="fa fa-truck"></i>Proveedor
+            </button>
+              </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+          <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+        </div>
+    </div>
+    
+    <app-observaciones
+      [pedido]="selectedPedido"
+      [currentUserId]="id"
+      [userRole]="usuario?.rol || ''"
+      [modalVisible]="observacionesModalVisible"
+      (closeModalEvent)="closeObservacionesModal()">
+    </app-observaciones>
+      
+        
+    <app-observacionesped 
+  [pedidoId]="selectedPedidoId"
+  [modalVisible]="showObservacionesModal1"
+  [currentUserId]="id"
+  [userRole]="usuario?.rol || ''"
+  (closeModalEvent)="closeObservacionesModal1()">
+</app-observacionesped>
+
+     <div class="modal-overlay" *ngIf="showSearchModal">
+        <div class="modal-content search-dashboard-modal">
+          <div class="modal-header">
+            <h2>Búsqueda General</h2>
+            <button class="close-button" (click)="closeSearchModal()">&times;</button>
+          </div>
+          <div class="modal-body">
+            <app-search-dashboard></app-search-dashboard>
+          </div>
+        </div>
+</div>
+  </main>
+
+<div class="modal fade" [ngClass]="{'show': showProveedorModal}" *ngIf="showProveedorModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+ 
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Asignar Proveedor</h5>
+                <button type="button" class="btn-close btn-close-white" (click)="closeProveedorModal()"></button>
+            </div>
+            <div class="modal-body">
+                <form [formGroup]="proveedorForm" (ngSubmit)="submitProveedorForm()">
+                    <div class="mb-3">
+                        <label for="proveedor" class="form-label">Proveedor</label>
+                        <select formControlName="id_proveedor" id="proveedor" class="form-select">
+                            <option [ngValue]="null" disabled selected>Seleccione un proveedor...</option>
+                            <option *ngFor="let p of proveedores" [ngValue]="p.id">{{ p.nombre }}</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fechaCotizacion" class="form-label">Fecha de Cotización</label>
+                        <input type="date" formControlName="fecha_cotizacion" id="fechaCotizacion" class="form-control" [ngModel]="proveedorForm.get('fecha_cotizacion')?.value | date:'yyyy-MM-dd'">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="fechaEntrega" class="form-label">Fecha de Entrega Estimada</label>
+                        <input type="date" formControlName="fecha_entrega" id="fechaEntrega" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="numeroFactura" class="form-label">Número de Factura</label>
+                        <input type="text" formControlName="numero_factura" id="numeroFactura" class="form-control">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="facturaArchivo" class="form-label">Archivo de Factura</label>
+                        <input type="file" (change)="onFileSelected($event)" id="facturaArchivo" class="form-control">
+                        <div class="form-text text-muted" *ngIf="selectedFile">
+                            Archivo seleccionado: {{ selectedFile.name }}
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="button" class="btn btn-secondary me-2" (click)="closeProveedorModal()">Cancelar</button>
+                        <button type="submit" class="btn btn-secondary me-2" [disabled]="proveedorForm.invalid">Guardar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop fade show" *ngIf="showProveedorModal"></div>

@@ -1,0 +1,104 @@
+<div class="list row">
+
+  <div class="col-md-12">
+    <div class="input-group mb-2">
+      <a routerLink="/addprod" class="btn"> <i class="material-icons right">add_circle</i> Nuevo Pedido</a>
+    </div>
+  
+   
+    <div class="input-group mb-3">
+      <input
+        type="text"
+        class="form-control"
+        placeholder="Search by Pedido"
+        [(ngModel)]="title"
+      />
+      <div class="input-group-append">
+        <button
+          class="btn btn-outline-secondary"
+          type="button"
+          (click)="searchTitle()"
+        >
+          Search
+        </button>
+      </div>
+    </div>
+  </div>
+  <div  class="col-md-12">
+    <h4>Pedidos List</h4>
+     
+      <div 
+      >
+      <table >
+      <tr>
+          <th>
+              Nro.
+          </th>
+          <th>
+            Proveedor
+          </th>
+          <th>
+            BL
+          </th>
+          <th>
+            Invoice
+          </th>
+          <th>
+            INV. EMBAR. BL
+          </th>
+          <th>
+            INV. Liquidada
+          </th>
+          <th>
+              FECHA BL CHINA
+            </th>
+            <th>
+              FECHA BL GUAYAQUIL
+            </th>
+            <th>
+              FECHA SALIDA ADUANA
+            </th>
+            <th>
+              FECHA LIQUIDACION
+            </th>
+          <th>
+              Accion
+          </th>
+      </tr>
+          <tr *ngFor="let tutorial of tutorials; let i = index"
+          [class.active]="i == currentIndex" >
+         <td  >
+          {{ tutorial.id }}
+          </td>
+        <td  >
+          {{ tutorial.codigo }}
+        </td>
+        <td   >
+          {{ tutorial.descripcion }}
+        </td>
+        <td>
+          {{ tutorial.cantidad }}
+        </td>
+        <td>
+          <button (click)="setActiveTutorial(tutorial, i)">ver</button>
+          <a class="badge badge-warning"
+          routerLink="/tutorialsd/{{ currentTutorial.id }}">
+          Edit
+        </a>
+        </td>
+      </tr>
+    </table>
+      </div>
+    
+
+    <button class="m-3 btn btn-sm btn-danger" (click)="removeAllTutorials()">
+      Remove All
+    </button>
+  </div>
+  <div class="col-md-4">
+    <app-tutorial-details
+      [viewMode]="true"
+      [currentTutorial]="currentTutorial"
+    ></app-tutorial-details>
+  </div>
+</div>

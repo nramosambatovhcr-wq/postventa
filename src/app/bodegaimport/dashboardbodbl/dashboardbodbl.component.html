@@ -1,0 +1,403 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">REPUESTOS IMPORTACIONES</div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de BL de Importaciones</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de las BL</p>
+    </div>
+
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="bl()">
+          <div class="valor-estadistica">BL</div>
+      </div>
+       <div class="tarjeta-estadistica" (click)="revision()">
+          <div class="valor-estadistica">REVISION</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="asignar()">
+        <div class="valor-estadistica">ASIGNACION</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="usuarios()">
+          <div class="valor-estadistica">USUARIO</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="reportes()">
+          <div class="valor-estadistica">REPORTES</div>
+      </div>
+    </div>
+
+    <div class="panel-contenido">
+      <div class="opciones-tabla">
+          <div class="filtros-fecha">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyFilters()">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyFilters()">
+              </div>
+            </div>
+             <div>
+        <input
+  type="text"
+  class="busqueda"
+  placeholder="Buscar por BL, Proveedor, Estado, Descripción o Invoice"
+  [(ngModel)]="searchTerm"
+  (input)="applyFilters()"
+  (keyup.enter)="applyFilters()" style="background-color: blue;">
+      </div>
+        <div class="acciones-tabla">
+          <button class="boton-secundario" (click)="downloadExcel()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-excel" viewBox="0 0 16 16">
+              <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219l-2.116-2.54z"/>
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            </svg>
+            Excel
+          </button>
+          <button class="boton-secundario" (click)="downloadCSV()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-spreadsheet" viewBox="0 0 16 16">
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+              <path d="M3 8v1h10V8H3zm0 3v1h10v-1H3z"/>
+            </svg>
+            CSV
+          </button>
+        </div>
+      </div>
+
+    <div class="contenedor-tabla">
+    <table class="tabla-pedidos">
+        <thead>
+            <tr>
+                <th>Cod</th>
+                <th>PROVEEDOR</th>
+                <th>BL</th>
+                <th>Estado</th>
+                <th>Fecha Creación</th>
+                <th>Fecha Arribo Puerto</th>
+                <th>Total Invoices</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <ng-container *ngFor="let item of bls; let i = index">
+                <tr>
+                    <td data-label="Codigo">{{ item.id }}</td>
+                    <td data-label="Proveedor">{{ item.proveedor }}</td>
+                    <td data-label="BL">
+                        <div class="bl-header-info">
+                            <span class="bl-number">{{ item.nombre }}</span>
+                            <span class="bl-summary">{{ item.invoiceBlItems?.length || 0 }} Invoice(s)</span>
+                        </div>
+                    </td>
+                    <td data-label="Estado">
+                        <span class="estado" [ngClass]="{
+                            'pendiente': item.estado === 'PENDIENTE',
+                            'transito': item.estado === 'TRANSITO',
+                            'activa': item.estado === 'ESPERANDO CONTENEDOR',
+                            'embarque': item.estado === 'EMBARQUE',
+                            'aduana': item.estado === 'ADUANA',
+                            'liquidado': item.estado === 'LIQUIDADO'
+                        }">
+                            {{ item.estado }}
+                        </span>
+                    </td>
+                    <td data-label="Fecha Creación">
+                        <span class="fecha-info">
+                            {{ formatDate(item.fecha_creacion) }}
+                        </span>
+                    </td>
+                    <td data-label="Fecha Arribo">
+                        <span class="fecha-info" 
+                              [ngClass]="'fecha-' + getDateStatus(item.farrivop, item.estado)">
+                            {{ formatDate(item.farrivop) }}
+                        </span>
+                    </td>
+                    <td data-label="Total Invoices">
+                       {{ item.invoiceBlItems?.length || 0 }}
+                    </td>
+                    <td style="width: 180px;">
+                       <div class="accordion-header" (click)="toggleAccordion(i)">                           
+                            <svg
+                                class="accordion-icon"
+                                [class.rotated]="activeAccordion === i"
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                fill="currentColor"
+                                viewBox="0 0 16 16">
+                                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                            </svg>
+                        </div>
+                        <div class="details-icon" (click)="openDetailsModal(item.id)">
+                          <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          fill="currentColor"
+                          class="bi bi-eye"
+                          viewBox="0 0 16 16"
+                        >
+                          <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z" />
+                          <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0" />
+                        </svg>
+                        </div>
+                        <div class="details-icon" (click)="updatebl(item.id)">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-2 3.846 3.846-2 .106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325"/>
+                            </svg>
+                        </div>
+                       
+                        <div class="details-icon" (click)="verBl(item.id)">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-hash" viewBox="0 0 16 16">
+                          <path d="M5.5 12h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1 0-1zM5 8a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 8zm0-4a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5A.5.5 0 0 1 5 4z"/>
+                          </svg>
+                        </div>
+                          <div *ngIf="modal==true">
+                              <div class="modal" [class.show-modal]="isModalOpen1">
+                      <div class="modal-content">
+                        <span class="close-button" (click)="closeDetailsModal()">&times;</span>
+                        <h3>Detalles del BL: {{ currentBlDetails?.length > 0 ? currentBlDetails[0].blNombre : 'Cargando...' }}</h3>
+
+                        <div class="table-responsive">
+                          <table class="table table-bordered table-striped">
+                            <thead>
+                              <tr>
+                                <th>CÓDIGO</th>
+                                <th>CHINO</th>
+                                <th>DESCRIPCIÓN ESPAÑOL</th>
+                                <th>CANTIDAD</th>
+                                <th>UNIDAD</th>
+                                <th>PRECIO UNITARIO</th>
+                                <th>INVOICE</th>
+                                <th>INVOICE BL</th>
+                                <th>BL</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr *ngIf="currentBlDetails.length === 0 && !isLoadingDetails">
+                                <td colspan="7">No se encontraron detalles para este BL.</td>
+                              </tr>
+                              <tr *ngIf="isLoadingDetails">
+                                <td colspan="7">Cargando detalles...</td>
+                              </tr>
+                              <tr *ngFor="let detail of currentBlDetails">
+                                <td>{{ detail.codigo }}</td>
+                                <td>{{ detail.chino }}</td>
+                                <td>{{ detail.descripcionEspanol }}</td>
+                                <td>{{ detail.cantidad }}</td>
+                                <td>{{ detail.unidad }}</td>
+                                <td>{{ detail.precioUnitario | currency:'USD':'symbol':'1.2-2' }}</td>
+                                <td>{{ detail.invoiceN }}</td>
+                                <td>{{ detail.invoiceBl }}</td>
+                                <td>{{ detail.blNombre }}</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+
+                      </div>
+                    </div>
+                          </div>
+                    </td>
+                </tr>
+                
+                <tr *ngIf="activeAccordion === i">
+                    <td colspan="8" class="accordion-full-cell">
+                        <div class="accordion-content" [class.open]="activeAccordion === i">
+                            <div class="accordion-body">
+                                <div class="bl-main-info">
+                                    <h4 class="bl-detail-title">Información del BL: {{ item.nombre }}</h4>
+                                    
+                                    <!-- Timeline de fechas importantes -->
+                                    <div class="dates-timeline">
+                                        <h5>Timeline de Fechas</h5>
+                                        <div class="timeline-container">
+                                            <div class="timeline-item" *ngIf="item.fecha_creacion">
+                                                <div class="timeline-date">{{ formatDate(item.fecha_creacion) }}</div>
+                                                <div class="timeline-label">Creación</div>
+                                            </div>
+                                            <div class="timeline-item" *ngIf="item.fembarque">
+                                                <div class="timeline-date">{{ formatDate(item.fembarque) }}</div>
+                                                <div class="timeline-label">Embarque</div>
+                                            </div>
+                                            <div class="timeline-item" *ngIf="item.ftransito">
+                                                <div class="timeline-date">{{ formatDate(item.ftransito) }}</div>
+                                                <div class="timeline-label">Tránsito</div>
+                                            </div>
+                                            <div class="timeline-item" *ngIf="item.farrivop">
+                                                <div class="timeline-date">{{ formatDate(item.farrivop) }}</div>
+                                                <div class="timeline-label">Arribo</div>
+                                            </div>
+                                            <div class="timeline-item" *ngIf="item.faduana">
+                                                <div class="timeline-date">{{ formatDate(item.faduana) }}</div>
+                                                <div class="timeline-label">Aduana</div>
+                                            </div>
+                                            <div class="timeline-item" *ngIf="item.fliquidacion">
+                                                <div class="timeline-date">{{ formatDate(item.fliquidacion) }}</div>
+                                                <div class="timeline-label">Liquidación</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bl-info-grid">
+                                        <div class="info-item">
+                                            <strong>BL Number:</strong> {{ item.nombre }}
+                                        </div>
+                                        <div class="info-item">
+                                            <strong>Proveedor:</strong> {{ item.proveedor }}
+                                        </div>
+                                        <div class="info-item">
+                                            <strong>Estado Principal:</strong> {{ item.estado }}
+                                        </div>
+                                        <div class="info-item" *ngIf="item.descripcion">
+                                            <strong>Descripción:</strong> {{ item.descripcion }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="invoicebl-items-section" *ngIf="item.invoiceBlItems">
+                                    <div class="section-header">
+                                        <h4 class="section-title">
+                                            Invoices Asociados ({{ item.invoiceBlItems.length }})
+                                        </h4>
+                                        <div class="section-actions">
+                                            <button class="btn-expand-all" 
+                                                    (click)="expandAllInvoices(i)"
+                                                    [title]="getExpandButtonText(i)">
+                                                <svg xmlns="http://www.w3.org/2000/svg" 
+                                                     width="14" 
+                                                     height="14" 
+                                                     fill="currentColor" 
+                                                     viewBox="0 0 16 16">
+                                                    <path *ngIf="!areInvoicesExpanded(i)" d="M1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8zM7.646.146a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 1.707V5.5a.5.5 0 0 1-1 0V1.707L6.354 2.854a.5.5 0 1 1-.708-.708l2-2zM8 10a.5.5 0 0 1 .5.5v3.793l1.146-1.147a.5.5 0 0 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 0 1 .708-.708L7.5 14.293V10.5A.5.5 0 0 1 8 10z"/>
+                                                    <path *ngIf="areInvoicesExpanded(i)" d="M1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8zm7-8a.5.5 0 0 1 .5.5v3.793L9.854 3.146a.5.5 0 1 1 .708.708l-2 2a.5.5 0 0 1-.708 0l-2-2a.5.5 0 1 1 .708-.708L7.5 4.293V.5A.5.5 0 0 1 8 0zm-.5 11.707-1.146 1.147a.5.5 0 0 1-.708-.708l2-2a.5.5 0 0 1 .708 0l2 2a.5.5 0 0 1-.708.708L8.5 11.707V15.5a.5.5 0 0 1-1 0v-3.793z"/>
+                                                </svg>
+                                                <span class="btn-text">{{ getExpandButtonText(i) }}</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="invoices-scroll-container">
+                                        <div class="invoices-grid">
+                                            <div *ngFor="let invoiceBl of item.invoiceBlItems; let idx = index" class="invoice-card">
+                                                <div class="invoice-card-header">
+                                                    <div class="invoice-info">
+                                                        <h5 class="invoice-number">{{ invoiceBl.invoiceNumber || 'Invoice #' + (idx + 1) }}</h5>
+                                                        <p class="invoice-id">ID: {{ invoiceBl.id }}</p>
+                                                        <p class="invoice-description">{{ invoiceBl.description }}</p>
+                                                    </div>
+                                                    <div class="invoice-status">
+                                                        <span class="estado estado-small" [ngClass]="{
+                                                            'pendiente': invoiceBl.status === 'PENDIENTE',
+                                                            'transito': invoiceBl.status === 'TRANSITO',
+                                                            'activa': invoiceBl.status === 'ESPERANDO CONTENEDOR',
+                                                            'embarque': invoiceBl.status === 'EMBARQUE',
+                                                            'aduana': invoiceBl.status === 'ADUANA',
+                                                            'liquidado': invoiceBl.status === 'LIQUIDADO',
+                                                            'aprobada': invoiceBl.status === 'APROBADA',
+                                                            'revision': invoiceBl.status === 'REVISION',
+                                                            'entregada': invoiceBl.status === 'ENTREGADA',
+                                                            'anulada': invoiceBl.status === 'ANULADA'
+                                                        }">
+                                                            {{ invoiceBl.status }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="invoice-card-body" [class.open]="areInvoicesExpanded(i)">
+                                                    <div class="invoice-details">
+                                                        <div class="detail-row">
+                                                            <strong>Fecha:</strong> {{ invoiceBl.creationDate | date: 'yyyy-MM-dd' }}
+                                                        </div>
+                                                        <div class="detail-row">
+                                                            <strong>BL Asociado:</strong> {{ invoiceBl.blNumber }}
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="invoice-actions">
+                                                        <button class="boton-accion editar" 
+                                                                (click)="editarInvoice(invoiceBl.id)" 
+                                                                title="Editar Invoice">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                                                                <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                                                                <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <button class="boton-accion eliminar" 
+                                                                (click)="eliminarInvoice(invoiceBl.id)" 
+                                                                title="Eliminar Invoice">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                                                                <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <button class="boton-accion detalles" 
+                                                                (click)="verDetallesInvoice(invoiceBl.id)" 
+                                                                title="Ver Detalles">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-eye-fill" viewBox="0 0 16 16">
+                                                                <path d="M10.5 8a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0z"/>
+                                                                <path d="M0 8s3-5.5 8-5.5S16 8 16 8s-3 5.5-8 5.5S0 8 0 8zm8 3.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+                                                            </svg>
+                                                        </button>
+                                                        <button class="boton-accion agregar-detalle" 
+                                                                (click)="navigate2(invoiceBl.id)" 
+                                                                title="Agregar Detalle">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="bi bi-plus-square-fill" viewBox="0 0 16 16">
+                                                                <path d="M2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2zm6.5 4.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3a.5.5 0 0 1 .5-.5z"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="no-invoices-message" *ngIf="!item.invoiceBlItems || item.invoiceBlItems.length === 0">
+                                    <div class="empty-state">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" class="bi bi-inbox" viewBox="0 0 16 16">
+                                            <path d="M4.98 4a.5.5 0 0 0-.39.188L1.54 8H6a.5.5 0 0 1 .5.5 1.5 1.5 0 1 0 3 0A.5.5 0 0 1 10 8h4.46l-3.05-3.812A.5.5 0 0 0 11.02 4H4.98zm9.954 5H10.45a2.5 2.5 0 0 1-4.9 0H1.066l.32 2.562a.5.5 0 0 0 .497.438h12.234a.5.5 0 0 0 .496-.438L14.933 9zM3.809 3.563A1.5 1.5 0 0 1 4.981 3h6.038a1.5 1.5 0 0 1 1.172.563l3.7 4.625a.5.5 0 0 1 .105.374l-.39 3.124A1.5 1.5 0 0 1 14.117 13H1.883a1.5 1.5 0 0 1-1.489-1.314l-.39-3.124a.5.5 0 0 1 .105-.374l3.7-4.625z"/>
+                                        </svg>
+                                        <h5>No hay invoices asociados</h5>
+                                        <p>Este BL no tiene invoices asociados actualmente.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </ng-container>
+        </tbody>
+    </table>
+</div>
+
+      <div class="pie-tabla">
+        <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos</div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button
+            *ngFor="let page of getPaginationArray()"
+            class="boton-pagina"
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeModal()">
+      <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <span class="image-modal-close" (click)="closeModal()">&times;</span>
+          <img [src]="currentImageUrl" alt="Imagen del Pedido" class="image-modal-image">
+      </div>
+  </div>
+</main>

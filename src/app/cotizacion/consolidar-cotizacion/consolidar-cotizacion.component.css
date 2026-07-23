@@ -1,0 +1,385 @@
+/* ============================================================
+   1. FIX: Headers sticky pierden color de fondo al hacer scroll
+   Bootstrap no aplica background con suficiente especificidad
+   en elementos con position:sticky — se fuerza aquí.
+   2. PALETA UNIFICADA: remapeo de utilidades Bootstrap a la
+   paleta de la suite (azul acento + tintes suaves + texto
+   oscuro). El HTML conserva sus clases; el color se decide acá.
+   ============================================================ */
+
+:root,
+:host {
+  --color-primario: #3a7bd5;
+  --color-primario-hover: #2f6abf;
+  --color-primario-tinte: #eaf1fb;
+  --color-positivo: #1e6e3a;
+  --color-positivo-tinte: #e6f4ec;
+  --color-peligro: #b3362a;
+  --color-peligro-tinte: #fdecea;
+  --color-alerta: #8a6d1a;
+  --color-alerta-tinte: #faf3dd;
+  --color-alerta-borde: #e8d9a8;
+  --gris-0: #fafafa;
+  --gris-1: #f2f2f7;
+  --gris-2: #e5e5ea;
+  --gris-3: #d1d1d6;
+  --gris-texto: #6c757d;
+  --color-texto: #1c1c1e;
+}
+
+/* Contenedor de scroll */
+.tabla-sticky-wrap {
+  max-height: 65vh;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+.tabla-sticky-wrap table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* Posicionamiento sticky — EL THEAD COMPLETO se fija como un solo
+   bloque. Antes cada fila llevaba su propio offset en píxeles
+   (top: 0 / 52 / 112) y cualquier diferencia con la altura real
+   dejaba una franja por donde se veían las filas al hacer scroll.
+   Con el thead entero sticky ese hueco es imposible. */
+.tabla-sticky-wrap thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Las clases th-sticky-r1/r2/r3 se conservan en el HTML pero ya no
+   necesitan posicionamiento propio */
+.th-sticky-r1, .th-sticky-r2, .th-sticky-r3 {
+  position: static;
+  top: auto;
+  vertical-align: middle;
+}
+
+/* Toda celda del encabezado con fondo SÓLIDO para que nada se
+   transparente al pasar contenido por debajo */
+.tabla-sticky-wrap thead th {
+  background-color: #f8f9fa;
+}
+
+/* Sort */
+.th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+.th-sort:hover { opacity: 0.85; }
+.th-sort .sort-icon { opacity: 0.5; font-size: 0.75rem; margin-left: 4px; }
+.th-sort .sort-icon.active { opacity: 1; }
+
+/* ============================================================
+   ENCABEZADOS DE TABLA — claros con texto oscuro
+   (antes: table-dark negro + bg saturados por proveedor)
+   ============================================================ */
+
+/* thead oscuro de Bootstrap → gris claro */
+.tabla-sticky-wrap thead.table-dark th {
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+  border-color: var(--gris-2) !important;
+}
+
+/* Celdas de proveedor — tintes suaves, se mantiene la distinción:
+   azul = sin decisión, verde = asignar, rojo = cancelar */
+.tabla-sticky-wrap th.bg-primary {
+  background-color: var(--color-primario-tinte) !important;
+  color: var(--color-primario-hover) !important;
+}
+
+.tabla-sticky-wrap th.bg-success {
+  background-color: var(--color-positivo-tinte) !important;
+  color: var(--color-positivo) !important;
+}
+
+.tabla-sticky-wrap th.bg-danger {
+  background-color: var(--color-peligro-tinte) !important;
+  color: var(--color-peligro) !important;
+}
+
+.tabla-sticky-wrap th.bg-secondary {
+  background-color: var(--gris-1) !important;
+  color: #495057 !important;
+}
+
+/* El texto marcado como blanco dentro de esos th hereda el color del tinte */
+.tabla-sticky-wrap th.bg-primary,
+.tabla-sticky-wrap th.bg-primary .text-white,
+.tabla-sticky-wrap th.bg-success,
+.tabla-sticky-wrap th.bg-success .text-white,
+.tabla-sticky-wrap th.bg-danger,
+.tabla-sticky-wrap th.bg-danger .text-white,
+.tabla-sticky-wrap th.bg-secondary,
+.tabla-sticky-wrap th.bg-secondary .text-white,
+.tabla-sticky-wrap th.text-white {
+  color: inherit !important;
+}
+
+.tabla-sticky-wrap thead.table-dark th.text-white {
+  color: #495057 !important;
+}
+
+/* Botones outline-light quedaban invisibles sobre fondos claros */
+.tabla-sticky-wrap .btn-outline-light {
+  color: #495057 !important;
+  border-color: var(--gris-3) !important;
+  background-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.tabla-sticky-wrap .btn-outline-light:hover {
+  background-color: #ffffff !important;
+  border-color: var(--color-primario) !important;
+  color: var(--color-primario) !important;
+}
+
+/* Línea separadora visible al hacer scroll — una sola sombra bajo
+   el bloque completo del encabezado */
+.tabla-sticky-wrap th.th-sticky-r1,
+.tabla-sticky-wrap th.th-sticky-r2,
+.tabla-sticky-wrap th.th-sticky-r3 {
+  box-shadow: none;
+  border-bottom: 1px solid var(--gris-2) !important;
+}
+
+.tabla-sticky-wrap thead {
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.12);
+}
+
+/* ============================================================
+   FILAS DE ESTADO — tintes de la paleta
+   ============================================================ */
+tr.table-warning > td {
+  background-color: var(--color-alerta-tinte) !important;
+  color: var(--color-texto);
+}
+
+tr.table-danger > td {
+  background-color: var(--color-peligro-tinte) !important;
+  color: var(--color-texto);
+}
+
+/* ============================================================
+   CABECERAS DE TARJETA — blancas con texto negro (sin colores)
+   ============================================================ */
+.card-header.bg-primary,
+.card-header.bg-warning {
+  background-color: #ffffff !important;
+  color: var(--color-texto) !important;
+  border-bottom: 1px solid var(--gris-2) !important;
+}
+
+.card-header.bg-primary.text-white,
+.card-header.bg-primary .text-white,
+.card-header.bg-primary strong,
+.card-header.bg-primary small,
+.card-header.bg-warning strong,
+.card-header.bg-warning small {
+  color: var(--color-texto) !important;
+}
+
+/* Bordes de tarjeta de colores → gris neutro */
+.card.border-primary,
+.card.border-warning,
+.card.border-info {
+  border-color: var(--gris-2) !important;
+}
+
+/* ============================================================
+   BOTONES — acento azul, verde/rojo apagados semánticos,
+   warning neutralizado
+   ============================================================ */
+.btn-primary {
+  background-color: var(--color-primario) !important;
+  border-color: var(--color-primario) !important;
+}
+.btn-primary:hover, .btn-primary:focus {
+  background-color: var(--color-primario-hover) !important;
+  border-color: var(--color-primario-hover) !important;
+}
+
+.btn-success {
+  background-color: var(--color-positivo) !important;
+  border-color: var(--color-positivo) !important;
+}
+.btn-success:hover, .btn-success:focus {
+  background-color: #185832 !important;
+  border-color: #185832 !important;
+}
+
+.btn-danger {
+  background-color: var(--color-peligro) !important;
+  border-color: var(--color-peligro) !important;
+}
+.btn-danger:hover, .btn-danger:focus {
+  background-color: #992e24 !important;
+  border-color: #992e24 !important;
+}
+
+.btn-warning {
+  background-color: var(--gris-1) !important;
+  border-color: var(--gris-3) !important;
+  color: var(--color-texto) !important;
+}
+.btn-warning:hover, .btn-warning:focus {
+  background-color: var(--gris-2) !important;
+}
+
+.btn-outline-danger {
+  color: var(--color-peligro) !important;
+  border-color: var(--color-peligro) !important;
+  background-color: transparent !important;
+}
+.btn-outline-danger:hover {
+  background-color: var(--color-peligro-tinte) !important;
+}
+
+.btn-outline-warning {
+  color: var(--color-alerta) !important;
+  border-color: var(--color-alerta-borde) !important;
+  background-color: transparent !important;
+}
+.btn-outline-warning:hover {
+  background-color: var(--color-alerta-tinte) !important;
+}
+
+/* ============================================================
+   BADGES — pastillas suaves (tinte + texto oscuro)
+   ============================================================ */
+.badge.bg-success {
+  background-color: var(--color-positivo-tinte) !important;
+  color: var(--color-positivo) !important;
+  border: 1px solid #bcdccb;
+}
+
+.badge.bg-danger {
+  background-color: var(--color-peligro-tinte) !important;
+  color: var(--color-peligro) !important;
+  border: 1px solid #eec2bc;
+}
+
+/* "En Espera" y demás avisos → gris neutro, sin color */
+.badge.bg-warning,
+.badge.bg-warning.text-dark {
+  background-color: var(--gris-1) !important;
+  color: #495057 !important;
+  border: 1px solid var(--gris-2);
+}
+
+.badge.bg-info {
+  background-color: var(--gris-1) !important;
+  color: #495057 !important;
+  border: 1px solid var(--gris-2);
+}
+
+.badge.bg-secondary {
+  background-color: var(--gris-1) !important;
+  color: #495057 !important;
+  border: 1px solid var(--gris-2);
+}
+
+.badge.bg-primary {
+  background-color: var(--color-primario-tinte) !important;
+  color: var(--color-primario-hover) !important;
+  border: 1px solid #c9dcf5;
+}
+
+/* ============================================================
+   UTILIDADES DE TEXTO — tonos apagados de la paleta
+   ============================================================ */
+.text-success { color: var(--color-positivo) !important; }
+.text-danger  { color: var(--color-peligro) !important; }
+.text-warning { color: var(--color-alerta) !important; }
+.text-primary { color: var(--color-primario) !important; }
+
+/* ============================================================
+   ALERTAS
+   ============================================================ */
+.alert-warning {
+  background-color: var(--color-alerta-tinte) !important;
+  border-color: var(--color-alerta-borde) !important;
+  color: var(--color-alerta) !important;
+}
+
+.border-warning {
+  border-color: var(--color-alerta-borde) !important;
+}
+
+
+/* ============================================================
+   bg-opacity-10 de Bootstrap no siempre aplica (se veía sólido):
+   se fuerzan los tintes suaves de la paleta
+   ============================================================ */
+.bg-success.bg-opacity-10 {
+  background-color: var(--color-positivo-tinte) !important;
+  color: var(--color-texto) !important;
+}
+
+.bg-danger.bg-opacity-10 {
+  background-color: var(--color-peligro-tinte) !important;
+  color: var(--color-texto) !important;
+}
+
+/* ============================================================
+   RESUMEN — fondo blanco y letras negras
+   ============================================================ */
+.card-body.bg-success,
+.card-body.bg-success.bg-opacity-10 {
+  background-color: #ffffff !important;
+  color: var(--color-texto) !important;
+}
+
+.card-body.bg-success .text-success,
+.card-body.bg-success .text-primary,
+.card-body.bg-success h3,
+.card-body.bg-success h4,
+.card-body.bg-success h5 {
+  color: var(--color-texto) !important;
+}
+
+.card.border-success {
+  border-color: var(--gris-2) !important;
+}
+
+
+/* ============================================================
+   SECCIÓN SUPERIOR SIN COLORES
+   ============================================================ */
+
+/* "¿Cómo funciona?" — de celeste a neutro con texto negro */
+.alert-info {
+  background-color: var(--gris-0) !important;
+  border-color: var(--gris-2) !important;
+  color: var(--color-texto) !important;
+}
+
+.alert-info.border-info,
+.border-info {
+  border-color: var(--gris-3) !important;
+}
+
+/* Botones Plantilla (outline-light) sobre cabeceras ahora blancas */
+.btn-outline-light {
+  color: #495057 !important;
+  border-color: var(--gris-3) !important;
+  background-color: transparent !important;
+}
+
+.btn-outline-light:hover {
+  background-color: var(--gris-1) !important;
+  border-color: var(--color-primario) !important;
+  color: var(--color-primario) !important;
+}
+
+/* Toggle de proveedores visibles: de azul sólido a tinte suave */
+.btn-sm.btn-primary {
+  background-color: var(--color-primario-tinte) !important;
+  border-color: #c9dcf5 !important;
+  color: var(--color-primario-hover) !important;
+}
+
+.btn-sm.btn-primary:hover {
+  background-color: #dbe8f8 !important;
+  border-color: var(--color-primario) !important;
+}

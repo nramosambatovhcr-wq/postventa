@@ -1,0 +1,370 @@
+<div class="container mt-4">
+  <h2>Extracción de Repuestos</h2>
+
+  <!-- ====== DASHBOARD ESTADÍSTICO ====== -->
+  <div class="stats-grid">
+    <div class="stat-card total">
+      <div class="stat-icon">📦</div>
+      <div class="stat-info">
+        <span class="stat-label">Total Extraído</span>
+        <span class="stat-number">{{ estadisticas.total }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadTotal }} piezas</span>
+      </div>
+    </div>
+
+    <div class="stat-card pendiente">
+      <div class="stat-icon">⏳</div>
+      <div class="stat-info">
+        <span class="stat-label">Pendiente</span>
+        <span class="stat-number">{{ estadisticas.pendientes }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadPendiente }} piezas</span>
+      </div>
+    </div>
+
+    <div class="stat-card entregado">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <span class="stat-label">Entregado</span>
+        <span class="stat-number">{{ estadisticas.entregados }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadEntregada }} piezas</span>
+      </div>
+    </div>
+
+    <div class="stat-card devuelto">
+      <div class="stat-icon">↩️</div>
+      <div class="stat-info">
+        <span class="stat-label">Devuelto</span>
+        <span class="stat-number">{{ estadisticas.devueltos }}</span>
+        <span class="stat-sub">{{ estadisticas.cantidadDevuelta }} piezas</span>
+      </div>
+    </div>
+  </div>
+  <!-- ==================================== -->
+
+  <!-- ====== DASHBOARD DE VEHÍCULOS (por VIN) ====== -->
+  <div class="stats-grid stats-vehiculos">
+    <div class="stat-card vehiculos">
+      <div class="stat-icon">🚗</div>
+      <div class="stat-info">
+        <span class="stat-label">Vehículos Intervenidos</span>
+        <span class="stat-number">{{ estadisticas.vehiculosTotal }}</span>
+        <span class="stat-sub">con partes extraídas</span>
+      </div>
+    </div>
+
+    <div class="stat-card veh-pendiente">
+      <div class="stat-icon">🕒</div>
+      <div class="stat-info">
+        <span class="stat-label">Vehículos Pendientes</span>
+        <span class="stat-number">{{ estadisticas.vehiculosPendientes }}</span>
+        <span class="stat-sub">con partes por entregar</span>
+      </div>
+    </div>
+
+    <div class="stat-card veh-completo">
+      <div class="stat-icon">🏁</div>
+      <div class="stat-info">
+        <span class="stat-label">Vehículos Completados</span>
+        <span class="stat-number">{{ estadisticas.vehiculosCompletos }}</span>
+        <span class="stat-sub">sin partes pendientes</span>
+      </div>
+    </div>
+  </div>
+  <!-- ============================================== -->
+
+  <!-- ====== PANELES INTERACTIVOS (clic para filtrar) ====== -->
+  <div class="analytics-grid">
+
+    <!-- Extracción por Agencia -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">📍 Extracción por Agencia <small>(clic para filtrar)</small></span>
+        <button *ngIf="agenciaSel" class="chip-clear" (click)="seleccionarAgencia(agenciaSel)">
+          ✕ {{ agenciaSel }}
+        </button>
+      </div>
+      <div class="panel-body scroll">
+        <div *ngFor="let a of rankingAgencias; let i = index"
+             class="rank-row"
+             [class.active]="agenciaSel === a.agencia"
+             (click)="seleccionarAgencia(a.agencia)">
+          <div class="rank-top">
+            <span class="rank-name"><b>{{ i + 1 }}.</b> {{ a.agencia }}</span>
+            <span class="rank-value">{{ a.piezas }} pzs</span>
+          </div>
+          <div class="rank-bar"><div class="rank-fill agencia" [style.width.%]="a.porcentaje"></div></div>
+          <div class="rank-sub">{{ a.registros }} registros · {{ a.pendientes }} pendientes</div>
+        </div>
+        <div *ngIf="rankingAgencias.length === 0" class="rank-empty">Sin datos</div>
+      </div>
+    </div>
+
+    <!-- Repuestos más pedidos -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">
+          ⭐ Repuestos más pedidos
+          <small *ngIf="agenciaSel">— {{ agenciaSel }}</small>
+        </span>
+        <select class="top-select" [(ngModel)]="topN" (ngModelChange)="recomputarVista()">
+          <option *ngFor="let n of topNOpciones" [ngValue]="n">Top {{ n }}</option>
+        </select>
+      </div>
+      <div class="panel-body scroll">
+        <div *ngFor="let p of rankingArticulos; let i = index"
+             class="rank-row"
+             [class.active]="articuloSel === p.codigo"
+             (click)="seleccionarArticulo(p.codigo)">
+          <div class="rank-top">
+            <span class="rank-name"><b>{{ i + 1 }}.</b> {{ p.articulo || p.codigo }}</span>
+            <span class="rank-value">{{ p.piezas }} pzs</span>
+          </div>
+          <div class="rank-bar"><div class="rank-fill articulo" [style.width.%]="p.porcentaje"></div></div>
+          <div class="rank-sub">{{ p.codigo }} · {{ p.extracciones }} extracción(es)</div>
+        </div>
+        <div *ngIf="rankingArticulos.length === 0" class="rank-empty">Sin datos</div>
+      </div>
+    </div>
+
+  </div>
+  <!-- ====================================================== -->
+
+  <!-- Filtros -->
+  <div class="row mb-3">
+    <div class="col-md-2">
+      <label>Estado</label>
+      <select class="form-select" [(ngModel)]="filtros.estado" (change)="aplicarFiltros()">
+        <option value="">-- Todos --</option>
+        <option *ngFor="let e of estados" [value]="e">{{ e }}</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label>Agencia</label>
+      <select class="form-select" [(ngModel)]="filtros.agencia" (change)="aplicarFiltros()">
+        <option value="">-- Todas --</option>
+        <option *ngFor="let a of agencias" [value]="a">{{ a }}</option>
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label>Código</label>
+      <input type="text" class="form-control" [(ngModel)]="filtros.codigo" (input)="aplicarFiltros()" placeholder="Buscar código...">
+    </div>
+    <div class="col-md-2">
+      <button class="btn btn-primary" (click)="abrirModalCrear()">+ Nueva Extracción</button>
+    </div> 
+  <div class="col-md-2 text-end">
+       <button class="btn btn-outline-secondary" (click)="toggleUpload()">
+    📁 Importar desde Excel
+  </button>
+    </div>
+  </div>
+
+  <!-- Chip de filtro activo (selección desde los paneles) -->
+  <div *ngIf="haySeleccion" class="filtro-activo">
+    <span>Filtrando:</span>
+    <span *ngIf="agenciaSel" class="fa-chip">
+      Agencia: {{ agenciaSel }}
+      <button (click)="seleccionarAgencia(agenciaSel)">✕</button>
+    </span>
+    <span *ngIf="articuloSel" class="fa-chip">
+      Artículo: {{ articuloSel }}
+      <button (click)="seleccionarArticulo(articuloSel)">✕</button>
+    </span>
+    <button class="btn-clear-all" (click)="limpiarSeleccion()">Limpiar todo</button>
+  </div>
+
+  <!-- Upload Excel -->
+  <div class="upload-box" *ngIf="mostrarUpload" (drop)="onDrop($event)" (dragover)="onDragOver($event)" (dragleave)="onDragLeave($event)">
+  <input type="file" accept=".xlsx" (change)="onFileChange($event)" hidden #fileInput />
+  <div class="upload-content">
+    <span class="upload-icon">📤</span>
+    <p>Arrastra aquí tu archivo Excel o</p>
+    <button class="btn btn-secondary" (click)="fileInput.click()">Seleccionar archivo</button>
+  </div>
+</div>
+
+  <!-- Mensajes -->
+  <div *ngIf="uploading" class="alert alert-info">⏳ Subiendo...</div>
+  <div *ngIf="uploadSuccess" class="alert alert-success">✅ {{ uploadSuccess }}</div>
+  <div *ngIf="uploadError" class="alert alert-danger">❌ {{ uploadError }}</div>
+
+  <!-- Tabla -->
+  <table class="table table-striped table-sm">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Artículo</th>
+        <th>Cantidad</th>
+        <th>Unidad</th>
+        <th>Agencia</th>
+        <th>Estado</th>
+        <th>Fecha</th>
+        <th>Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let r of filtrados">
+        <td>{{ r.codigo }}</td>
+        <td>{{ r.articulo }}</td>
+        <td>{{ r.cantidad }}</td>
+        <td>{{ r.conjuntoUnidad }}</td>
+        <td>{{ r.agencia }}</td>
+        <td>
+          <span class="badge" [ngClass]="{
+            'bg-warning': r.estado === 'PENDIENTE',
+            'bg-success': r.estado === 'ENTREGADO',
+            'bg-secondary': r.estado === 'DEVUELTO'
+          }">{{ r.estado }}</span>
+        </td>
+        <td>{{ r.fechaExtraccion | date:'dd/MM/yyyy' }}</td>
+       <td>
+        <div class="btn-group" role="group">
+            <button class="btn btn-sm btn-outline-info" (click)="abrirModalVer(r)" title="Ver detalles">👁️</button>
+            <button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditar(r)" title="Editar">✏️</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="abrirImagenes(r)" title="Imágenes">📷</button>
+            <button class="btn btn-sm btn-outline-danger" (click)="eliminar(r.id!)" title="Eliminar">🗑️</button>
+        </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" [class.show]="modalVisible" [style.display]="modalVisible ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">{{ modo === 'crear' ? 'Nueva Extracción' : 'Editar Extracción' }}</h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="form">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label>Código *</label>
+              <input type="text" class="form-control" formControlName="codigo">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Artículo *</label>
+              <input type="text" class="form-control" formControlName="articulo">
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Cantidad *</label>
+              <input type="number" class="form-control" formControlName="cantidad">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Unidad *</label>
+              <input type="text" class="form-control" formControlName="conjuntoUnidad">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>VIN</label>
+              <input type="text" class="form-control" formControlName="vin">
+            </div>
+
+            <div class="col-md-4 mb-3">
+              <label>Fecha Extracción *</label>
+              <input type="date" class="form-control" formControlName="fechaExtraccion">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Agencia *</label>
+              <input type="text" class="form-control" formControlName="agencia">
+            </div>
+            <div class="col-md-4 mb-3">
+              <label>Estado *</label>
+              <select class="form-select" formControlName="estado">
+                <option value="PENDIENTE">PENDIENTE</option>
+                <option value="ENTREGADO">ENTREGADO</option>
+                <option value="DEVUELTO">DEVUELTO</option>
+              </select>
+            </div>
+
+            <!-- ====== DATOS DE ENTREGA / DEVOLUCIÓN (solo al editar) ====== -->
+            <div class="col-12" *ngIf="modo === 'editar'">
+              <div class="seccion-entrega">
+                <span class="seccion-titulo">Datos de entrega / devolución</span>
+              </div>
+            </div>
+
+            <div class="col-md-6 mb-3" *ngIf="modo === 'editar'">
+              <label>Fecha Devolución</label>
+              <input type="date" class="form-control" formControlName="fechaDevolucion">
+            </div>
+            <div class="col-md-6 mb-3" *ngIf="modo === 'editar'">
+              <label>Ajuste</label>
+              <input type="text" class="form-control" formControlName="ajusteJymmy">
+            </div>
+            <!-- ============================================================ -->
+
+            <div class="col-md-6 mb-3">
+              <label>Cliente</label>
+              <input type="text" class="form-control" formControlName="cliente">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>OT / Prefactura / Proforma</label>
+              <input type="text" class="form-control" formControlName="otPrefacturaProforma">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Solicitado Por</label>
+              <input type="text" class="form-control" formControlName="solicitadoPor">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label>Reservado</label>
+              <input type="text" class="form-control" formControlName="reservado">
+            </div>
+
+            <div class="col-12 mb-3">
+              <label>Observación</label>
+              <textarea class="form-control" formControlName="observacion" rows="2"></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">Cancelar</button>
+        <button type="button" class="btn btn-primary" (click)="guardar()">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" [class.show]="modalVerVisible" [style.display]="modalVerVisible ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content view-modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle del Registro</h5>
+        <button type="button" class="btn-close" (click)="cerrarModalVer()"></button>
+      </div>
+      <div class="modal-body view-modal-body">
+        <div class="view-grid">
+          <div class="view-item"><span class="view-label">Código</span><span class="view-value">{{ sel?.codigo }}</span></div>
+          <div class="view-item"><span class="view-label">Artículo</span><span class="view-value">{{ sel?.articulo }}</span></div>
+          <div class="view-item"><span class="view-label">Cantidad</span><span class="view-value">{{ sel?.cantidad }}</span></div>
+          <div class="view-item"><span class="view-label">Unidad/Conjunto</span><span class="view-value">{{ sel?.conjuntoUnidad }}</span></div>
+          <div class="view-item"><span class="view-label">Agencia</span><span class="view-value">{{ sel?.agencia }}</span></div>
+          <div class="view-item"><span class="view-label">Estado</span>
+            <span class="view-value"><span class="estado-badge" [class.pendiente]="sel?.estado==='PENDIENTE'" [class.entregado]="sel?.estado==='ENTREGADO'">{{ sel?.estado }}</span></span>
+          </div>
+          <div class="view-item"><span class="view-label">F. Extracción</span><span class="view-value">{{ sel?.fechaExtraccion | date:'dd/MM/yyyy' }}</span></div>
+          <div class="view-item"><span class="view-label">F. Devolución</span><span class="view-value">{{ (sel?.fechaDevolucion | date:'dd/MM/yyyy') || '—' }}</span></div>
+          <div class="view-item"><span class="view-label">VIN</span><span class="view-value">{{ sel?.vin || '—' }}</span></div>
+          <div class="view-item"><span class="view-label">Cliente</span><span class="view-value">{{ sel?.cliente || '—' }}</span></div>
+          <div class="view-item"><span class="view-label">OT / Prefactura</span><span class="view-value">{{ sel?.otPrefacturaProforma || '—' }}</span></div>
+          <div class="view-item"><span class="view-label">Solicitado por</span><span class="view-value">{{ sel?.solicitadoPor || '—' }}</span></div>
+          <div class="view-item"><span class="view-label">Ajuste</span><span class="view-value">{{ sel?.ajusteJymmy || '—' }}</span></div>
+          <div class="view-item"><span class="view-label">Reservado</span><span class="view-value">{{ sel?.reservado || '—' }}</span></div>
+          <div class="view-item full"><span class="view-label">Observación</span><span class="view-value">{{ sel?.observacion || 'Sin observaciones' }}</span></div>
+        </div>
+      </div>
+      <div class="modal-footer"><button class="btn btn-secondary" (click)="cerrarModalVer()">Cerrar</button></div>
+    </div>
+  </div>
+</div>
+
+<app-extraccion-imagenes
+  [tipoExtraccion]="'REPUESTO'"
+  [extraccionId]="imagenesRegistroId"
+  [visible]="imagenesVisible"
+  (cerrar)="cerrarImagenes()">
+</app-extraccion-imagenes>

@@ -1,0 +1,150 @@
+<!-- ===== MODO MODAL ===== -->
+<ng-container *ngIf="modoModal">
+  <div class="modal-overlay" *ngIf="visible" (click)="cerrar()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+
+      <div class="modal-header">
+        <h3>Buscador de Artículos</h3>
+        <button class="close-button" (click)="cerrar()">&times;</button>
+      </div>
+
+      <!-- Barra de búsqueda -->
+      <div class="modal-search-bar">
+        <input
+          type="text"
+          placeholder="Ingrese código o descripción"
+          [(ngModel)]="textoBusqueda"
+          (keyup.enter)="buscar()"
+        />
+        <button class="boton-buscar" (click)="buscar()">Buscar</button>
+      </div>
+
+      <!-- Pestañas -->
+      <div class="modal-tabs" *ngIf="mostrarPestarias">
+        <button class="tab-button" [class.active]="activeTab === 'stock'" (click)="activeTab = 'stock'">Stock Agencias</button>
+        <button class="tab-button" [class.active]="activeTab === 'buscar'" (click)="activeTab = 'buscar'">Búsqueda</button>
+        <button class="tab-button" [class.active]="activeTab === 'equivalentes'" (click)="activeTab = 'equivalentes'">Equivalentes</button>
+      </div>
+
+      <!-- Contenido pestañas -->
+      <div class="tab-content" *ngIf="mostrarPestarias">
+        <ng-container *ngTemplateOutlet="tabStock"></ng-container>
+        <ng-container *ngTemplateOutlet="tabBuscar"></ng-container>
+        <ng-container *ngTemplateOutlet="tabEquivalentes"></ng-container>
+      </div>
+
+      <div class="modal-footer">
+        <button class="boton-cerrar" (click)="cerrar()">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</ng-container>
+
+<!-- ===== MODO PÁGINA ===== -->
+<ng-container *ngIf="!modoModal">
+  <div class="pagina-content">
+
+    <div class="pagina-header">
+      <h3>Buscador de Artículos</h3>
+    </div>
+
+    <!-- Barra de búsqueda -->
+    <div class="modal-search-bar">
+      <input
+        type="text"
+        placeholder="Ingrese código o descripción"
+        [(ngModel)]="textoBusqueda"
+        (keyup.enter)="buscar()"
+      />
+      <button class="boton-buscar" (click)="buscar()">Buscar</button>
+    </div>
+
+    <!-- Pestañas -->
+    <div class="modal-tabs" *ngIf="mostrarPestarias">
+      <button class="tab-button" [class.active]="activeTab === 'stock'" (click)="activeTab = 'stock'">Stock Agencias</button>
+      <button class="tab-button" [class.active]="activeTab === 'buscar'" (click)="activeTab = 'buscar'">Búsqueda</button>
+      <button class="tab-button" [class.active]="activeTab === 'equivalentes'" (click)="activeTab = 'equivalentes'">Equivalentes</button>
+    </div>
+
+    <!-- Contenido pestañas -->
+    <div class="tab-content" *ngIf="mostrarPestarias">
+      <ng-container *ngTemplateOutlet="tabStock"></ng-container>
+      <ng-container *ngTemplateOutlet="tabBuscar"></ng-container>
+      <ng-container *ngTemplateOutlet="tabEquivalentes"></ng-container>
+    </div>
+
+  </div>
+</ng-container>
+
+<!-- ===== TEMPLATES DE PESTAÑAS (compartidos) ===== -->
+
+<ng-template #tabStock>
+  <div *ngIf="activeTab === 'stock'">
+    <div class="info-articulo" *ngIf="stockMaster">
+      <strong>{{ stockMaster.articulo }}</strong> – {{ stockMaster.nombre }}<br/>
+      <small>{{ stockMaster.clase }} | {{ stockMaster.grupo }} | Línea: {{ stockMaster.lineaCompetencia || 'N/A' }}</small>
+    </div>
+
+    <div class="resumen-stock">
+      <span *ngIf="totalUnidadesDisponibles > 0; else sinStockTpl">
+        Total <strong>unidades disponibles</strong>: {{ totalUnidadesDisponibles }}
+      </span>
+      <ng-template #sinStockTpl>
+        <span class="texto-sin-stock">{{ mensajeSinStock }}</span>
+      </ng-template>
+    </div>
+
+    <table class="tabla-stock" *ngIf="stockAgencias.length > 0">
+      <thead>
+        <tr>
+          <th>Agencia</th>
+          <th>Bodega</th>
+          <th>Ubicación</th>
+          <th>Stock</th>
+          <th>Reservado</th>
+          <th>Disponible</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of stockAgencias">
+          <td>{{ row.oficina }}</td>
+          <td>{{ row.bodega }}</td>
+          <td>{{ row.ubicacion }}</td>
+          <td>{{ row.stock }}</td>
+          <td>{{ row.stockReservado }}</td>
+          <td>{{ row.stockDisponible }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</ng-template>
+
+<ng-template #tabBuscar>
+  <div *ngIf="activeTab === 'buscar'">
+    <app-search-dashboard [codigo]="codigoParaBusqueda"></app-search-dashboard>
+  </div>
+</ng-template>
+
+<ng-template #tabEquivalentes>
+  <div *ngIf="activeTab === 'equivalentes'">
+    <div class="search-equiv-title">EQUIVALENTES</div>
+    <div class="search-equiv-column">
+      <div class="equiv-item" *ngFor="let c of equivCodes">
+        {{ c }}
+        <span class="stock-badge" [class.ok]="equivStockMap[c] > 0" [class.cero]="equivStockMap[c] === 0">
+          Disponible ({{ equivStockMap[c] ?? 0 }})
+        </span>
+        <div class="agencias-list" *ngIf="equivAgenciasMap[c]?.length">
+          <small *ngFor="let a of equivAgenciasMap[c]">
+            Agencias {{ a.oficina }}: {{ a.stock }}
+          </small>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="equivCodes.length === 0" class="sin-stock">
+      No se encontraron equivalentes para este código.
+    </div>
+  </div>
+</ng-template>

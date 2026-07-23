@@ -1,0 +1,163 @@
+<!-- Updated dashboard.component.html with multi-language support -->
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">{{ t('title') }}</div>
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          [placeholder]="t('searchPlaceholder')"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+      </div>
+      
+      <!-- Language Selector -->
+      <div class="language-selector">
+        <button class="language-button" (click)="toggleLanguageMenu()">
+          <span class="flag">{{ getCurrentLanguageFlag() }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+          </svg>
+        </button>
+        <div class="language-menu" *ngIf="showLanguageMenu">
+          <button 
+            *ngFor="let lang of languages" 
+            class="language-option"
+            [class.active]="currentLanguage === lang.code"
+            (click)="changeLanguage(lang.code)">
+            <span class="flag-large">{{ lang.flag }}</span>
+            <span class="lang-name">{{ lang.name }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">{{ t('dashboardTitle') }}</h1>
+      <p class="panel-subtitulo">{{ t('dashboardSubtitle') }}</p>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="coti()">
+        <div class="valor-estadistica">{{ t('quotations') }}</div>
+      </div>
+       
+      <div class="tarjeta-estadistica" (click)="error()">
+        <div class="valor-estadistica">{{ t('assigned') }}</div>          
+      </div>
+      <div class="tarjeta-estadistica" (click)="aprobada()">
+        <div class="valor-estadistica">{{ t('approved') }}</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="rechazada()"> 
+        <div class="valor-estadistica">{{ t('rejected') }}</div>
+      </div>
+    </div>
+    
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">{{ t('recentQuotations') }}</div>
+        <div class="acciones-tabla">
+          <!-- Filtro de fechas -->
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label for="startDate">{{ t('from') }}</label>
+              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+            </div>
+            <div class="fecha-hasta">
+              <label for="endDate">{{ t('to') }}</label>
+              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+            </div>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">
+              {{ t('reset') }}
+            </button>
+          </div>
+          <button class="boton boton-contorno" (click)="filterData()">
+            {{ t('filter') }}
+          </button>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">
+              {{ t('export') }}
+            </button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">{{ t('excel') }}</a>
+              <a (click)="downloadCSV()">{{ t('csv') }}</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>{{ t('item') }}</th>
+              <th>{{ t('code') }}</th>
+              <th>{{ t('supplier') }}</th>
+              <th>{{ t('date') }}</th>
+              <th>{{ t('status') }}</th>
+              <th>{{ t('details') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista; let i = index" class="fila-datos">
+              <td [attr.data-label]="t('item')">{{ i + 1 }}</td>
+              <td [attr.data-label]="t('code')">{{ item.codigoCot }}</td>
+              <td [attr.data-label]="t('supplier')">{{ item.proveedorId }}</td>
+              <td [attr.data-label]="t('date')" class="hide-mobile">
+                {{ item.fechaSolicitud ? (item.fechaSolicitud | date:'dd/MM/yyyy') : '-' }}
+              </td>
+              <td [attr.data-label]="t('status')">
+                {{ item.estadoCotizacion }} 
+              </td>
+              <td [attr.data-label]="t('actions')" class="text-center">
+                <div class="d-flex justify-content-center align-items-center gap-2">
+                  <button 
+                    (click)="verDetalles(item.cotizacionId)" 
+                    class="details-icon btn btn-link p-0" 
+                    [title]="t('viewDetails')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16">
+                      <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                      <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pie-tabla">
+        <div class="items-count">
+          {{ t('showing') }} {{ lista?.length || 0 }} 
+          {{ t('of') }} {{ filteredData?.length || 0 }} 
+          {{ t('orders') }}
+        </div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pagina" 
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+</main>

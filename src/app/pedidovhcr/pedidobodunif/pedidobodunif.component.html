@@ -1,0 +1,768 @@
+<!-- pedidobodunif.component.html -->
+
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Pedidos Bodega</div>
+      <div class="contenedor-busqueda">
+        <input type="text" class="busqueda"
+               placeholder="Buscar código, descripción, observaciones, cliente, OT o usuario"
+               [(ngModel)]="searchTerm" (keyup.enter)="searchImports()">
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">{{ tituloPagina }}</h1>
+      <p class="panel-subtitulo">{{ subtituloPagina }}</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         TARJETAS ESTADÍSTICAS SUPERIORES (siempre visibles)
+         ══════════════════════════════════════════════════ -->
+    <div class="stats-bar">
+      <div class="stat-chip stat-total">
+        <span class="stat-num">{{ cntTotal }}</span>
+        <span class="stat-label">TOTAL</span>
+      </div>
+      <div class="stat-chip stat-pendiente">
+        <span class="stat-num">{{ cntPendiente }}</span>
+        <span class="stat-label">PENDIENTES</span>
+      </div>
+      <div class="stat-chip stat-clocal">
+        <span class="stat-num">{{ cntClocal }}</span>
+        <span class="stat-label">COMPRA LOCAL</span>
+      </div>
+      <div class="stat-chip stat-proceso">
+        <span class="stat-num">{{ cntProceso }}</span>
+        <span class="stat-label">EN PROCESO</span>
+      </div>
+      <div class="stat-chip stat-asignado">
+        <span class="stat-num">{{ cntAsignado }}</span>
+        <span class="stat-label">ASIGNADOS</span>
+      </div>
+      <div class="stat-chip stat-revisado">
+        <span class="stat-num">{{ cntRevisado }}</span>
+        <span class="stat-label">FINALIZADOS</span>
+      </div>
+      <div class="stat-chip stat-error">
+        <span class="stat-num">{{ cntError }}</span>
+        <span class="stat-label">ERRÓNEOS</span>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         PESTAÑAS DE NAVEGACIÓN (solo 3 + buscar)
+         ══════════════════════════════════════════════════ -->
+    <div class="contenedor-estadisticas">
+
+      <div class="tarjeta-estadistica"
+           [ngClass]="{'activa-todos': paginaActual === 'todos'}"
+           (click)="irA('todos')"
+           style="cursor:pointer; background:#636e72;">
+        <div class="valor-estadistica">TODOS</div>
+      </div>
+
+      <!-- ── COMPRA LOCAL ── -->
+      <div class="tarjeta-estadistica"
+           [ngClass]="{'activa-clocal': paginaActual === 'clocal'}"
+           (click)="irA('clocal')"
+           style="cursor:pointer; background:#fdcb6e; color:#2d3436;">
+        <div class="valor-estadistica">COMPRA LOCAL</div>
+      </div>
+
+      <div class="tarjeta-estadistica asignado"
+           [ngClass]="{'activa-asignado': paginaActual === 'asignado'}"
+           (click)="irA('asignado')"
+           style="cursor:pointer;">
+        <div class="valor-estadistica">ASIGNADO</div>
+      </div>
+
+      <div class="tarjeta-estadistica"
+           [ngClass]="{'activa-estadisticas': paginaActual === 'estadisticas'}"
+           (click)="irA('estadisticas')"
+           style="cursor:pointer; background:#00b894;">
+        <div class="valor-estadistica">📊 ESTADÍSTICAS</div>
+      </div>
+
+      <div class="tarjeta-estadistica search-dashboard"
+           (click)="openNuevoBuscador()"
+           style="cursor:pointer;">
+        <div class="valor-estadistica">BUSCAR</div>
+      </div>
+
+    </div>
+
+    <!-- ══════════════════════════════════════════════════
+         VISTA ESTADÍSTICAS
+         ══════════════════════════════════════════════════ -->
+    <ng-container *ngIf="paginaActual === 'estadisticas'">
+      <div class="estadisticas-container">
+
+        <!-- Resumen general -->
+        <div class="estadisticas-resumen">
+          <h2>Resumen General</h2>
+          <p>Total de pedidos registrados: <strong>{{ cntTotal }}</strong></p>
+        </div>
+
+        <!-- Barras por estado -->
+        <div class="estadisticas-barras">
+          <h3>Distribución por Estado</h3>
+          <div class="barra-item" *ngFor="let g of estadisticasPorEstado">
+            <div class="barra-label">
+              <span class="barra-estado">{{ g.estado }}</span>
+              <span class="barra-valores">{{ g.total }} pedidos ({{ g.porcentaje }}%)</span>
+            </div>
+            <div class="barra-track">
+              <div class="barra-fill"
+                   [style.width.%]="g.porcentaje"
+                   [style.background]="g.color">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas detalle -->
+        <div class="estadisticas-cards">
+          <div class="est-card" *ngFor="let g of estadisticasPorEstado"
+               [style.border-color]="g.color">
+            <div class="est-card-num" [style.color]="g.color">{{ g.total }}</div>
+            <div class="est-card-label">{{ g.estado }}</div>
+            <div class="est-card-pct" [style.background]="g.color">{{ g.porcentaje }}%</div>
+          </div>
+        </div>
+
+      </div>
+    </ng-container>
+
+    <!-- ══════════════════════════════════════════════════
+         TABLA (vistas todos y asignado)
+         ══════════════════════════════════════════════════ -->
+    <div class="contenedor-tabla-importaciones" *ngIf="paginaActual !== 'estadisticas'">
+
+      <!-- Cabecera con filtros -->
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">{{ tituloPagina }}</div>
+        <div class="acciones-tabla">
+
+          <!-- SELECT FILTRO ESTADO -->
+          <select class="select-estado-filtro" [(ngModel)]="filtroEstado" (change)="aplicarFiltroEstado()">
+            <option value="">Todos los estados</option>
+            <option value="PENDIENTE">PENDIENTE</option>
+            <option value="CLOCAL">COMPRA LOCAL</option>
+            <option value="PROCESO">EN PROCESO</option>
+            <option value="ASIGNADO">ASIGNADO</option>
+            <option value="REVISADO">FINALIZADO</option>
+            <option value="ERRONEO">MAL PEDIDO</option>
+          </select>
+
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label>Desde:</label>
+              <input type="date" [(ngModel)]="startDate" (change)="applyDateFilter()">
+            </div>
+            <div class="fecha-hasta">
+              <label>Hasta:</label>
+              <input type="date" [(ngModel)]="endDate" (change)="applyDateFilter()">
+            </div>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+          </div>
+
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">CSV (.csv)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spinner -->
+      <ng-container *ngIf="loading; else tablaContent">
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Cargando datos...</p>
+        </div>
+      </ng-container>
+
+      <ng-template #tablaContent>
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <!-- Cabeceras ordenables -->
+                <th class="th-sortable" (click)="sortBy('codigo')">
+                  Codigo {{ sortIcon('codigo') }}
+                </th>
+                <th class="th-sortable" (click)="sortBy('descripcion')">
+                  Descripcion {{ sortIcon('descripcion') }}
+                </th>
+                <th class="th-sortable" (click)="sortBy('cantidad')">
+                  Cant. {{ sortIcon('cantidad') }}
+                </th>
+                <th>Observaciones</th>
+                <th class="th-sortable" (click)="sortBy('cliente')">
+                  Cliente {{ sortIcon('cliente') }}
+                </th>
+                <th class="th-sortable" (click)="sortBy('ot')">
+                  OT {{ sortIcon('ot') }}
+                </th>
+                <th class="th-sortable" (click)="sortBy('nombre')">
+                  Usuario {{ sortIcon('nombre') }}
+                </th>
+                <th class="th-sortable hide-mobile" (click)="sortBy('fecha_creacion')">
+                  Fecha {{ sortIcon('fecha_creacion') }}
+                </th>
+                <!-- Columnas exclusivas de COMPRA LOCAL -->
+                <ng-container *ngIf="esVistaCompraLocal">
+                  <th class="th-sortable" (click)="sortBy('proveedor')">Proveedor {{ sortIcon('proveedor') }}</th>
+                  <th class="th-sortable" (click)="sortBy('fecha_entrega')">F. Entrega {{ sortIcon('fecha_entrega') }}</th>
+                </ng-container>
+                <th>Imagen</th>
+                <th class="th-sortable th-estado" (click)="sortBy('estado')">
+                  Estado {{ sortIcon('estado') }}
+                </th>
+                <th class="th-acciones">Acciones</th>
+                <th class="th-cl">CL / Prov.</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+
+                <!-- Código: siempre abre modal de stock -->
+                <td data-label="Codigo">
+                  <button type="button" class="btn-link-codigo"
+                          (click)="abrirModalInfoStock(item.codigo)"
+                          title="Ver stock del artículo">
+                    {{ item.codigo }}
+                  </button>
+                </td>
+
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+
+                <td data-label="Observaciones">{{ item.ultimo_mensaje || item.observaciones }}</td>
+
+                <td data-label="Cliente">{{ item.cliente }}</td>
+                <td data-label="OT">{{ item.ot }}</td>
+                <td data-label="Usuario">{{ item.nombre }} {{ item.apellido }}</td>
+
+                <td data-label="Fecha" class="hide-mobile">
+                  {{ item.fecha_creacion ? (item.fecha_creacion | date:'dd/MM/yyyy') : '-' }}
+                </td>
+
+                <!-- Proveedor y Fecha Entrega (solo en vista clocal) -->
+                <ng-container *ngIf="esVistaCompraLocal">
+                  <td data-label="Proveedor">{{ item.proveedor || '-' }}</td>
+                  <td data-label="F.Entrega">
+                    {{ item.fecha_entrega ? (item.fecha_entrega | date:'dd/MM/yyyy') : '-' }}
+                  </td>
+                </ng-container>
+
+                <!-- Imágenes -->
+                <td data-label="Imagen">
+                  <div *ngFor="let imagePath of item.imagenes">
+                    <img *ngIf="imagePath != null"
+                         [src]="getImageUrl(imagePath)" alt="Imagen del pedido"
+                         (click)="openImageModal(getImageUrl(imagePath))"
+                         class="pedido-image" width="60px" height="60px"
+                         style="cursor:pointer; border-radius:4px;">
+                  </div>
+                </td>
+
+                <!-- ── ESTADO ── -->
+                <td data-label="Estado" class="td-estado">
+                  <div *ngIf="esAdmin; else soloEstado">
+                    <select [(ngModel)]="item.estado" (change)="actualizarEstado(item)"
+                            class="select-estado-coloreado"
+                            [ngClass]="{
+                              'sel-pendiente': item.estado === 'PENDIENTE',
+                              'sel-proceso':   item.estado === 'PROCESO',
+                              'sel-asignado':  item.estado === 'ASIGNADO',
+                              'sel-revisado':  item.estado === 'REVISADO',
+                              'sel-erroneo':   item.estado === 'ERRONEO'
+                            }">
+                      <option value="PENDIENTE">PENDIENTE</option>
+                      <option value="PROCESO">EN PROCESO</option>
+                      <option value="ASIGNADO">ASIGNADO</option>
+                      <option value="ERRONEO">MAL PEDIDO</option>
+                      <option value="REVISADO">FINALIZADO</option>
+                    </select>
+                  </div>
+                  <ng-template #soloEstado>
+                    <span class="badge-estado" [ngClass]="{
+                      'badge-pendiente': item.estado === 'PENDIENTE',
+                      'badge-proceso':   item.estado === 'PROCESO',
+                      'badge-asignado':  item.estado === 'ASIGNADO',
+                      'badge-revisado':  item.estado === 'REVISADO',
+                      'badge-erroneo':   item.estado === 'ERRONEO'
+                    }">{{ getEstadoDisplay(item.estado) }}</span>
+                  </ng-template>
+                </td>
+
+                <!-- ── ACCIONES ── -->
+                <td data-label="Acciones" class="td-acciones">
+                  <div class="btn-group-acciones">
+                    <button class="btn-icon btn-comentarios"
+                            (click)="openObservacionesModal(item)"
+                            title="Ver Comentarios">
+                      <i class="fa fa-comments"></i>
+                      <span>Comentarios</span>
+                    </button>
+                    <button class="btn-icon btn-detalles"
+                            (click)="verObservaciones(item.id_pedido)"
+                            title="Ver Detalles">
+                      <i class="fa fa-info-circle"></i>
+                      <span>Detalles</span>
+                    </button>
+                  </div>
+                </td>
+
+                <!-- ── CL / PROVEEDOR ── -->
+                <td data-label="CL/Prov." class="td-cl">
+                  <div class="btn-group-cl">
+                    <!-- Toggle: marcar como compra local (visible en TODOS) -->
+                    <button *ngIf="!item.compra_local"
+                            class="btn-cl btn-cl-off"
+                            (click)="toggleCompraLocal(item)"
+                            title="Marcar como compra local">
+                      <i class="fa fa-check"></i> CL
+                    </button>
+
+                    <!-- Ya es compra local -->
+                    <ng-container *ngIf="item.compra_local">
+                      <!-- Quitar CL (visible en todas las vistas) -->
+                      <button class="btn-cl btn-cl-on"
+                              (click)="quitarCompraLocal(item)"
+                              title="Quitar compra local">
+                        <i class="fa fa-check"></i> CL
+                      </button>
+                      <!-- Proveedor: SOLO en vista Compra Local -->
+                      <button *ngIf="esVistaCompraLocal"
+                              class="btn-cl btn-proveedor"
+                              (click)="openProveedorModal(item)"
+                              title="Asignar Proveedor">
+                        <i class="fa fa-truck"></i> Proveedor
+                      </button>
+                    </ng-container>
+                  </div>
+                </td>
+
+              </tr>
+
+              <tr *ngIf="lista.length === 0">
+                <td colspan="12" class="no-results">
+                  No se encontraron resultados para los filtros aplicados.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-template>
+
+      <!-- Paginación -->
+      <div class="pie-tabla" *ngIf="!loading">
+        <div class="items-count">
+          Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos
+        </div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage-1)" [disabled]="currentPage===1">&lt;</button>
+          <button *ngFor="let page of getPaginationArray()" class="boton-pagina"
+                  [ngClass]="{'activo': page===currentPage}"
+                  (click)="page !== -1 ? changePage(page) : null">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage+1)" [disabled]="currentPage===totalPages">&gt;</button>
+        </div>
+      </div>
+
+    </div><!-- /contenedor-tabla -->
+  </section>
+
+  <!-- ════════════ MODALES ════════════ -->
+
+  <!-- Imagen -->
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+
+  <!-- Observaciones -->
+  <app-observaciones [pedido]="selectedPedido" [currentUserId]="id"
+    [userRole]="usuario?.rol || ''" [modalVisible]="observacionesModalVisible"
+    (closeModalEvent)="closeObservacionesModal()">
+  </app-observaciones>
+
+  <!-- Detalles -->
+  <app-observacionesped [pedidoId]="selectedPedidoId" [modalVisible]="showObservacionesModal1"
+    [currentUserId]="id" [userRole]="usuario?.rol || ''"
+    (closeModalEvent)="closeObservacionesModal1()">
+  </app-observacionesped>
+
+  <!-- Búsqueda general -->
+  <div class="modal-overlay" *ngIf="showSearchModal">
+    <div class="modal-content search-dashboard-modal">
+      <div class="modal-header">
+        <h2>Búsqueda General</h2>
+        <button class="close-button" (click)="closeSearchModal()">&times;</button>
+      </div>
+      <div class="modal-body"><app-search-dashboard></app-search-dashboard></div>
+    </div>
+  </div>
+
+  <!-- Nuevo buscador -->
+  <app-pedidobod-search-modal [modoModal]="true" [visible]="showNuevoBuscador"
+    (visibleChange)="showNuevoBuscador = $event">
+  </app-pedidobod-search-modal>
+</main>
+
+<!-- ════════════════════════════════════
+     MODAL STOCK
+     ════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="infoStockModalVisible" (click)="cerrarModalInfoStock()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Información del Artículo: {{ busquedaCodigo }}</h3>
+      <button class="close-button" (click)="cerrarModalInfoStock()">&times;</button>
+    </div>
+    <div class="modal-tabs">
+      <button class="tab-button" [class.active]="activeTab==='stock'"       (click)="activeTab='stock'">Stock Agencias</button>
+      <button class="tab-button" [class.active]="activeTab==='buscar'"      (click)="activeTab='buscar'">Búsqueda</button>
+      <button class="tab-button" [class.active]="activeTab==='equivalentes'"
+              (click)="activeTab='equivalentes'; cargarEquivalentesModal(busquedaCodigo)">Equivalentes</button>
+    </div>
+    <div class="tab-content" *ngIf="activeTab==='stock'">
+      <div class="info-articulo">
+        <strong>{{ stockMaster?.articulo }}</strong> – {{ stockMaster?.nombre }}<br>
+        <small>{{ stockMaster?.clase }} | {{ stockMaster?.grupo }} | Línea: {{ stockMaster?.lineaCompetencia || 'N/A' }}</small>
+      </div>
+      <div class="resumen-stock">
+        <span *ngIf="totalUnidadesDisponibles > 0; else sinStockTpl">
+          Total <strong>unidades disponibles</strong>: {{ totalUnidadesDisponibles }}
+        </span>
+        <ng-template #sinStockTpl><span class="texto-sin-stock">{{ mensajeSinStock }}</span></ng-template>
+      </div>
+      <table class="tabla-stock" *ngIf="stockAgencias.length > 0">
+        <thead><tr><th>Agencia</th><th>Bodega</th><th>Ubicación</th><th>Stock</th><th>Reservado</th><th>Disponible</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let row of stockAgencias">
+            <td>{{row.oficina}}</td><td>{{row.bodega}}</td><td>{{row.ubicacion}}</td>
+            <td>{{row.stock}}</td><td>{{row.stockReservado}}</td><td>{{row.stockDisponible}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tab-content" *ngIf="activeTab==='buscar'">
+      <app-search-dashboard [codigo]="busquedaCodigo"></app-search-dashboard>
+    </div>
+    <div class="tab-content" *ngIf="activeTab==='equivalentes'">
+      <div class="search-equiv-title">EQUIVALENTES</div>
+      <div class="search-equiv-column">
+        <div class="equiv-item" *ngFor="let c of equivCodes">
+          {{ c }}
+          <span class="stock-badge" [class.ok]="(equivStockMap[c]??0)>0" [class.cero]="(equivStockMap[c]??0)===0">
+            Disponible ({{ equivStockMap[c] ?? 0 }})
+          </span>
+          <div class="agencias-list" *ngIf="equivAgenciasMap[c]?.length">
+            <small *ngFor="let a of equivAgenciasMap[c]">Agencias {{a.oficina}}: {{a.stock}}</small>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="equivCodes.length === 0" class="sin-stock">No se encontraron equivalentes.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="boton-cerrar" (click)="cerrarModalInfoStock()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MODAL PROVEEDOR
+     ════════════════════════════════════ -->
+<div class="modal fade show" *ngIf="showProveedorModal"
+     style="display:block; z-index:1055;"
+     tabindex="-1" (click)="closeProveedorModal()">
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Asignar Proveedor</h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeProveedorModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form [formGroup]="proveedorForm" (ngSubmit)="submitProveedorForm()">
+          <div class="mb-3">
+            <label class="form-label">Proveedor</label>
+            <select formControlName="id_proveedor" class="form-select">
+              <option [ngValue]="null" disabled selected>Seleccione un proveedor...</option>
+              <option *ngFor="let p of proveedores" [ngValue]="p.id">{{ p.nombre }}</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha de Cotización</label>
+            <input type="date" formControlName="fecha_cotizacion" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Fecha de Entrega Estimada</label>
+            <input type="date" formControlName="fecha_entrega" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Número de Factura</label>
+            <input type="text" formControlName="numero_factura" class="form-control">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Archivo de Factura</label>
+            <input type="file" (change)="onFileSelected($event)" class="form-control">
+            <div class="form-text text-muted" *ngIf="selectedFile">Archivo: {{ selectedFile.name }}</div>
+          </div>
+          <div class="d-flex justify-content-end">
+            <button type="button" class="btn btn-secondary me-2" (click)="closeProveedorModal()">Cancelar</button>
+            <button type="submit" class="btn btn-primary" [disabled]="proveedorForm.invalid">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="showProveedorModal" style="z-index:1050;"></div>
+
+<!-- ════════════════════════════════════
+     ESTILOS INLINE
+     ════════════════════════════════════ -->
+<style>
+/* ── Stats bar ── */
+.stats-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 16px 0;
+}
+.stat-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 18px;
+  border-radius: 10px;
+  color: #fff;
+  min-width: 90px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+}
+.stat-num   { font-size: 24px; font-weight: 700; line-height: 1; }
+.stat-label { font-size: 10px; margin-top: 4px; letter-spacing: .5px; }
+.stat-total    { background: #2d3436; }
+.stat-pendiente{ background: #e17055; }
+.stat-clocal   { background: #fdcb6e; color: #2d3436; }
+.stat-proceso  { background: #0984e3; }
+.stat-asignado { background: #6c5ce7; }
+.stat-revisado { background: #00b894; }
+.stat-error    { background: #d63031; }
+
+/* ── Pestañas activas nuevas ── */
+.tarjeta-estadistica.activa-todos         { box-shadow: 0 4px 12px rgba(99,110,114,.5); transform: translateY(-2px); }
+.tarjeta-estadistica.activa-clocal        { box-shadow: 0 4px 12px rgba(253,203,110,.6); transform: translateY(-2px); }
+.tarjeta-estadistica.activa-estadisticas  { box-shadow: 0 4px 12px rgba(0,184,148,.5);  transform: translateY(-2px); }
+
+/* ── Select estado filtro ── */
+.select-estado-filtro {
+  padding: 6px 10px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #fff;
+}
+.select-estado-inline {
+  width: 100%;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: 12px;
+}
+
+/* ── Cabeceras ordenables ── */
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.th-sortable:hover { background: rgba(0,0,0,.05); }
+
+/* Tabla con scroll horizontal para que nunca aplaste columnas */
+.tabla-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.tabla-responsive table {
+  min-width: 1200px;
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* ── Badges de estado ── */
+.badge-estado {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: #636e72;
+}
+.badge-pendiente { background: #e17055; }
+.badge-proceso   { background: #0984e3; }
+.badge-asignado  { background: #6c5ce7; }
+.badge-revisado  { background: #00b894; }
+.badge-erroneo   { background: #d63031; }
+
+/* ── Vista Estadísticas ── */
+.estadisticas-container { padding: 20px 0; }
+.estadisticas-resumen   { margin-bottom: 24px; }
+.estadisticas-resumen h2{ font-size: 18px; margin-bottom: 6px; }
+
+.estadisticas-barras    { margin-bottom: 32px; }
+.estadisticas-barras h3 { font-size: 15px; margin-bottom: 14px; }
+.barra-item      { margin-bottom: 14px; }
+.barra-label     { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 13px; }
+.barra-estado    { font-weight: 600; }
+.barra-valores   { color: #636e72; }
+.barra-track     { height: 18px; background: #f1f2f6; border-radius: 9px; overflow: hidden; }
+.barra-fill      { height: 100%; border-radius: 9px; transition: width .5s ease; min-width: 2px; }
+
+.estadisticas-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.est-card {
+  border: 2px solid #ddd;
+  border-radius: 12px;
+  padding: 16px 20px;
+  min-width: 130px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.est-card-num   { font-size: 32px; font-weight: 700; }
+.est-card-label { font-size: 12px; color: #636e72; margin-top: 4px; }
+.est-card-pct   {
+  position: absolute;
+  top: 6px; right: 6px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+/* ── Select estado coloreado ── */
+.select-estado-coloreado {
+  width: 120px;
+  min-width: 110px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 2px solid #ddd;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  appearance: none;
+  -webkit-appearance: none;
+  text-align: center;
+  letter-spacing: .3px;
+}
+.sel-pendiente { background: #e17055; border-color: #c0392b; }
+.sel-proceso   { background: #0984e3; border-color: #2980b9; }
+.sel-asignado  { background: #6c5ce7; border-color: #5f4dd0; }
+.sel-revisado  { background: #00b894; border-color: #00a381; }
+.sel-erroneo   { background: #d63031; border-color: #b22222; }
+.select-estado-coloreado option { background: #fff; color: #2d3436; font-weight: 600; }
+
+/* Anchos mínimos de las últimas 3 columnas */
+.th-estado    { min-width: 130px; white-space: nowrap; cursor: pointer; user-select: none; }
+.th-acciones  { min-width: 155px; white-space: nowrap; }
+.th-cl        { min-width: 145px; white-space: nowrap; }
+
+.td-estado,
+.td-acciones,
+.td-cl { vertical-align: middle !important; padding: 8px 6px; }
+
+/* ── Grupo de botones Acciones ── */
+.btn-group-acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 130px;
+}
+.btn-icon {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter .2s, transform .1s;
+  white-space: nowrap;
+  color: #fff;
+  width: 100%;
+}
+.btn-icon:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-icon i { font-size: 13px; flex-shrink: 0; }
+.btn-comentarios { background: #27ae60; }
+.btn-detalles    { background: #2980b9; }
+
+/* ── Grupo de botones CL / Proveedor ── */
+.btn-group-cl {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 120px;
+}
+.btn-cl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter .2s, transform .1s;
+  white-space: nowrap;
+  color: #fff;
+  letter-spacing: .3px;
+  width: 100%;
+}
+.btn-cl:hover         { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-cl-off           { background: #dfe6e9; color: #636e72; border: 2px dashed #b2bec3; }
+.btn-cl-on            { background: #fdcb6e; color: #2d3436; border: 2px solid #e0b44a; }
+.btn-proveedor        { background: #6c5ce7; border: 2px solid #5f4dd0; }
+
+/* ── Loading ── */
+.loading-container { display: flex; flex-direction: column; align-items: center; padding: 40px; }
+.loading-spinner   {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  width: 40px; height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 15px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.no-results { text-align: center; padding: 30px; font-style: italic; color: #666; }
+</style>

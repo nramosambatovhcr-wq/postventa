@@ -1,0 +1,545 @@
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <h4 class="mb-0">Importación Masiva de Detalles a Cotizaciones </h4>
+        </div>
+        <div class="card-body">
+          <ul class="nav nav-pills nav-justified mb-4">
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 1}" href="javascript:void(0);">
+                <span class="badge badge-pill" [ngClass]="{'badge-primary': currentStep === 1, 'badge-secondary': currentStep !== 1}">1</span>
+                Seleccionar archivo y **cotizaciones**
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 2}" href="javascript:void(0);">
+                <span class="badge badge-pill" [ngClass]="{'badge-primary': currentStep === 2, 'badge-secondary': currentStep !== 2}">2</span>
+                Validar datos
+              </a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" [ngClass]="{'active': currentStep === 3}" href="javascript:void(0);">
+                <span class="badge badge-pill" [ngClass]="{'badge-primary': currentStep === 3, 'badge-secondary': currentStep !== 3}">3</span>
+                Importar a las cotizaciones **seleccionadas**
+              </a>
+            </li>
+          </ul>
+
+          <div *ngIf="currentStep === 1" class="step-content">
+            <div class="alert alert-info">
+              <i class="fas fa-info-circle"></i> 
+              Los detalles del archivo Excel se cargarán a <strong>SÓLO</strong> las cotizaciones que aparecen **seleccionadas** (con el check) a continuación.
+              <br>
+              Total de cotizaciones **seleccionadas** a procesar: <strong>{{ cotizacionesSeleccionadas.length }}</strong>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">Cotizaciones Recientes </h5>
+              </div>
+              <div class="card-body">
+                <div *ngIf="loadingCotizaciones" class="text-center">
+                  <div class="spinner-border text-primary" role="status">
+                    <span class="sr-only">Cargando cotizaciones...</span>
+                  </div>
+                </div>
+                
+                <div *ngIf="!loadingCotizaciones && cotizacionesRecientes.length === 0" class="alert alert-warning">
+                  No se encontraron cotizaciones recientes. Por favor, cree cotizaciones primero.
+                </div>
+                
+                <div *ngIf="!loadingCotizaciones && cotizacionesRecientes.length > 0" class="table-responsive">
+                  <table class="table table-sm table-striped">
+                    <thead>
+                      <tr>
+                        <th>
+                          <input type="checkbox" [(ngModel)]="selectAll" (change)="toggleSelectAll()" />
+                        </th>
+                        <th>N.</th>
+                        <th>Cotizacion</th>
+                        <th>Proveedor</th>
+                        <th>Estado</th>
+                        <th>Fecha Solicitud</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let cot of cotizacionesRecientes; let i = index">
+                        <td>
+                          <input type="checkbox" 
+                                 [(ngModel)]="cot.selected" 
+                                 (change)="updateSelectedCotizaciones()">
+                        </td>
+                        <td>{{ i + 1 }}</td>
+                         <td>{{ cot.cotizacionId || 'N/A' }}</td>
+                        <td><strong>{{ cot.codigoCot }}</strong></td>
+                       
+                        <td>
+                          <span class="badge" 
+                                [ngClass]="{
+                                  'badge-warning': cot.estadoCotizacion === 'Solicitada',
+                                  'badge-info': cot.estadoCotizacion === 'Recibida',
+                                  'badge-success': cot.estadoCotizacion === 'Aprobada',
+                                  'badge-danger': cot.estadoCotizacion === 'Rechazada'
+                                }">
+                            {{ cot.estadoCotizacion }}
+                          </span>
+                        </td>
+                        <td>{{ cot.fechaSolicitud | date:'dd/MM/yyyy' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Plantilla</h5>
+                  </div>
+                  <div class="card-body">
+                    <div class="text-center mb-3">
+                      <button type="button" class="btn btn-outline-primary btn-lg" (click)="downloadTemplate()">
+                        <i class="fas fa-file-download"></i> Descargar Plantilla
+                      </button>
+                      <p class="mt-2 text-muted" *ngIf="isTemplateDownloaded">
+                        <i class="fas fa-check-circle text-success"></i> Plantilla descargada
+                      </p>
+                      <small class="text-muted d-block mt-2">
+                        La plantilla NO incluye columna COT - se asignará automáticamente
+                      </small>
+                    </div>
+
+                    <div class="alert alert-secondary text-left mt-3" style="font-size: 0.875rem;">
+                      <h6 class="font-weight-bold mb-2">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        INSTRUCCIONES PARA CARGAR DETALLES 
+                      </h6>
+                      <p class="mb-2">
+                        Este archivo cargará los mismos detalles a <strong>SOLO</strong> las cotizaciones que <strong>SELECCIONE</strong> en el sistema.
+                      </p>
+                      <ol class="mb-2 pl-3">
+                        <li class="mb-1">Complete la información en la hoja <strong>"Detalles"</strong> según el formato indicado.</li>
+                        <li class="mb-1">
+                          Columnas obligatorias <span class="text-danger font-weight-bold">(marcadas en ROJO)</span>:
+                          <ul class="mt-1 pl-3">
+                            <li><strong>CODIGO:</strong> Identificador único del producto</li>
+                            <li><strong>DESCRIPCION ESPAÑOL:</strong> Nombre o descripción del producto</li>
+                            <li><strong>QTY:</strong> Número de unidades (solo valores numéricos)</li>
+                          </ul>
+                        </li>
+                        <li class="mb-1">Guarde el archivo y cárguelo en el sistema.</li>
+                      </ol>
+                      <div class="alert alert-warning mb-0 py-1 px-2" style="font-size: 0.8rem;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>NOTA:</strong> Se aplicarán estos detalles a
+                        <strong>{{ cotizacionesSeleccionadas.length }} cotización(es)</strong> seleccionada(s).
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="col-md-6">
+                <div class="card">
+                  <div class="card-header bg-light">
+                    <h5 class="mb-0">Cargar Archivo</h5>
+                  </div>
+                  <div class="card-body text-center">
+                    <div class="custom-file">
+                      <input type="file" class="custom-file-input" id="excelFile" 
+                             (change)="onFileSelect($event)" accept=".xlsx, .xls"
+                             [disabled]="cotizacionesRecientes.length === 0">
+                      <label class="custom-file-label" for="excelFile">
+                        {{ excelFile ? excelFile.name : 'Seleccionar archivo...' }}
+                      </label>
+                    </div>
+                    <div *ngIf="loading" class="mt-3">
+                      <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Procesando...</span>
+                      </div>
+                      <p class="mt-2">Procesando archivo...</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="errorMessage" class="alert alert-danger">
+              <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+            </div>
+
+            <div *ngIf="successMessage && currentStep === 1" class="alert alert-success">
+              <i class="fas fa-check-circle"></i> {{ successMessage }}
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="goToDashboard()">
+                <i class="fas fa-arrow-left"></i> Volver al Dashboard
+              </button>
+              <button type="button" class="btn btn-primary" 
+                      [disabled]="!excelFile || loading || cotizacionesSeleccionadas.length === 0" 
+                      (click)="nextStep()">
+                Siguiente <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="currentStep === 2" class="step-content">
+            <div class="alert" [ngClass]="{'alert-warning': validationErrors.length > 0, 'alert-success': validationErrors.length === 0}">
+              <i class="fas" [ngClass]="{'fa-exclamation-triangle': validationErrors.length > 0, 'fa-check-circle': validationErrors.length === 0}"></i>
+              <span *ngIf="validationErrors.length > 0">
+                Se encontraron {{ validationErrors.length }} errores en los datos. Debe corregirlos antes de continuar.
+              </span>
+              <span *ngIf="validationErrors.length === 0">
+                Los datos se han validado correctamente. Se cargarán {{ previewData.length }} detalles a **{{ cotizacionesSeleccionadas.length }}** cotizaciones.
+              </span>
+            </div>
+
+            <!-- ── Alerta de duplicados consolidados ── -->
+            <div *ngIf="duplicatesInfo.length > 0" class="card mb-4 border-warning">
+              <div class="card-header bg-warning text-dark d-flex align-items-center">
+                <i class="fas fa-copy mr-2"></i>
+                <h5 class="mb-0">
+                  {{ duplicatesInfo.length }} código(s) duplicado(s) consolidado(s)
+                </h5>
+                <small class="ml-2">(las cantidades fueron sumadas automáticamente)</small>
+              </div>
+              <div class="card-body p-0">
+                <div class="table-responsive">
+                  <table class="table table-sm table-bordered mb-0">
+                    <thead class="thead-light">
+                      <tr>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th class="text-center">Filas en Excel</th>
+                        <th class="text-center">Cantidad Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let dup of duplicatesInfo" class="table-warning">
+                        <td><strong>{{ dup.codigo }}</strong></td>
+                        <td>{{ dup.descripcion }}</td>
+                        <td class="text-center">
+                          <span class="badge badge-secondary">{{ dup.filasOriginales }}</span>
+                        </td>
+                        <td class="text-center">
+                          <span class="badge badge-warning text-dark font-weight-bold">{{ dup.cantidadTotal }}</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <div class="card mb-4">
+              <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Resumen de Datos</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" (click)="togglePreview()">
+                  <i class="fas" [ngClass]="{'fa-eye': !showPreview, 'fa-eye-slash': showPreview}"></i>
+                  {{ showPreview ? 'Ocultar Vista Previa' : 'Mostrar Vista Previa' }}
+                </button>
+              </div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-3">
+                    <div class="card bg-light">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0">{{ previewData.length }}</h3>
+                        <p class="text-muted mb-0">Detalles por Cotización</p>
+                        <small *ngIf="duplicatesInfo.length > 0" class="text-warning font-weight-bold">
+                          <i class="fas fa-compress-arrows-alt"></i>
+                          {{ duplicatesInfo.length }} consolidado(s)
+                        </small>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card bg-info text-white">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0">{{ cotizacionesSeleccionadas.length }}</h3>
+                        <p class="mb-0">Cotizaciones a Procesar</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card bg-primary text-white">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0">{{ previewData.length * cotizacionesSeleccionadas.length }}</h3>
+                        <p class="mb-0">Total de Detalles</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card" [ngClass]="{'bg-danger text-white': invalidRows.length > 0, 'bg-success text-white': invalidRows.length === 0}">
+                      <div class="card-body text-center">
+                        <h3 class="mb-0">{{ invalidRows.length }}</h3>
+                        <p class="mb-0">Filas con Errores</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="validationErrors.length > 0" class="card mb-4">
+              <div class="card-header bg-danger text-white">
+                <h5 class="mb-0">Errores de Validación</h5>
+              </div>
+              <div class="card-body">
+                <ul class="list-group">
+                  <li *ngFor="let error of validationErrors.slice(0, 10)" class="list-group-item list-group-item-danger">
+                    {{ error }}
+                  </li>
+                </ul>
+                <div *ngIf="validationErrors.length > 10" class="mt-2 text-center">
+                  <p class="text-muted">Se muestran 10 de {{ validationErrors.length }} errores.</p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="showPreview" class="card mb-4">
+              <div class="card-header bg-light">
+                <h5 class="mb-0">Vista Previa de Detalles a Cargar</h5>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table class="table table-bordered table-striped table-hover">
+                    <thead class="thead-dark">
+                      <tr>
+                        <th>Item</th>
+                        <th>Línea</th>
+                        <th>Código</th>
+                        <th>Nuevo Código</th>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Unidad</th>
+                        <th>Precio Unit.</th>
+                        <th>Precio Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr *ngFor="let item of previewData.slice(0, 10); let i = index" 
+                          [ngClass]="{
+                            'bg-danger text-white': invalidRows.includes(i),
+                            'table-warning': item.esDuplicadoConsolidado && !invalidRows.includes(i)
+                          }">
+                        <td>{{ item.item || i + 1 }}</td>
+                        <td>{{ item.linea || '-' }}</td>
+                        <td>
+                          {{ item.codigo }}
+                          <span *ngIf="item.esDuplicadoConsolidado"
+                                class="badge badge-warning text-dark ml-1"
+                                title="{{ item.cantidadOriginalFilas }} filas fusionadas">
+                            <i class="fas fa-copy"></i> x{{ item.cantidadOriginalFilas }}
+                          </span>
+                        </td>
+                        <td>{{ item.newcodigo || '-' }}</td>
+                        <td>{{ item.descripcion }}</td>
+                        <td>
+                          {{ item.cantidad }}
+                          <small *ngIf="item.esDuplicadoConsolidado" class="text-muted d-block">
+                            (suma de {{ item.cantidadOriginalFilas }} filas)
+                          </small>
+                        </td>
+                        <td>{{ item.unidad || 'PCS' }}</td>
+                        <td>{{ item.precioUnitario ? (item.precioUnitario | currency) : '-' }}</td>
+                        <td>{{ item.precioTotal ? (item.precioTotal | currency) : '-' }}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div *ngIf="previewData.length > 10" class="mt-2 text-center">
+                  <p class="text-muted">Se muestran 10 de {{ previewData.length }} registros.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                <i class="fas fa-arrow-left"></i> Anterior
+              </button>
+              <button type="button" class="btn btn-primary" [disabled]="invalidRows.length > 0" (click)="nextStep()">
+                Siguiente <i class="fas fa-arrow-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="currentStep === 3" class="step-content">
+            <div *ngIf="!importInProgress && !importComplete && !importFailed" class="text-center p-5">
+              <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> 
+                <h5>¡ATENCIÓN!</h5>
+                Está a punto de importar <strong>{{ previewData.length }} detalles</strong> a 
+                <strong>{{ cotizacionesSeleccionadas.length }} cotizaciones</strong>.
+                <br><br>
+                Esto creará un total de <strong>{{ previewData.length * cotizacionesSeleccionadas.length }} registros</strong>.
+                <br><br>
+                <strong>Esta acción no se puede deshacer.</strong>
+              </div>
+
+              <div class="card mb-4">
+                <div class="card-header bg-light">
+                  <h5 class="mb-0">Cotizaciones a Procesar</h5>
+                </div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6" *ngFor="let cot of cotizacionesSeleccionadas.slice(0, 6)">
+                      <div class="alert alert-info mb-2">
+                        <i class="fas fa-file-alt"></i> {{ cot.codigoCot }}
+                        <small class="d-block">{{ cot.ProveedorId || 'N/A' }}</small>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="cotizacionesSeleccionadas.length > 6" class="text-center text-muted">
+                    ... y {{ cotizacionesSeleccionadas.length - 6 }} más
+                  </div>
+                </div>
+              </div>
+
+              <button type="button" class="btn btn-success btn-lg mt-4" (click)="startImport()">
+                <i class="fas fa-file-import"></i> Confirmar e Iniciar Importación
+              </button>
+            </div>
+
+            <div *ngIf="importInProgress" class="text-center p-5">
+              <h4 class="mb-4">Importando datos a múltiples cotizaciones...</h4>
+              
+              <div class="progress mb-4" style="height: 30px;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                     [style.width.%]="importProgress" [attr.aria-valuenow]="importProgress" 
+                     aria-valuemin="0" aria-valuemax="100">
+                  {{ importProgress }}%
+                </div>
+              </div>
+              
+              <div class="alert alert-info">
+                <p class="mb-2">
+                  <i class="fas fa-spinner fa-spin"></i> 
+                  Procesando cotización {{ processedCotizaciones + 1 }} de {{ cotizacionesSeleccionadas.length }}
+                </p>
+                <small class="text-muted">
+                  Por favor espere, este proceso puede tomar varios minutos...
+                </small>
+              </div>
+
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <div class="card bg-light">
+                    <div class="card-body text-center">
+                      <h4 class="mb-0">{{ processedCotizaciones }}</h4>
+                      <p class="text-muted mb-0">Procesadas</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                      <h4 class="mb-0">{{ successCotizaciones }}</h4>
+                      <p class="mb-0">Exitosas</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card bg-danger text-white">
+                    <div class="card-body text-center">
+                      <h4 class="mb-0">{{ failedCotizaciones }}</h4>
+                      <p class="mb-0">Fallidas</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="importComplete" class="text-center p-5">
+              <div class="alert alert-success">
+                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                <h4 class="alert-heading">¡Importación Completada!</h4>
+                <p>{{ successMessage }}</p>
+              </div>
+              
+              <div class="row mt-4">
+                <div class="col-md-3">
+                  <div class="card bg-light">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ cotizacionesSeleccionadas.length }}</h3>
+                      <p class="text-muted mb-0">Cotizaciones Destino</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ successCotizaciones }}</h3>
+                      <p class="mb-0">Cotizaciones Exitosas</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card" [ngClass]="{'bg-danger text-white': failedCotizaciones > 0, 'bg-light': failedCotizaciones === 0}">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ failedCotizaciones }}</h3>
+                      <p class="mb-0">Cotizaciones Fallidas</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                      <h3 class="mb-0">{{ totalDetalles }}</h3>
+                      <p class="mb-0">Detalles Totales Creados</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div *ngIf="errorMessage && failedCotizaciones > 0" class="alert alert-warning mt-4">
+                <i class="fas fa-exclamation-triangle"></i> 
+                Algunas cotizaciones no pudieron procesarse. Revise las cotizaciones fallidas.
+              </div>
+              
+              <div class="mt-4">
+                <button type="button" class="btn btn-primary me-2" (click)="goToDashboard()">
+                  <i class="fas fa-list"></i> Ver Dashboard de Cotizaciones
+                </button>
+                <button type="button" class="btn btn-secondary me-2" (click)="goToCrearMultiple()">
+                  <i class="fas fa-plus"></i> Crear Más Cotizaciones
+                </button>
+                <button type="button" class="btn btn-outline-secondary" (click)="resetForm()">
+                  <i class="fas fa-sync"></i> Importar Otro Archivo
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="importFailed" class="text-center p-5">
+              <div class="alert alert-danger">
+                <i class="fas fa-times-circle fa-3x mb-3"></i>
+                <h4 class="alert-heading">¡Error en la Importación!</h4>
+                <p>{{ errorMessage }}</p>
+              </div>
+              
+              <div class="mt-4">
+                <button type="button" class="btn btn-secondary me-2" (click)="previousStep()">
+                  <i class="fas fa-arrow-left"></i> Revisar Datos
+                </button>
+                <button type="button" class="btn btn-primary" (click)="resetForm()">
+                  <i class="fas fa-sync"></i> Comenzar de Nuevo
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="!importInProgress && !importComplete && !importFailed" class="d-flex justify-content-between mt-4">
+              <button type="button" class="btn btn-secondary" (click)="previousStep()">
+                <i class="fas fa-arrow-left"></i> Anterior
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

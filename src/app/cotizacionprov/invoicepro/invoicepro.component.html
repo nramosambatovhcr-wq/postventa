@@ -1,0 +1,275 @@
+<!-- HEADER -->
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">REPUESTOS IMPORTACIONES</div>
+
+      <!-- Selector de idioma -->
+      <div class="language-selector">
+        <button class="language-button" (click)="toggleLanguageMenu()" type="button">
+          <span class="flag">{{ getCurrentLanguageFlag() }}</span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
+          </svg>
+        </button>
+        <div class="language-menu" *ngIf="showLanguageMenu">
+          <button *ngFor="let lang of languages"
+                  type="button"
+                  class="language-option"
+                  [class.active]="currentLanguage === lang.code"
+                  (click)="changeLanguage(lang.code)">
+            <span class="flag-large">{{ lang.flag }}</span>
+            <span class="lang-name">{{ lang.name }}</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Buscador -->
+      <div class="contenedor-busqueda">
+        <input type="text" 
+               class="busqueda" 
+               [placeholder]="t('searchPlaceholder')"
+               [(ngModel)]="searchTerm" 
+               (keyup.enter)="searchImports()"
+               (input)="searchImports()">
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="contenedor">
+  <section class="panel">
+    <!-- Panel Header -->
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">{{ t('invoiceDashboardTitle') }}</h1>
+      <p class="panel-subtitulo">{{ t('invoiceDashboardSubtitle') }}</p>
+    </div>
+
+    <!-- Tarjetas de navegación -->
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="coti()">
+        <div class="valor-estadistica">{{ t('invoice') }}</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="crear()">
+        <div class="valor-estadistica">{{ t('create') }}</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="asignada()">
+        <div class="valor-estadistica">{{ t('asignada') }}</div>
+      </div>
+      
+      <div class="tarjeta-estadistica" (click)="revi()">
+        <div class="valor-estadistica">{{ t('revision') }}</div>
+      </div>
+    
+    </div>
+
+    <!-- Filtros y acciones -->
+    <div class="panel-contenido">
+      <div class="opciones-tabla">
+        <!-- Filtros de fecha -->
+        <div class="filtros-fecha">
+          <div class="fecha-desde">
+            <label for="startDate">{{ t('from') }}</label>
+            <input type="date" 
+                   id="startDate" 
+                   [(ngModel)]="startDate" 
+                   (change)="applyFilters()">
+          </div>
+          <div class="fecha-hasta">
+            <label for="endDate">{{ t('to') }}</label>
+            <input type="date" 
+                   id="endDate" 
+                   [(ngModel)]="endDate" 
+                   (change)="applyFilters()">
+          </div>
+        </div>
+
+        <!-- Botones de exportación -->
+        <div class="acciones-tabla">
+          <button class="boton-secundario" 
+                  type="button"
+                  (click)="downloadExcel()"
+                  [disabled]="filteredData.length === 0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-excel" viewBox="0 0 16 16">
+              <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.781l2.116 2.54a.5.5 0 0 0 .768-.641L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.219l-2.116-2.54z"/>
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+            </svg>
+            {{ t('excel') }}
+          </button>
+
+          <button class="boton-secundario" 
+                  type="button"
+                  (click)="downloadCSV()"
+                  [disabled]="filteredData.length === 0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-file-earmark-spreadsheet" viewBox="0 0 16 16">
+              <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+              <path d="M3 8v1h10V8H3zm0 3v1h10v-1H3z"/>
+            </svg>
+            {{ t('csv') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabla -->
+      <div class="contenedor-tabla">
+        <!-- Mensaje de carga -->
+        <div *ngIf="loading" class="loading-message">
+          <p>{{ t('loading') || 'Cargando...' }}</p>
+        </div>
+
+        <!-- Mensaje sin datos -->
+        <div *ngIf="!loading && lista.length === 0" class="no-data-message">
+          <p>{{ t('noData') || 'No hay datos para mostrar' }}</p>
+        </div>
+
+        <!-- Tabla con datos -->
+        <table class="tabla-pedidos" *ngIf="!loading && lista.length > 0">
+          <thead>
+            <tr>
+              <th>{{ t('item') }}</th>
+              <th>{{ t('invoice') }}</th>
+              <th>{{ t('quotation') }}</th>
+              <th>{{ t('status') }}</th>
+              <th>{{ t('actions') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista; let i = index; trackBy: trackById">
+              <td [attr.data-label]="t('item')">
+                {{ (currentPage - 1) * itemsPerPage + i + 1 }}
+              </td>
+              
+              <td [attr.data-label]="t('invoice')">
+                {{ item.invoice || '-' }}
+              </td>
+              
+              <td [attr.data-label]="t('quotation')">
+                {{ item.cotizacion || '-' }}
+              </td>
+              
+              <td [attr.data-label]="t('status')">
+                <span class="estado" [ngClass]="{
+                    'pendiente': item.estado === 'PENDIENTE',
+                    'aprobada': item.estado === 'APROBADA',
+                    'activo': item.estado === 'activo',
+                    'revision': item.estado === 'EN REVISION',
+                    'anulada': item.estado === 'ANULADA',
+                    'entregada': item.estado === 'ENTREGADA',
+                    'subir-detalle': item.estado === 'SUBIR DETALLE'
+                }">
+                  {{ item.estado }}
+                </span>
+              </td>
+              
+              <td [attr.data-label]="t('actions')">
+                <div class="acciones-celda">
+                  <!-- Botón Editar -->
+                <!--  <button class="boton-accion editar" 
+                          type="button"
+                          (click)="navigate1()" 
+                          [title]="t('edit')"
+                          [attr.aria-label]="t('edit')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16">
+                      <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
+                      <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/>
+                    </svg>
+                  </button>
+ 
+                  <button class="boton-accion eliminar" 
+                          type="button"
+                          (click)="eliminar(item.id)" 
+                          [title]="t('delete')"
+                          [attr.aria-label]="t('delete')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash-fill" viewBox="0 0 16 16">
+                      <path d="M2.5 1a1 1 0 0 0-1 1v1a1 1 0 0 0 1 1H3v9a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V4h.5a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H10a1 1 0 0 0-1-1H7a1 1 0 0 0-1 1H2.5zm3 4a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 .5-.5zM8 5a.5.5 0 0 1 .5.5v7a.5.5 0 0 1-1 0v-7A.5.5 0 0 1 8 5zm3 .5v7a.5.5 0 0 1-1 0v-7a.5.5 0 0 1 1 0z"/>
+                    </svg>
+                  </button>-->
+
+                  <!-- Botón Ver Detalles -->
+                  <button class="boton-accion agregar-detalle" 
+                          type="button"
+                          (click)="navigate2(item.id)" 
+                          [title]="t('viewDetails')"
+                          [attr.aria-label]="t('viewDetails')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-eye" viewBox="0 0 16 16">
+                      <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                      <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                    </svg>
+                  </button>
+
+                  <!-- Botón Lista -->
+                  <button class="boton-accion agregar-detalle" 
+                          type="button"
+                          (click)="navigate3(item.id)" 
+                          [title]="t('list')"
+                          [attr.aria-label]="t('list')">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-ul" viewBox="0 0 16 16">
+                      <path fill-rule="evenodd" d="M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zm-3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm0 4a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pie-tabla" *ngIf="!loading && filteredData.length > 0">
+        <div class="items-count">
+          {{ t('showing') }} {{ lista?.length || 0 }} {{ t('of') }} {{ filteredData?.length || 0 }} {{ t('orders') }}
+        </div>
+        
+        <div class="paginacion">
+          <button class="boton-pagina" 
+                  type="button"
+                  (click)="changePage(currentPage - 1)" 
+                  [disabled]="currentPage === 1"
+                  [attr.aria-label]="'Página anterior'">
+            &lt;
+          </button>
+          
+          <button *ngFor="let page of getPaginationArray()"
+                  type="button"
+                  class="boton-pagina"
+                  [ngClass]="{'activo': page === currentPage}"
+                  [disabled]="page === '...'"
+                  (click)="page !== '...' && changePage(page)"
+                  [attr.aria-label]="page === '...' ? 'Más páginas' : 'Página ' + page">
+            {{ page }}
+          </button>
+          
+          <button class="boton-pagina" 
+                  type="button"
+                  (click)="changePage(currentPage + 1)" 
+                  [disabled]="currentPage === totalPages"
+                  [attr.aria-label]="'Página siguiente'">
+            &gt;
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Modal de Imagen -->
+  <div class="image-modal-overlay" 
+       *ngIf="isModalOpen" 
+       (click)="closeModal()"
+       role="dialog"
+       aria-modal="true"
+       [attr.aria-label]="t('orderImage')">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <button class="image-modal-close" 
+              type="button"
+              (click)="closeModal()"
+              aria-label="Cerrar modal">
+        &times;
+      </button>
+      <img [src]="currentImageUrl" 
+           [alt]="t('orderImage')" 
+           class="image-modal-image">
+    </div>
+  </div>
+</main>

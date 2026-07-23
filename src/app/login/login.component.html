@@ -1,0 +1,54 @@
+<div class="header">
+  <h1>IMPORTACIONES</h1>
+</div>
+
+<div class="container">
+  <div class="logo">
+    <h2>VHCR<span>Importaciones</span></h2>
+    <p>Sistema de Gestión de Importaciones</p>
+  </div>
+  
+  <form [formGroup]="loginForm" (ngSubmit)="onSubmit1()">
+    <div class="form-group">
+      <label for="nombreUsuario">Usuario</label>
+      <input
+        type="text"
+        id="nombreUsuario"
+        formControlName="nombreUsuario"
+        [ngClass]="{ 'is-invalid': submitted && loginForm.controls['nombreUsuario'].errors }"
+      >
+      <div *ngIf="submitted && loginForm.controls['nombreUsuario'].errors" class="error-message">
+        <div *ngIf="loginForm.controls['nombreUsuario'].errors['required']">Usuario es requerido</div>
+      </div>
+    </div>
+    
+    <div class="form-group">
+      <label for="contrasena">Contraseña</label>
+      <input
+        type="password"
+        id="contrasena"
+        formControlName="contrasena"
+        [ngClass]="{ 'is-invalid': submitted && loginForm.controls['contrasena'].errors }"
+      >
+      <div *ngIf="submitted && loginForm.controls['contrasena'].errors" class="error-message">
+        <div *ngIf="loginForm.controls['contrasena'].errors['required']">Contraseña es requerida</div>
+      </div>
+    </div>
+    
+    <!-- Error message displayed immediately after form validation errors -->
+    <div *ngIf="errorMessage" class="error-message auth-error">
+      {{ errorMessage }}
+    </div>
+    
+    <div class="d-grid gap-2">
+      <button class="btn btn-danger" type="submit" [disabled]="loading">
+        <span *ngIf="loading" class="spinner-border spinner-border-sm me-1"></span>
+        Iniciar Sesión
+      </button>
+    </div>
+  </form>
+  
+  <div class="forgot-password">
+    <a href="#">¿Olvidó su contraseña?</a>
+  </div>
+</div>

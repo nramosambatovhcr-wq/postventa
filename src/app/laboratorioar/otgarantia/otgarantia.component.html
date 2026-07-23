@@ -1,0 +1,211 @@
+<div class="container">
+  <header class="header">
+    <h1>📄 Extractor y Editor de Datos PDF</h1>
+    <p>Sube un archivo PDF para extraer y editar información de repuestos y trabajos. Luego, exporta a Excel.</p>
+  </header>
+
+ <div class="upload-section">
+  <div class="upload-area" 
+       (dragover)="onDragOver($event)"
+       (dragleave)="onDragLeave($event)"
+       (drop)="onDrop($event)">
+    <input type="file" 
+           id="fileInput" 
+           accept=".pdf,application/pdf" 
+           (change)="onFileSelected($event)"
+           class="file-input">
+    <label for="fileInput" class="upload-label">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">
+        <strong>Haz clic para seleccionar</strong> o arrastra un archivo PDF aquí
+      </div>
+      <div class="upload-hint">
+        Formatos soportados: PDF (máximo 10MB)
+      </div>
+    </label>
+  </div>
+</div>
+
+<div *ngIf="error" class="error">
+  <div class="error-content">
+    <p>❌ {{ error }}</p>
+    <div class="error-actions">
+      <button (click)="retryExtraction()" class="retry-btn">
+        🔄 Intentar nuevamente
+      </button>
+      <button (click)="clearError()" class="clear-btn">
+        ✖️ Limpiar
+      </button>
+    </div>
+  </div>
+</div>
+
+  <div *ngIf="isLoading" class="loading-spinner">
+    Cargando y procesando PDF...
+  </div>
+
+  <div *ngIf="extractedData" class="data-display">
+    <h2>📋 Datos Extraídos y Editables</h2>
+    
+    <button (click)="exportToExcel()" class="export-button">
+      📊 Exportar a Excel
+    </button>
+
+    <div class="info-section">
+      <h3>🔍 Información General</h3>
+      <div class="grid-container">
+        <div class="grid-item">
+          <strong>No. Orden:</strong> 
+          <input type="text" [(ngModel)]="extractedData.orderNumber">
+        </div>
+        <div class="grid-item">
+          <strong>Cliente:</strong> 
+          <input type="text" [(ngModel)]="extractedData.cliente">
+        </div>
+        <div class="grid-item">
+          <strong>Fecha:</strong> 
+          <input type="text" [(ngModel)]="extractedData.fecha">
+        </div>
+        <div class="grid-item">
+          <strong>Asesor:</strong> 
+          <input type="text" [(ngModel)]="extractedData.asesor">
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="extractedData.vehiculo" class="info-section">
+      <h3>🚗 Información del Vehículo</h3>
+      <div class="grid-container">
+        <div class="grid-item">
+          <strong>Marca:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.marca">
+        </div>
+        <div class="grid-item">
+          <strong>Modelo:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.modelo">
+        </div>
+        <div class="grid-item">
+          <strong>Placa:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.placa">
+        </div>
+        <div class="grid-item">
+          <strong>Kilometraje:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.kilometraje">
+        </div>
+        <div class="grid-item">
+          <strong>Chasis:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.chasis">
+        </div>
+        <div class="grid-item">
+          <strong>Motor:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.motor">
+        </div>
+        <div class="grid-item">
+          <strong>Año:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.anio">
+        </div>
+        <div class="grid-item">
+          <strong>Color:</strong> 
+          <input type="text" [(ngModel)]="extractedData.vehiculo.color">
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h3>📝 Motivo</h3>
+      <textarea [(ngModel)]="extractedData.motivo" rows="3"></textarea>
+    </div>
+
+    <div *ngIf="extractedData.repuestos && extractedData.repuestos.length > 0" class="info-section">
+      <h3>🛠️ Repuestos Utilizados</h3>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Cantidad</th>
+              <th>Precio Unitario</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of extractedData.repuestos; let i = index">
+              <td><input type="text" [(ngModel)]="extractedData.repuestos[i].codigo"></td>
+              <td><input type="text" [(ngModel)]="extractedData.repuestos[i].producto"></td>
+              <td><input type="number" [(ngModel)]="extractedData.repuestos[i].cantidad" (change)="updateRepuestoTotal(i)"></td>
+              <td><input type="number" [(ngModel)]="extractedData.repuestos[i].precioUnitario" (change)="updateRepuestoTotal(i)"></td>
+              <td><input type="number" [(ngModel)]="extractedData.repuestos[i].total" readonly></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="4"><strong>Total Repuestos:</strong></td>
+              <td><strong>${{ getTotalRepuestos() | number:'1.2-2' }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="extractedData.trabajos && extractedData.trabajos.length > 0" class="info-section">
+      <h3>👷 Trabajos Realizados</h3>
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Descripción</th>
+              <th>Cantidad</th>
+              <th>Precio Unitario</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of extractedData.trabajos; let i = index">
+              <td><input type="text" [(ngModel)]="extractedData.trabajos[i].codigo"></td>
+              <td><input type="text" [(ngModel)]="extractedData.trabajos[i].descripcion"></td>
+              <td><input type="number" [(ngModel)]="extractedData.trabajos[i].cantidad" (change)="updateTrabajoTotal(i)"></td>
+              <td><input type="number" [(ngModel)]="extractedData.trabajos[i].precioUnitario" (change)="updateTrabajoTotal(i)"></td>
+              <td><input type="number" [(ngModel)]="extractedData.trabajos[i].total" readonly></td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-row">
+              <td colspan="4"><strong>Total Trabajos:</strong></td>
+              <td><strong>${{ getTotalTrabajos() | number:'1.2-2' }}</strong></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <div *ngIf="(!extractedData.repuestos || extractedData.repuestos.length === 0) && 
+                (!extractedData.trabajos || extractedData.trabajos.length === 0)" 
+         class="no-data">
+      <p>⚠️ No se pudieron extraer repuestos ni trabajos del PDF.</p>
+      <p>Verifica que el formato del documento sea correcto o intenta con otro archivo.</p>
+    </div>
+
+    <div *ngIf="extractedData.financiero && 
+                (extractedData.financiero.subtotal > 0 || 
+                 extractedData.financiero.iva > 0 || 
+                 extractedData.financiero.total > 0)" 
+         class="info-section">
+      <h3>💰 Resumen Financiero</h3>
+      <div class="financial-summary">
+        <div class="financial-item">
+          <strong>Subtotal:</strong> <input type="number" [(ngModel)]="extractedData.financiero.subtotal">
+        </div>
+        <div class="financial-item">
+          <strong>IVA:</strong> <input type="number" [(ngModel)]="extractedData.financiero.iva">
+        </div>
+        <div class="financial-item total">
+          <strong>Total:</strong> <input type="number" [(ngModel)]="extractedData.financiero.total">
+        </div>
+      </div>
+    </div>
+
+    <button (click)="reset()" class="reset-button">Limpiar Datos</button>
+  </div>
+</div>

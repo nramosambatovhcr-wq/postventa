@@ -1,0 +1,157 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Pedidos Bodega</div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Laboratorio Vehiculos</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de los repuestos</p>
+    </div>
+
+    <!-- Tarjetas de estadísticas -->
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="asignado()" *ngIf="rolusuario!='repuestoslv' || rolusuario!='repuestoslk'|| rolusuario!='repuestoslsc' ">
+        <div class="valor-estadistica">ASIGNADOS</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="pendiente()">
+        <div class="valor-estadistica">PENDIENTES</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="revisado()">
+        <div class="valor-estadistica">REVISADOS</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="vehis()">
+        <div class="valor-estadistica">VEHICULOS</div>
+      </div>
+    </div>
+
+    <!-- Tabla de pedidos -->
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">Pedidos Recientes</div>
+        <div class="acciones-tabla">
+          <div class="filtro-fechas">
+            <label>Desde:</label>
+            <input type="date" [(ngModel)]="startDate" (change)="applyDateFilter()" />
+            <label>Hasta:</label>
+            <input type="date" [(ngModel)]="endDate" (change)="applyDateFilter()" />
+            <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+          </div>
+          <button class="boton boton-contorno" (click)="toggleFilters()">
+            {{ showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros' }}
+          </button>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">CSV (.csv)</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filtros avanzados -->
+      <div class="filtros-avanzados" *ngIf="showFilters">
+        <div class="filtro-item">
+          <label>Línea:</label>
+          <select [(ngModel)]="filters.linea" (change)="applyFilters()">
+            <option value="">Todas</option>
+            <option *ngFor="let linea of getUniqueValues('linea')" [value]="linea">{{ linea }}</option>
+          </select>
+        </div>
+        <div class="filtro-item">
+          <label>Modelo:</label>
+          <select [(ngModel)]="filters.modelo" (change)="applyFilters()">
+            <option value="">Todos</option>
+            <option *ngFor="let modelo of getUniqueValues('modelo')" [value]="modelo">{{ modelo }}</option>
+          </select>
+        </div>
+        <div class="filtro-item">
+          <label>Motor:</label>
+          <input type="text" [(ngModel)]="filters.motor" (input)="applyFilters()" placeholder="Filtrar motor..." />
+        </div>
+        <div class="filtro-item">
+          <label>Chasis:</label>
+          <input type="text" [(ngModel)]="filters.chasis" (input)="applyFilters()" placeholder="Filtrar chasis..." />
+        </div>
+        <div class="filtro-item">
+          <label>Frontal:</label>
+          <input type="text" [(ngModel)]="filters.frontal" (input)="applyFilters()" placeholder="Filtrar frontal..." />
+        </div>
+        <div class="filtro-item">
+          <label>Caja:</label>
+          <input type="text" [(ngModel)]="filters.caja" (input)="applyFilters()" placeholder="Filtrar caja..." />
+        </div>
+        <div class="filtro-item">
+          <label>Drive:</label>
+          <select [(ngModel)]="filters.drive" (change)="applyFilters()">
+            <option value="">Todos</option>
+            <option *ngFor="let drive of getUniqueValues('drive')" [value]="drive">{{ drive }}</option>
+          </select>
+        </div>
+        <div class="filtro-item">
+          <label>Diferencial:</label>
+          <input type="text" [(ngModel)]="filters.diferencial" (input)="applyFilters()" placeholder="Filtrar diferencial..." />
+        </div>
+        <button class="boton boton-primario" (click)="clearAllFilters()">Limpiar Filtros</button>
+      </div>
+
+      <!-- Tabla -->
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Línea</th>
+              <th>Modelo</th>
+              <th>Chasis</th>
+              <th>Motor</th>
+              <th>Frontal</th>
+              <th>Caja</th>
+              <th>Drive</th>
+              <th>Diferencial</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista" class="fila-datos">
+              <td data-label="Fecha">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</td>
+              <td data-label="Línea">{{ item.linea }}</td>
+              <td data-label="Modelo">{{ item.modelo }}</td>
+              <td data-label="Chasis">{{ item.chasis }}</td>
+              <td data-label="Motor">{{ item.motor }}</td>
+              <td data-label="Frontal">{{ item.frontal }}</td>
+              <td data-label="Caja">{{ item.caja }}</td>
+              <td data-label="Drive">{{ item.drive }}</td>
+              <td data-label="Diferencial">{{ item.diferencial }}</td>
+              <td>
+                <button type="button" class="btn-ver" (click)="ver(item.id)">Ver</button>
+              </td>
+            </tr>
+            <tr *ngIf="lista.length === 0">
+              <td colspan="10" style="text-align: center; padding: 20px;">No se encontraron resultados</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="pie-tabla">
+        <div class="items-count">Mostrando {{ lista.length }} de {{ totalItems }} Partes</div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button *ngFor="let page of getPaginationArray()" class="boton-pagina"
+            [ngClass]="{'activo': page === currentPage}" (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

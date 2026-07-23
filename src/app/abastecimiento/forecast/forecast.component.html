@@ -1,0 +1,672 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     FORECAST VEHICENTRO  —  replica completa del Excel
+     ═══════════════════════════════════════════════════════════════ -->
+
+<div class="fc-root">
+
+  <!-- ── TOOLBAR ──────────────────────────────────────────────── -->
+  <header class="fc-toolbar">
+    <div class="fc-toolbar-left">
+      <button *ngIf="vistaActiva === 'certeza'"
+              class="btn-back"
+              (click)="volverLista()">
+        ← Volver
+      </button>
+      <h1 class="fc-titulo">
+        <span class="fc-titulo-main">FORECAST</span>
+        <span class="fc-titulo-sub">VEHICENTRO</span>
+      </h1>
+    </div>
+
+    <!-- BARRA DE BÚSQUEDA (solo en lista) -->
+    <div *ngIf="vistaActiva === 'lista'" class="fc-toolbar-right">
+      <div class="fc-search-wrap">
+        <svg class="fc-search-icon" viewBox="0 0 20 20" fill="none">
+          <circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <input class="fc-search"
+               [formControl]="busqueda"
+               placeholder="Buscar código o descripción…"
+               autocomplete="off" />
+        <button *ngIf="busqueda.value" class="fc-search-clear" (click)="busqueda.setValue('')">✕</button>
+      </div>
+
+      <select class="fc-select" [(ngModel)]="filtroClase" (ngModelChange)="cambiarFiltroClase($event)">
+        <option value="">Todas las clases</option>
+        <option *ngFor="let c of clasesDisponibles" [value]="c">{{ c }}</option>
+      </select>
+
+      <button class="btn-reload" (click)="cargarLista()" title="Recargar">↺</button>
+    </div>
+
+    <!-- INFO DEL ARTÍCULO (solo en certeza) -->
+    <div *ngIf="vistaActiva === 'certeza' && articuloActual" class="fc-toolbar-right">
+      <span class="fc-art-codigo">{{ articuloActual.codEmpresa }}</span>
+      <span [class]="'badge-clasif ' + colorClasificacion(clasificacion)">
+        {{ clasificacion || '—' }}
+      </span>
+      <span class="fc-art-fob">FOB {{ fmtFob(articuloActual.fob) }}</span>
+    </div>
+  </header>
+
+  <!-- ── ERROR ─────────────────────────────────────────────────── -->
+  <div *ngIf="errorMensaje" class="fc-error">
+    ⚠ {{ errorMensaje }}
+    <button (click)="errorMensaje = ''">✕</button>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       VISTA: LISTA  (BASE DATO)
+       ══════════════════════════════════════════════════════════════ -->
+  <main *ngIf="vistaActiva === 'lista'" class="fc-main">
+
+    <!-- KPI strip -->
+    <div class="fc-kpi-strip">
+      <div class="fc-kpi">
+        <span class="fc-kpi-val">{{ listaCompleta.length | number }}</span>
+        <span class="fc-kpi-lbl">Artículos totales</span>
+      </div>
+      <div class="fc-kpi">
+        <span class="fc-kpi-val">{{ listaFiltrada.length | number }}</span>
+        <span class="fc-kpi-lbl">Filtrados</span>
+      </div>
+      <div class="fc-kpi">
+        <span class="fc-kpi-val text-green">
+          {{ contarConStock() }}
+        </span>
+        <span class="fc-kpi-lbl">Con stock</span>
+      </div>
+    </div>
+
+    <!-- SKELETON -->
+    <div *ngIf="cargandoLista" class="fc-skeleton-wrap">
+      <div class="fc-skeleton" *ngFor="let i of [1,2,3,4,5,6,7,8]"></div>
+    </div>
+
+    <!-- TABLA -->
+    <div *ngIf="!cargandoLista" class="fc-table-wrap">
+      <table class="fc-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Clase</th>
+            <th>Grupo</th>
+            <th class="text-right">Stock disp.</th>
+            <th class="text-right">FOB</th>
+            <th class="text-right">Costo prom.</th>
+            <th class="text-right">Últ. venta</th>
+            <th class="text-right">Últ. compra</th>
+            <th class="text-right">QTY UC</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of paginaItems; trackBy: trackById"
+              class="fc-fila"
+              (click)="abrirArticulo(item)">
+            <td class="fc-codigo">{{ item.codEmpresa }}</td>
+            <td class="fc-desc">{{ item.descripcion }}</td>
+            <td><span class="chip-clase">{{ item.claseId }}</span></td>
+            <td class="text-muted">{{ item.grupo }}</td>
+            <td class="text-right"
+                [class.text-green]="item.stockDisponible > 0"
+                [class.text-red]="item.stockDisponible <= 0">
+              {{ fmt(item.stockDisponible) }}
+            </td>
+            <td class="text-right text-mono">{{ fmtFob(item.fob) }}</td>
+            <td class="text-right text-mono text-muted">{{ fmtFob(item.costoPromedio) }}</td>
+            <td class="text-right text-small text-muted">{{ fmtFecha(item.ultimaVenta) }}</td>
+            <td class="text-right text-small text-muted">{{ fmtFecha(item.fechaUc) }}</td>
+            <td class="text-right">{{ fmt(item.qtyUc) }}</td>
+            <td class="text-right">
+              <button class="btn-ver" (click)="$event.stopPropagation(); abrirArticulo(item)">
+                Ver →
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="listaFiltrada.length === 0">
+            <td colspan="11" class="fc-empty">Sin resultados para la búsqueda actual.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- PAGINACIÓN -->
+    <nav *ngIf="!cargandoLista && totalPaginas > 1" class="fc-paginacion">
+      <button [disabled]="paginaActual === 1" (click)="cambiarPagina(1)">«</button>
+      <button [disabled]="paginaActual === 1" (click)="cambiarPagina(paginaActual - 1)">‹</button>
+      <button *ngFor="let p of paginasVisibles"
+              [class.active]="p === paginaActual"
+              (click)="cambiarPagina(p)">{{ p }}</button>
+      <button [disabled]="paginaActual === totalPaginas" (click)="cambiarPagina(paginaActual + 1)">›</button>
+      <button [disabled]="paginaActual === totalPaginas" (click)="cambiarPagina(totalPaginas)">»</button>
+      <span class="fc-pag-info">
+        {{ (paginaActual - 1) * itemsPorPagina + 1 }}–{{ minVal(paginaActual * itemsPorPagina, listaFiltrada.length) }}
+        de {{ listaFiltrada.length | number }}
+      </span>
+    </nav>
+  </main>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       VISTA: CERTEZA  (ficha detalle del artículo)
+       ══════════════════════════════════════════════════════════════ -->
+  <main *ngIf="vistaActiva === 'certeza'" class="fc-main">
+
+    <!-- SKELETON -->
+    <div *ngIf="cargandoDetalle" class="fc-skeleton-wrap">
+      <div class="fc-skeleton tall" *ngFor="let i of [1,2,3]"></div>
+    </div>
+
+    <ng-container *ngIf="!cargandoDetalle && articuloActual">
+
+      <!-- ── CABECERA DEL ARTÍCULO ────────────────────────────── -->
+      <section class="fc-card fc-cabecera">
+        <div class="fc-cabecera-grid">
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Código empresa</p>
+            <p class="fc-value-lg">{{ articuloActual.codEmpresa }}</p>
+          </div>
+          <div class="fc-cabecera-col fc-desc-col">
+            <p class="fc-label">Descripción</p>
+            <p class="fc-value-lg">{{ articuloActual.descripcion }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Clase</p>
+            <p class="fc-value">{{ articuloActual.claseId }}</p>
+            <p class="fc-value-sub">{{ articuloActual.clase }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Grupo</p>
+            <p class="fc-value">{{ articuloActual.grupoId }}</p>
+            <p class="fc-value-sub">{{ articuloActual.grupo }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">FOB</p>
+            <p class="fc-value-lg text-accent">{{ fmtFob(articuloActual.fob) }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Costo promedio</p>
+            <p class="fc-value">{{ fmtFob(articuloActual.costoPromedio) }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Stock disponible</p>
+            <p class="fc-value-lg"
+               [class.text-green]="articuloActual.stockDisponible > 0"
+               [class.text-red]="articuloActual.stockDisponible <= 0">
+              {{ fmt(articuloActual.stockDisponible) }}
+            </p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Stock reservado</p>
+            <p class="fc-value text-muted">{{ fmt(articuloActual.stockReservado) }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">QTY UC</p>
+            <p class="fc-value">{{ fmt(articuloActual.qtyUc) }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Fecha UC</p>
+            <p class="fc-value">{{ fmtFecha(articuloActual.fechaUc) }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Última venta</p>
+            <p class="fc-value">{{ fmtFecha(articuloActual.ultimaVenta) }}</p>
+          </div>
+          <div class="fc-cabecera-col">
+            <p class="fc-label">Vendido últ. mes</p>
+            <p class="fc-value">{{ fmt(articuloActual.vendidoUltMes) }}</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── TABS ────────────────────────────────────────────── -->
+      <div class="fc-tabs">
+        <button [class.active]="tabActiva === 'certeza'"  (click)="tabActiva = 'certeza'">
+          📊 Certeza
+        </button>
+        <button [class.active]="tabActiva === 'wintel'"   (click)="tabActiva = 'wintel'">
+          📈 Wintel
+        </button>
+        <button [class.active]="tabActiva === 'ordenes'"  (click)="tabActiva = 'ordenes'">
+          🚢 Órdenes
+          <span *ngIf="ordenesCompra.length" class="tab-badge">{{ ordenesCompra.length }}</span>
+        </button>
+        <button [class.active]="tabActiva === 'ajuste'"   (click)="tabActiva = 'ajuste'">
+          ✏ Ajuste
+        </button>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════
+           TAB: CERTEZA  —  Historial de ventas + pronóstico
+           ════════════════════════════════════════════════════════ -->
+      <section *ngIf="tabActiva === 'certeza'" class="fc-card">
+
+        <div *ngIf="ventasPorAnio.length === 0" class="fc-empty">
+          Sin historial de ventas disponible.
+        </div>
+
+        <ng-container *ngIf="ventasPorAnio.length > 0">
+
+          <!-- TABLA HISTORIAL MENSUAL -->
+          <div class="fc-table-wrap">
+            <table class="fc-table fc-hist-table">
+              <thead>
+                <tr>
+                  <th class="col-anio">Año / Fila</th>
+                  <th *ngFor="let m of [0,1,2,3,4,5,6,7,8,9,10,11]" class="text-right">
+                    {{ getMesNombre(m) }}
+                  </th>
+                  <th class="text-right col-total">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Ventas por año -->
+                <ng-container *ngFor="let fila of ventasPorAnio">
+                  <tr class="fila-ventas">
+                    <td class="fc-anio-label">{{ fila.anio }}</td>
+                    <td *ngFor="let mes of [0,1,2,3,4,5,6,7,8,9,10,11]"
+                        class="text-right"
+                        [class.text-muted]="(fila.meses[mes]?.cantVendida ?? 0) === 0">
+                      {{ (fila.meses[mes]?.cantVendida ?? 0) > 0 ? fmt(fila.meses[mes].cantVendida) : '·' }}
+                    </td>
+                    <td class="text-right fw-bold">{{ fmt(fila.total) }}</td>
+                  </tr>
+                </ng-container>
+
+                <!-- VNT REAL año actual -->
+                <tr class="fila-real">
+                  <td class="fc-anio-label">VNT REAL {{ anioActual }}</td>
+                  <td *ngFor="let v of getVentasRealesActuales(); let i = index"
+                      class="text-right"
+                      [class.text-muted]="v === 0">
+                    {{ v ? fmt(v) : '·' }}
+                  </td>
+                  <td class="text-right fw-bold">{{ fmt(resumen?.vtaTotalReal ?? 0) }}</td>
+                </tr>
+
+                <!-- PRONOSTICO (Wintel) -->
+                <tr class="fila-pronos" *ngIf="wintelResultado">
+                  <td class="fc-anio-label">PRONÓSTICO</td>
+                  <td *ngFor="let v of wintelResultado.forecastMensual; let i = index"
+                      class="text-right text-accent">
+                    {{ fmt(v) }}
+                  </td>
+                  <td class="text-right text-accent fw-bold">
+                    {{ fmt(wintelResultado.forecastAnual) }}
+                  </td>
+                </tr>
+
+                <!-- METODO WINTEL -->
+                <tr class="fila-wintel" *ngIf="wintelResultado">
+                  <td class="fc-anio-label">MÉTODO WINTEL</td>
+                  <td *ngFor="let v of wintelResultado.forecastMensual"
+                      class="text-right text-small text-muted">
+                    {{ fmt(v) }}
+                  </td>
+                  <td class="text-right text-muted text-small">
+                    {{ fmt(wintelResultado.forecastAnual) }}
+                  </td>
+                </tr>
+
+                <!-- DIFERENCIA -->
+                <tr class="fila-diff" *ngIf="wintelResultado">
+                  <td class="fc-anio-label">DIFERENCIA</td>
+                  <td *ngFor="let d of getDiferencias(); let i = index"
+                      class="text-right text-small"
+                      [class.text-green]="d >= 0"
+                      [class.text-red]="d < 0">
+                    {{ i < mesActual ? (d > 0 ? '+' : '') + fmt(d) : '·' }}
+                  </td>
+                  <td></td>
+                </tr>
+
+                <!-- % ERROR -->
+                <tr class="fila-err" *ngIf="wintelResultado">
+                  <td class="fc-anio-label">% ERROR</td>
+                  <td *ngFor="let e of getErroresPct(); let i = index"
+                      class="text-right text-small">
+                    {{ i < mesActual ? pct(e) : '·' }}
+                  </td>
+                  <td></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- MÉTRICAS RESUMEN -->
+          <div *ngIf="resumen" class="fc-metricas">
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">VNT TOTAL REAL</span>
+              <span class="fc-metrica-val">{{ fmt(resumen.vtaTotalReal) }}</span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">VNT TOTAL PRONOS</span>
+              <span class="fc-metrica-val text-accent">{{ fmt(resumen.vtaTotalPronos) }}</span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">% CUMPLIMIENTO</span>
+              <span class="fc-metrica-val"
+                    [class.text-green]="resumen.pctCumplimiento >= 0.8"
+                    [class.text-orange]="resumen.pctCumplimiento >= 0.5 && resumen.pctCumplimiento < 0.8"
+                    [class.text-red]="resumen.pctCumplimiento < 0.5">
+                {{ pct(resumen.pctCumplimiento) }}
+              </span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">MAPE</span>
+              <span class="fc-metrica-val"
+                    [class.text-green]="resumen.mape < 0.1"
+                    [class.text-orange]="resumen.mape >= 0.1 && resumen.mape < 0.2"
+                    [class.text-red]="resumen.mape >= 0.2">
+                {{ pct(resumen.mape) }}
+              </span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl"># MES ACTUAL</span>
+              <span class="fc-metrica-val">{{ resumen.mesActual }}</span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">ERROR PRONÓST.</span>
+              <span class="fc-metrica-val text-muted">{{ pct(resumen.errorPronostico) }}</span>
+            </div>
+          </div>
+
+        </ng-container>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════
+           TAB: WINTEL  —  Detalle del motor de pronóstico
+           ════════════════════════════════════════════════════════ -->
+      <section *ngIf="tabActiva === 'wintel'" class="fc-card">
+
+        <div *ngIf="!wintelResultado" class="fc-empty">
+          Sin datos suficientes para calcular el pronóstico Wintel.
+        </div>
+
+        <ng-container *ngIf="wintelResultado">
+
+          <!-- Resumen Wintel -->
+          <div class="fc-wintel-summary">
+            <div class="fc-wintel-stat">
+              <span class="fc-ws-lbl">FORECAST ANUAL</span>
+              <span class="fc-ws-val text-accent">{{ fmt(wintelResultado.forecastAnual) }}</span>
+              <span class="fc-ws-unit">unidades</span>
+            </div>
+            <div class="fc-wintel-stat">
+              <span class="fc-ws-lbl">% CRECIMIENTO</span>
+              <span class="fc-ws-val" [class]="claseCrecimiento()">
+                {{ textoCrecimiento() }}
+              </span>
+            </div>
+            <div class="fc-wintel-stat">
+              <span class="fc-ws-lbl">PROM MENSUAL</span>
+              <span class="fc-ws-val">
+                {{ fmt(wintelResultado.forecastAnual / 12) }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Distribución mensual del pronóstico -->
+          <div class="fc-table-wrap">
+            <table class="fc-table fc-wintel-table">
+              <thead>
+                <tr>
+                  <th>Mes</th>
+                  <th class="text-right">Coef. estacional</th>
+                  <th class="text-right">Forecast mensual</th>
+                  <th class="text-right">% del anual</th>
+                  <th>Barra</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let i of [0,1,2,3,4,5,6,7,8,9,10,11]">
+                  <td class="fw-bold">{{ getMesNombre(i) }}</td>
+                  <td class="text-right text-mono text-small">
+                    {{ (wintelResultado.forecastMensual[i] / wintelResultado.forecastAnual * 100 || 0).toFixed(2) }}%
+                  </td>
+                  <td class="text-right text-accent fw-bold">
+                    {{ fmt(wintelResultado.forecastMensual[i]) }}
+                  </td>
+                  <td class="text-right text-small text-muted">
+                    {{ wintelResultado.forecastAnual > 0
+                        ? pct(wintelResultado.forecastMensual[i] / wintelResultado.forecastAnual)
+                        : '—' }}
+                  </td>
+                  <td class="fc-barra-col">
+                    <div class="fc-barra"
+                         [style.width.%]="wintelResultado.forecastAnual > 0
+                           ? (wintelResultado.forecastMensual[i] / wintelResultado.forecastAnual * 100)
+                           : 0">
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="2" class="fw-bold">TOTAL</td>
+                  <td class="text-right fw-bold text-accent">
+                    {{ fmt(wintelResultado.forecastAnual) }}
+                  </td>
+                  <td class="text-right fw-bold">100%</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+
+          <!-- Comparativo año a año -->
+          <div *ngIf="ventasPorAnio.length >= 2" class="fc-anio-comp">
+            <h3 class="fc-section-title">Comparativo histórico</h3>
+            <div class="fc-anio-bars">
+              <div *ngFor="let fila of ventasPorAnio" class="fc-anio-bar-item">
+                <span class="fc-anio-bar-lbl">{{ fila.anio }}</span>
+                <div class="fc-anio-bar-track">
+                  <div class="fc-anio-bar-fill"
+                       [style.width.%]="wintelResultado.forecastAnual > 0
+                         ? (fila.total / wintelResultado.forecastAnual * 100)
+                         : 0">
+                  </div>
+                </div>
+                <span class="fc-anio-bar-val">{{ fmt(fila.total) }}</span>
+              </div>
+              <!-- Forecast -->
+              <div class="fc-anio-bar-item forecast-bar">
+                <span class="fc-anio-bar-lbl text-accent">Pronóstico</span>
+                <div class="fc-anio-bar-track">
+                  <div class="fc-anio-bar-fill accent"
+                       style="width: 100%">
+                  </div>
+                </div>
+                <span class="fc-anio-bar-val text-accent">{{ fmt(wintelResultado.forecastAnual) }}</span>
+              </div>
+            </div>
+          </div>
+
+        </ng-container>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════
+           TAB: ÓRDENES  —  Compras pendientes (Postgres)
+           ════════════════════════════════════════════════════════ -->
+      <section *ngIf="tabActiva === 'ordenes'" class="fc-card">
+
+        <div *ngIf="ordenesCompra.length === 0" class="fc-empty">
+          No hay órdenes de compra pendientes para este artículo.
+        </div>
+
+        <ng-container *ngIf="ordenesCompra.length > 0">
+
+          <!-- KPIs órdenes -->
+          <div class="fc-ord-kpis">
+            <div class="fc-ord-kpi">
+              <span class="fc-ord-kpi-lbl">Órdenes activas</span>
+              <span class="fc-ord-kpi-val">{{ ordenesCompra.length }}</span>
+            </div>
+            <div class="fc-ord-kpi">
+              <span class="fc-ord-kpi-lbl">Total pendiente</span>
+              <span class="fc-ord-kpi-val text-orange">
+                {{ fmt(+ordenesCompra[0]?.cantidadPendiente!) }} uds
+              </span>
+            </div>
+            <div class="fc-ord-kpi">
+              <span class="fc-ord-kpi-lbl">En tránsito</span>
+              <span class="fc-ord-kpi-val text-accent">
+                {{ fmt(+ordenesCompra[0]?.cantidadTransito!) }} uds
+              </span>
+            </div>
+          </div>
+
+          <div class="fc-table-wrap">
+            <table class="fc-table">
+              <thead>
+                <tr>
+                  <th>Orden</th>
+                  <th>Proveedor</th>
+                  <th>Fecha</th>
+                  <th class="text-right">Días</th>
+                  <th class="text-right">Solicitado</th>
+                  <th class="text-right">Enviado</th>
+                  <th class="text-right">Pendiente</th>
+                  <th class="text-right">Tránsito</th>
+                  <th>BLs tránsito</th>
+                  <th>BLs arribados</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let o of ordenesCompra">
+                  <td class="fc-codigo">{{ o.ordenCompra }}</td>
+                  <td>{{ o.proveedor }}</td>
+                  <td class="text-small text-muted">{{ fmtFecha(o.fechaOrden) }}</td>
+                  <td class="text-right"
+                      [class.text-red]="+(o.diasTranscurridos ?? 0) > 120"
+                      [class.text-orange]="+(o.diasTranscurridos ?? 0) > 60 && +(o.diasTranscurridos ?? 0) <= 120">
+                    {{ o.diasTranscurridos ?? '—' }}
+                  </td>
+                  <td class="text-right">{{ fmt(+(o.cantidadSolicitada ?? 0)) }}</td>
+                  <td class="text-right text-muted">{{ fmt(+(o.cantidadEnviada ?? 0)) }}</td>
+                  <td class="text-right text-orange fw-bold">{{ fmt(+(o.cantidadPendiente ?? 0)) }}</td>
+                  <td class="text-right text-accent fw-bold">{{ fmt(+(o.cantidadTransito ?? 0)) }}</td>
+                  <td class="text-small text-muted">{{ o.blsEnTransito || '—' }}</td>
+                  <td class="text-small text-muted">{{ o.blsArribados || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </ng-container>
+      </section>
+
+      <!-- ════════════════════════════════════════════════════════
+           TAB: AJUSTE  —  Ajuste manual del forecast
+           ════════════════════════════════════════════════════════ -->
+      <section *ngIf="tabActiva === 'ajuste'" class="fc-card">
+
+        <div class="fc-ajuste-header">
+          <div>
+            <h3 class="fc-section-title">Ajuste manual del pronóstico</h3>
+            <p class="fc-ajuste-desc">
+              Modifica los valores del pronóstico Wintel mes a mes.
+              El total se recalcula automáticamente.
+            </p>
+          </div>
+          <div class="fc-ajuste-kpis">
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">Wintel anual</span>
+              <span class="fc-metrica-val text-muted">
+                {{ fmt(wintelResultado?.forecastAnual ?? 0) }}
+              </span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">Ajuste total</span>
+              <span class="fc-metrica-val text-accent">{{ fmt(totalAjuste) }}</span>
+            </div>
+            <div class="fc-metrica">
+              <span class="fc-metrica-lbl">Variación</span>
+              <span class="fc-metrica-val"
+                    [class.text-green]="variacAjuste >= 0"
+                    [class.text-red]="variacAjuste < 0">
+                {{ variacAjuste >= 0 ? '+' : '' }}{{ pct(variacAjuste) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="fc-table-wrap">
+          <table class="fc-table fc-ajuste-table">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th class="text-right">Wintel</th>
+                <th class="text-right">Real {{ anioActual }}</th>
+                <th class="text-center">Ajuste manual</th>
+                <th class="text-right">Diferencia vs Wintel</th>
+                <th class="text-right">% Var.</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let aj of ajusteItems"
+                  [class.fila-pasada]="aj.mes <= mesActual">
+                <td class="fw-bold">{{ aj.nombreMes }}</td>
+                <td class="text-right text-muted">
+                  {{ fmt(getForecastMes(aj.mes - 1)) }}
+                </td>
+                <td class="text-right"
+                    [class.text-green]="getVentaMes(anioActual, aj.mes - 1) > 0">
+                  {{ aj.mes <= mesActual ? fmt(getVentaMes(anioActual, aj.mes - 1)) : '·' }}
+                </td>
+                <td class="text-center">
+                  <input class="fc-ajuste-input"
+                         type="number"
+                         min="0"
+                         [value]="aj.valorAjuste"
+                         (change)="actualizarAjuste(aj.mes, +$any($event.target).value)" />
+                </td>
+                <td class="text-right text-small"
+                    [class.text-green]="aj.valorAjuste >= getForecastMes(aj.mes - 1)"
+                    [class.text-red]="aj.valorAjuste < getForecastMes(aj.mes - 1)">
+                  {{ fmt(aj.valorAjuste - getForecastMes(aj.mes - 1)) }}
+                </td>
+                <td class="text-right text-small">
+                  <ng-container *ngIf="getForecastMes(aj.mes - 1) > 0">
+                    {{ pct((aj.valorAjuste - getForecastMes(aj.mes - 1)) / getForecastMes(aj.mes - 1)) }}
+                  </ng-container>
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="fw-bold">TOTAL</td>
+                <td class="text-right fw-bold text-muted">
+                  {{ fmt(wintelResultado?.forecastAnual ?? 0) }}
+                </td>
+                <td class="text-right fw-bold text-green">
+                  {{ fmt(resumen?.vtaTotalReal ?? 0) }}
+                </td>
+                <td class="text-center fw-bold text-accent">
+                  {{ fmt(totalAjuste) }}
+                </td>
+                <td class="text-right fw-bold"
+                    [class.text-green]="variacAjuste >= 0"
+                    [class.text-red]="variacAjuste < 0">
+                  {{ variacAjuste >= 0 ? '+' : '' }}{{ pct(variacAjuste) }}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <!-- Botón resetear a Wintel -->
+        <div class="fc-ajuste-footer">
+          <button class="btn-reset" (click)="inicializarAjustes()">
+            ↺ Resetear a valores Wintel
+          </button>
+        </div>
+
+      </section>
+
+    </ng-container>
+  </main>
+
+</div>

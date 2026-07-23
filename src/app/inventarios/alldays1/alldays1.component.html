@@ -1,0 +1,700 @@
+<div class="container-fluid p-4">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <h3 class="mb-0">Conteos de Inventario por Fecha</h3>
+      <div class="btn-group">
+        <button class="btn btn-success" (click)="exportarExcel()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel Detallado
+        </button>
+        <button class="btn btn-primary" (click)="exportarExcel1()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel por Fechas
+        </button>
+        <button class="btn btn-info" (click)="exportarExcelAgrupado()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel Agrupado
+        </button>
+        <button class="btn btn-secondary" (click)="exportarExcelDiario3()" [disabled]="loading">
+          <i class="bi bi-file-earmark-excel"></i> Excel Diario
+        </button>
+      </div>
+    </div>
+
+    <div class="card-body">
+      <div *ngIf="loading" class="text-center">
+        <div class="spinner-border" role="status">
+          <span class="visually-hidden">Cargando...</span>
+        </div>
+      </div>
+
+      <!-- NUEVA TABLA: CONTEOS DÃA A DÃA -->
+      <div *ngIf="!loading && articulosDiarios.length > 0" class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">
+            <i class="bi bi-calendar-check text-primary me-2"></i>
+            Vista DÃ­a a DÃ­a - Conteos por Fecha
+          </h5>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Esta tabla muestra:</strong> Todos los conteos realizados agrupados por dÃ­a, incluyendo fecha y hora exacta, cantidad contada, diferencia con stock disponible, observaciones y usuario contador.
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-primary sticky-top">
+              <tr>
+                <th rowspan="2" class="align-middle text-center">Item</th>
+                <th rowspan="2" class="align-middle">CÃ³digo</th>
+                <th rowspan="2" class="align-middle">ArtÃ­culo</th>
+                <th rowspan="2" class="align-middle">DescripciÃ³n</th>
+                <th rowspan="2" class="align-middle text-end">Stock </th>
+                <th rowspan="2" class="align-middle text-end">Stock Reservado</th>
+                <th rowspan="2" class="align-middle text-end">Stock Disponible</th>
+                <th rowspan="2" class="align-middle text-center">Unidad</th>
+                <th rowspan="2" class="align-middle text-end">Costo Promedio</th>
+                <th [attr.colspan]="fechasUnicas.length" class="text-center bg-primary text-white">
+                  Conteos por DÃ­a
+                </th>
+              </tr>
+              <tr>
+                <th *ngFor="let fecha of fechasUnicas" class="text-center bg-info text-white fecha-header-diaria">
+                  {{ formatearFechaCorta(fecha) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let articulo of articulosDiarios; let i = index">
+                <td class="text-center align-top">
+                  <span class="badge bg-primary">{{ i + 1 }}</span>
+                </td>
+                <td class="align-top"><strong>{{ articulo.codigo_articulo }}</strong></td>
+                <td class="align-top">{{ articulo.nombre_articulo }}</td>
+                <td class="small align-top">{{ articulo.descripcion }}</td>
+                <td class="text-end fw-bold text-primary align-top">
+                  {{ articulo.stock }}
+                </td>
+                <td class="text-end fw-bold text-primary align-top">
+                  {{ articulo.stock_reservado }}
+                </td>
+                <td class="text-end fw-bold text-primary align-top">
+                  {{ articulo.stock_disponible }}
+                </td>
+                <td class="text-center align-top">{{ articulo.unidad }}</td>
+                <td class="text-end align-top">{{ articulo.costo_promedio}}</td>
+                
+                <td *ngFor="let fecha of fechasUnicas" class="conteo-diario-cell">
+                  <div *ngFor="let conteo of getConteosDiariosPorFecha(articulo, fecha); let idx = index" 
+                       class="conteo-diario-item mb-2"
+                       
+                     >
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                      <span class="badge bg-secondary small">Conteo {{ idx + 1 }}</span>
+                      <i class="bi bi-clock text-muted"></i>
+                    </div>
+                    
+                    <div class="small mb-1">
+                      <i class="bi bi-calendar3"></i>
+                      <strong>{{ formatearFechaHora(conteo.fechaHora) }}</strong>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="small text-muted">Cantidad:</span>
+                      <span class="fw-bold text-dark">{{ conteo.cantidad_contada }}</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                      <span class="small text-muted">Diferencia:</span>
+                      <span class="fw-bold"
+                           
+                           >
+                        {{ conteo.diferencia  }}
+                      </span>
+                    </div>
+                    
+                    <div class="border-top pt-1 mt-1">
+                      <div class="small text-info mb-1">
+                        <i class="bi bi-chat-left-text"></i>
+                        <strong>Obs:</strong> {{ conteo.observaciones }}
+                      </div>
+                      
+                      <div class="small text-muted">
+                        <i class="bi bi-person"></i>
+                     <strong>Us:</strong>   {{ conteo.usuario_contador }}
+                      </div>
+                      <div class="small text-muted">
+                        <i class="bi bi-person"></i>
+                      <strong>Ubi:</strong>  {{ conteo.ubicacionconteo }}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div *ngIf="getConteosDiariosPorFecha(articulo, fecha).length === 0" class="text-muted text-center py-2">
+                    <i class="bi bi-dash-circle"></i> Sin conteos
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+<!-- SECCIÃ“N: ARTÃCULOS FUERA DE INVENTARIO -->
+<div class="card mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center bg-danger text-white">
+    <h3 class="mb-0">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      ArtÃ­culos Fuera de Inventario
+    </h3>
+    <div class="btn-group">
+      <button class="btn btn-light" (click)="cargarConteosFueraInventario()" [disabled]="loadingFueraInventario">
+        <i class="bi bi-arrow-clockwise"></i> Actualizar
+      </button>
+      <button class="btn btn-success" (click)="exportarExcelFueraInventario()" 
+              [disabled]="loadingFueraInventario || conteosFueraInventario.length === 0">
+        <i class="bi bi-file-earmark-excel"></i> Excel Detallado
+      </button>
+      <button class="btn btn-info" (click)="exportarExcelFueraInventarioResumen()" 
+              [disabled]="loadingFueraInventario || conteosFueraInventario.length === 0">
+        <i class="bi bi-file-earmark-excel"></i> Excel Resumen
+      </button>
+    </div>
+  </div>
+
+  <div class="card-body">
+    <div *ngIf="loadingFueraInventario" class="text-center py-5">
+      <div class="spinner-border text-danger" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+      <p class="mt-2">Cargando artÃ­culos fuera de inventario...</p>
+    </div>
+
+    <div *ngIf="!loadingFueraInventario && conteosFueraInventario.length === 0" class="alert alert-warning">
+      <i class="bi bi-info-circle me-2"></i>
+      No se han cargado datos. Haga clic en "Actualizar" para cargar los artÃ­culos fuera de inventario.
+    </div>
+
+    <div *ngIf="!loadingFueraInventario && conteosFueraInventario.length > 0">
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <strong>Â¡ATENCIÃ“N!</strong> Estos artÃ­culos fueron contados fÃ­sicamente pero <strong>NO existen en el sistema de inventario</strong>.
+        <ul class="mb-0 mt-2">
+          <li>Total de artÃ­culos encontrados: <strong>{{ conteosFueraInventario.length }}</strong></li>
+          <li>Pueden indicar: cÃ³digos incorrectos, productos no registrados, o errores de captura</li>
+          <li>Se muestran agrupados por dÃ­a y artÃ­culo</li>
+        </ul>
+      </div>
+
+      <!-- EstadÃ­sticas RÃ¡pidas -->
+      <div class="row mb-4">
+        <div class="col-md-3">
+          <div class="card bg-danger text-white">
+            <div class="card-body">
+              <h6 class="card-title">Total ArtÃ­culos</h6>
+              <h2 class="mb-0">{{ conteosFueraInventario.length }}</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-warning text-dark">
+            <div class="card-body">
+              <h6 class="card-title">Con Reconteo Pendiente</h6>
+              <h2 class="mb-0">{{ contarArticulosConReconteo() }}</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-info text-white">
+            <div class="card-body">
+              <h6 class="card-title">Cantidad Total</h6>
+              <h2 class="mb-0">{{ calcularCantidadTotal() }}</h2>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="card bg-success text-white">
+            <div class="card-body">
+              <h6 class="card-title">Valor Total</h6>
+              <h2 class="mb-0">{{ calcularValorTotal() }}</h2>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tabla de Conteos Fuera de Inventario -->
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover table-sm">
+          <thead class="table-danger sticky-top">
+            <tr>
+              <th class="text-center">Item</th>
+              <th>Fecha</th>
+              <th>DÃ­a</th>
+              <th>CÃ³digo</th>
+              <th>DescripciÃ³n</th>
+              <th class="text-center">Total Conteos</th>
+              <th class="text-end">Cantidad</th>
+              <th class="text-end">Valor Total</th>
+              <th class="text-end">Precio Unit. Prom.</th>
+              <th>Ubicaciones</th>
+              <th>Estados</th>
+              <th>Usuarios</th>
+              <th class="text-center">Reconteo</th>
+              <th>Observaciones</th>
+              <th>Detalle</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let conteo of conteosFueraInventario; let i = index"
+               >
+              <td class="text-center">
+                <span class="badge bg-dark">{{ i + 1 }}</span>
+              </td>
+              <td>
+                <strong>{{ conteo.fecha_formateada }}</strong>
+                <div class="small text-muted">
+                  {{ conteo.hora_primer_conteo }} - {{ conteo.hora_ultimo_conteo }}
+                </div>
+              </td>
+              <td>{{ conteo.dia_semana?.trim() }}</td>
+              <td>
+                <strong class="text-danger">{{ conteo.codigo_interno_agencia }}</strong>
+              </td>
+              <td class="small">{{ conteo.descripcion || 'Sin descripciÃ³n' }}</td>
+              <td class="text-center">
+                <span class="badge bg-primary">{{ conteo.total_conteos_del_dia }}</span>
+              </td>
+              <td class="text-end fw-bold">{{ conteo.cantidad_total_dia  }}</td>
+              <td class="text-end fw-bold text-success">
+                {{ conteo.valor_total_dia}}
+              </td>
+              <td class="text-end">
+                {{ conteo.precio_unitario_promedio  }}
+              </td>
+              <td class="small">{{ conteo.ubicaciones || '-' }}</td>
+              <td class="small">{{ conteo.estados || '-' }}</td>
+              <td class="small">{{ conteo.usuarios_nombres || conteo.usuarios }}</td>
+              <td class="text-center">
+                <span *ngIf="conteo.requiere_reconteo" class="badge bg-warning text-dark">
+                  <i class="bi bi-exclamation-triangle"></i> SÃ­ ({{ conteo.reconteos_pendientes_dia }})
+                </span>
+                <span *ngIf="!conteo.requiere_reconteo" class="badge bg-secondary">No</span>
+              </td>
+              <td class="small">
+                {{ conteo.observaciones_dia || 'Sin observaciones' }}
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-info" 
+                        (click)="mostrarDetalleConteo(conteo)"
+                        title="Ver detalle completo">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="table-light">
+            <tr>
+              <td colspan="6" class="text-end"><strong>TOTALES:</strong></td>
+              <td class="text-end fw-bold">{{ calcularCantidadTotal()}}</td>
+              <td class="text-end fw-bold text-success">
+                {{ calcularValorTotal() }}
+              </td>
+              <td colspan="7"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+      <!-- TABLA CON VISTA AGRUPADA -->
+      <div *ngIf="!loading && gruposFechas.length > 0" class="mb-4">
+        <h5 class="mb-3">Vista Agrupada por PerÃ­odos</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th rowspan="2" class="align-middle">Item</th>
+                <th rowspan="2" class="align-middle">CÃ³digo</th>
+                <th rowspan="2" class="align-middle">ArtÃ­culo</th>
+                <th rowspan="2" class="align-middle">DescripciÃ³n</th>
+                <th rowspan="2" class="align-middle">Stock</th>
+                <th rowspan="2" class="align-middle">Stock Reservado</th>
+                <th rowspan="2" class="align-middle">Stock Disponible</th>
+                <th rowspan="2" class="align-middle">Unidad</th>
+                <th rowspan="2" class="align-middle">Costo Promedio</th>
+                <th [attr.colspan]="gruposFechas.length * 2" class="text-center bg-primary text-white">
+                  PerÃ­odos de Conteo
+                </th>
+              </tr>
+              <tr>
+                <ng-container *ngFor="let grupo of gruposFechas">
+                  <th class="text-center bg-info text-white">
+                    DÃ­as {{ grupo.dias }}<br>Conteo
+                  </th>
+                  <th class="text-center bg-warning">
+                    DÃ­as {{ grupo.dias }}<br>Diferencia
+                  </th>
+                </ng-container>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let articulo of articulosAgrupados; let i = index">
+                <td class="text-center">
+                  <span class="badge bg-secondary">{{ i + 1 }}</span>
+                </td>
+                <td>{{ articulo.codigo_articulo }}</td>
+                <td>{{ articulo.nombre_articulo }}</td>
+                <td class="small">{{ articulo.descripcion }}</td>
+                <td class="text-end">{{ articulo.stock }}</td>
+                <td class="text-end">{{ articulo.stock_reservado }}</td>
+                <td class="text-end fw-bold">{{ articulo.stock_disponible  }}</td>
+                <td class="text-center">{{ articulo.unidad }}</td>
+                <td class="text-end">{{ articulo.costo_promedio }}</td>
+                
+                <ng-container *ngFor="let grupo of gruposFechas">
+                  <td class="text-end bg-light">
+                    <span class="fw-bold text-primary">
+                      {{ getSumaConteosGrupo(articulo, grupo.fechas)}}
+                    </span>
+                  </td>
+                  <td class="text-end" 
+                     >
+                    <span class="fw-bold"
+                          >
+                      {{ calcularDiferencia(getSumaConteosGrupo(articulo, grupo.fechas), articulo.stock_disponible)  }}
+                    </span>
+                  </td>
+                </ng-container>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      
+
+      <!-- NUEVA TABLA: ARTÃCULOS CON DIFERENCIAS -->
+      <div *ngIf="!loading && articulosConDiferencias.length > 0" class="mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="mb-0">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+            ArtÃ­culos Pendientes de CorrecciÃ³n - Requieren Reconteo DÃ­a 11
+          </h5>
+          <button class="btn btn-warning" (click)="exportarExcelDiferencias()" [disabled]="loading">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Diferencias
+          </button>
+        </div>
+        
+        <div class="alert alert-info">
+          <i class="bi bi-info-circle me-2"></i>
+          <strong>Filtros aplicados:</strong>
+          <ul class="mb-0 mt-2">
+            <li>ArtÃ­culos que tuvieron diferencias en el conteo inicial (DÃ­as 6-9)</li>
+            <li>ArtÃ­culos que NO se corrigieron en el reconteo del DÃ­a 10</li>
+            <li>Solo muestra artÃ­culos que aÃºn requieren atenciÃ³n en el DÃ­a 11</li>
+          </ul>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-dark sticky-top">
+              <tr>
+                <th rowspan="2" class="align-middle text-center">Item</th>
+                <th rowspan="2" class="align-middle">CÃ³digo</th>
+                <th rowspan="2" class="align-middle">ArtÃ­culo</th>
+                <th rowspan="2" class="align-middle">DescripciÃ³n</th>
+                <th rowspan="2" class="align-middle text-end">Stock Disponible</th>
+                <th rowspan="2" class="align-middle text-center">Unidad</th>
+                <th rowspan="2" class="align-middle text-end">Costo Promedio</th>
+                <th colspan="2" class="text-center bg-secondary text-white">DÃ­as 6-9 (Referencia)</th>
+                <th colspan="2" class="text-center bg-info text-white">DÃ­a 10 (Reconteo)</th>
+                <th colspan="2" class="text-center bg-primary text-white">DÃ­a 11 (Reconteo)</th>
+              </tr>
+              <tr>
+                <th class="text-center bg-secondary-subtle">Conteo</th>
+                <th class="text-center bg-secondary-subtle">Diferencia</th>
+                <th class="text-center bg-info-subtle">Reconteo</th>
+                <th class="text-center bg-info-subtle">Diferencia</th>
+                <th class="text-center bg-primary-subtle">Reconteo</th>
+                <th class="text-center bg-primary-subtle">Diferencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              <ng-container *ngFor="let articulo of articulosConDiferencias; let i = index">
+                <!-- Fila principal con datos -->
+                <tr>
+                  <td class="text-center" rowspan="2">
+                    <span class="badge bg-dark">{{ i + 1 }}</span>
+                  </td>
+                  <td rowspan="2"><strong>{{ articulo.codigo_articulo }}</strong></td>
+                  <td rowspan="2">{{ articulo.nombre_articulo }}</td>
+                  <td class="small" rowspan="2">{{ articulo.descripcion }}</td>
+                  <td class="text-end fw-bold text-primary" rowspan="2">
+                    {{ articulo.stock_disponible }}
+                  </td>
+                  <td class="text-center" rowspan="2">{{ articulo.unidad }}</td>
+                  <td class="text-end" rowspan="2">{{ articulo.costo_promedio  }}</td>
+                  
+                  <!-- DÃ­as 6-9 (Referencia) -->
+                  <ng-container *ngIf="getGrupoDias6_9()">
+                    <td class="text-end bg-light">
+                      {{ getSumaConteosGrupo(articulo, getGrupoDias6_9()!.fechas) }}
+                    </td>
+                    <td class="text-end bg-danger-subtle">
+                      <span class="fw-bold text-danger">
+                        {{ calcularDiferencia(getSumaConteosGrupo(articulo, getGrupoDias6_9()!.fechas), articulo.stock_disponible) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  
+                  <!-- DÃ­a 10 (Reconteo) -->
+                  <ng-container *ngIf="getGrupoDia10()">
+                    <td class="text-end bg-info-subtle">
+                      <span class="fw-bold text-info">
+                        {{ getSumaReconteoDias(articulo, ['10']) }}
+                      </span>
+                    </td>
+                    <td class="text-end" 
+                       >
+                      <span class="fw-bold"
+                           >
+                        {{ calcularDiferencia(getSumaReconteoDias(articulo, ['10']), articulo.stock_disponible) }}
+                      </span>
+                    </td>
+                  </ng-container>
+                  
+                  <!-- DÃ­a 11 (Reconteo) -->
+                  <ng-container *ngIf="getGrupoDia11()">
+                    <td class="text-end bg-primary-subtle">
+                      <span class="fw-bold text-primary">
+                        {{ getSumaReconteoDias(articulo, ['11']) }}
+                      </span>
+                    </td>
+                    <td class="text-end" 
+                      >
+                      <span class="fw-bold"
+                            >
+                        {{ calcularDiferencia(getSumaReconteoDias(articulo, ['11']), articulo.stock_disponible)  }}
+                      </span>
+                    </td>
+                  </ng-container>
+                </tr>
+                
+                <!-- Fila de observaciones -->
+                <tr class="observaciones-row">
+                  <ng-container *ngIf="getGrupoDias6_9()">
+                    <td colspan="2" class="small text-muted bg-light">
+                      <i class="bi bi-chat-left-text me-1"></i>
+                      <strong>Obs:</strong> {{ getObservacionesGrupo(articulo, getGrupoDias6_9()!.fechas) }}
+                    </td>
+                  </ng-container>
+                  
+                  <ng-container *ngIf="getGrupoDia10()">
+                    <td colspan="2" class="small text-muted bg-info-subtle">
+                      <i class="bi bi-chat-left-text me-1"></i>
+                      <strong>Obs:</strong> {{ getObservacionesGrupo(articulo, getGrupoDia10()!.fechas) }}
+                    </td>
+                  </ng-container>
+                  
+                  <ng-container *ngIf="getGrupoDia11()">
+                    <td colspan="2" class="small text-muted bg-primary-subtle">
+                      <i class="bi bi-chat-left-text me-1"></i>
+                      <strong>Obs:</strong> {{ getObservacionesGrupo(articulo, getGrupoDia11()!.fechas) }}
+                    </td>
+                  </ng-container>
+                </tr>
+              </ng-container>
+            </tbody>
+            <tfoot class="table-light">
+              <tr>
+                <td colspan="13" class="text-center small">
+                  <i class="bi bi-exclamation-circle me-2 text-danger"></i>
+                  <strong>Total de artÃ­culos que AÃšN requieren correcciÃ³n: {{ articulosConDiferencias.length }}</strong>
+                  <span class="text-muted ms-2">(No corregidos en DÃ­a 10)</span>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- TABLA ORIGINAL CON TODAS LAS FECHAS -->
+      <div *ngIf="!loading && fechasUnicas.length > 0">
+        <h5 class="mb-3">Vista Detallada por Fecha</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover table-sm">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th rowspan="2" class="align-middle">Item</th>
+                <th rowspan="2" class="align-middle">CÃ³digo</th>
+                <th rowspan="2" class="align-middle">ArtÃ­culo</th>
+                <th rowspan="2" class="align-middle">DescripciÃ³n</th>
+                <th rowspan="2" class="align-middle">Stock</th>
+                <th rowspan="2" class="align-middle">Stock Reservado</th>
+                <th rowspan="2" class="align-middle">Stock Disponible</th>
+                <th rowspan="2" class="align-middle">Unidad</th>
+                <th rowspan="2" class="align-middle">Costo Promedio</th>
+                <th [attr.colspan]="fechasUnicas.length" class="text-center">Fechas de Conteo</th>
+              </tr>
+              <tr>
+                <th *ngFor="let fecha of fechasUnicas" class="text-center fecha-header">
+                  {{ formatearFechaCorta(fecha) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let articulo of articulosAgrupados; let i = index">
+                <td data-label="Item">
+                  <span class="item-number">{{ i + 1 }}</span>
+                </td>
+                <td>{{ articulo.codigo_articulo }}</td>
+                <td>{{ articulo.nombre_articulo }}</td>
+                <td>{{ articulo.descripcion }}</td>
+                <td class="text-end">{{ articulo.stock }}</td>
+                <td class="text-end">{{ articulo.stock_reservado }}</td>
+                <td class="text-end">{{ articulo.stock_disponible }}</td>
+                <td>{{ articulo.unidad }}</td>
+                <td class="text-end">{{ articulo.costo_promedio }}</td>
+                
+                <td *ngFor="let fecha of fechasUnicas" class="conteo-cell">
+                  <div *ngFor="let conteo of getConteosPorFecha(articulo, fecha)" 
+                       class="conteo-item mb-2"
+                      >
+                    <div class="fw-bold">
+                      Cant: {{ conteo.cantidad_contada  }}
+                    </div>
+                    <div class="small text-muted">
+                      {{ conteo.usuario_contador }}
+                    </div>
+                    <div *ngIf="conteo.requiere_reconteo" class="badge bg-warning text-dark mt-1">
+                      Reconteo
+                    </div>
+                    <div *ngIf="conteo.cantidad_reconteo" class="mt-1 text-success">
+                      Recont: {{ conteo.cantidad_reconteo }}
+                      <div class="small">{{ conteo.usuario_reconteo }}</div>
+                    </div>
+                    <div *ngIf="conteo.observaciones" class="small text-info mt-1">
+                      <i class="bi bi-info-circle"></i> {{ conteo.observaciones }}
+                    </div>
+                  </div>
+                  <div *ngIf="getConteosPorFecha(articulo, fecha).length === 0" class="text-muted">
+                    -
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div *ngIf="!loading && articulosAgrupados.length === 0" class="alert alert-info">
+        No hay conteos disponibles para mostrar.
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .conteo-cell {
+    min-width: 150px;
+    vertical-align: top;
+  }
+
+  .conteo-item {
+    padding: 8px;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+  }
+
+  .requiere-reconteo {
+    border-left: 3px solid #ffc107;
+  }
+
+  .fecha-header {
+    background-color: #e9ecef;
+    font-weight: 600;
+  }
+
+  .fecha-header-diaria {
+    background-color: #0dcaf0 !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .item-number {
+    font-weight: 600;
+    color: #495057;
+  }
+
+  .sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .bg-success-subtle {
+    background-color: #d1e7dd !important;
+  }
+
+  .bg-danger-subtle {
+    background-color: #f8d7da !important;
+  }
+
+  .bg-info-subtle {
+    background-color: #cfe2ff !important;
+  }
+  
+  .bg-primary-subtle {
+    background-color: #e7f1ff !important;
+  }
+  
+  .bg-secondary-subtle {
+    background-color: #e2e3e5 !important;
+  }
+
+  .bg-warning-subtle {
+    background-color: #fff3cd !important;
+  }
+
+  .observaciones-row {
+    border-top: 1px dashed #dee2e6;
+  }
+
+  .observaciones-row td {
+    padding: 8px !important;
+    font-style: italic;
+  }
+
+  .table-responsive {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+
+  .btn-group {
+    gap: 0.5rem;
+    display: flex;
+  }
+
+  .conteo-diario-cell {
+    min-width: 220px;
+    vertical-align: top;
+    padding: 10px;
+  }
+
+  .conteo-diario-item {
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background-color: #ffffff;
+    transition: all 0.2s;
+  }
+
+  .conteo-diario-item:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+
+  .conteo-diario-item .bi {
+    margin-right: 4px;
+  }
+</style>

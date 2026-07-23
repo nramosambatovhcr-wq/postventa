@@ -1,0 +1,174 @@
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Bodega Importaciones</div>
+        <div class="contenedor-busqueda">
+        <input
+          type="text"
+          class="busqueda"
+          placeholder="Buscar código, descripción, cliente o usuario" [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i> <span class="hide-mobile-button-text">Buscar</span> </button>
+
+      </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Pedidos Enviados</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de los pedidos enviados para envío</p>
+      </div>
+
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica" (click)="asignado()">
+            <div class="titulo-estadistica">ASIGNADOS</div> 
+        </div>
+        <div class="tarjeta-estadistica" (click)="enviado()">
+            <div class="titulo-estadistica">ENVIADOS</div> 
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">EN PROCESO</div>
+          <div class="valor-estadistica">{{ stats.enProceso }}</div> 
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="titulo-estadistica">ENVIADOS</div>
+          <div class="valor-estadistica">{{ stats.enviados }}</div>  
+        </div>
+      </div>
+
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Pedidos Enviados Recientes</div>
+          <div class="acciones-tabla">
+            <div class="filtro-fechas">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+              </div>
+              <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+            </div>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">
+                <i class="fa fa-download"></i> Exportar
+              </button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()"><i class="fa fa-file-excel"></i> Excel (.xlsx)</a>
+                <a (click)="downloadCSV()"><i class="fa fa-file-csv"></i> CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Cliente</th>
+                <th>OT</th>
+                <th>Usuario</th>
+                <th class="hide-mobile">Fecha</th>
+                <th>Imagen</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Código">{{ item.codigo }}</td>
+                <td data-label="Descripción">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                <td data-label="Cliente">{{ item.cliente }}</td>
+                <td data-label="OT">{{ item.ot }}</td>
+                <td data-label="Usuario">{{ item.nombre }} {{item.apellido}}</td>
+                <td data-label="Fecha" class="hide-mobile">{{ item.fecha_creacion | date:'dd/MM/yyyy' || '-' }}</td>
+                <td data-label="Imagen">
+                    <div class="image-container">
+                        <ng-container *ngIf="item.imagenes && item.imagenes.length > 0; else noImage">
+                            <div *ngFor="let imagePath of item.imagenes">
+                                <img [src]="getImageUrl(imagePath)" alt="Imagen del pedido" (click)="openImageModal(getImageUrl(imagePath))" class="pedido-image">
+                            </div>
+                        </ng-container>
+                        <ng-template #noImage>
+                            <span class="no-image-text">No hay imagen</span> </ng-template>
+                    </div>
+                  </td>
+                <td data-label="Estado">
+                  
+                    <span class="estado" [ngClass]="{
+                      'estado-pendiente': item.estado === 'PROCESO',
+                      'estado-en-transito': item.estado === 'ASIGNADO',
+                      'estado-completado': item.estado === 'ENVIADO'
+                    }">
+                      {{ item.estado }}
+                    </span>
+               
+                </td>
+               <td data-label="Acciones">
+                <div class="acciones-container">
+                  <button class="boton-accion" (click)="openObservacionesModal(item)" title="Ver Comentarios">
+                    <i class="fa fa-comments"></i> Comentarios
+                  </button>
+                  <button class="boton-accion view-details-button" (click)="verObservaciones(item.id_pedido)" title="Ver Detalles del Pedido">
+                    <i class="fa fa-info-circle"></i> Ver Detalles
+                  </button>
+                </div>
+              </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ totalItems || 0 }} pedidos</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button
+              *ngFor="let page of getPaginationArray()"
+              class="boton-pagina"
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="page !== -1 && changePage(page)"> <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+          <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+        </div>
+    </div>
+
+    <app-observaciones
+      [pedido]="selectedPedido"
+      [currentUserId]="id"
+      [userRole]="usuario?.rol || ''"
+      [modalVisible]="observacionesModalVisible"
+      (closeModalEvent)="closeObservacionesModal()">
+    </app-observaciones>
+
+
+    <app-observacionesped
+      [pedidoId]="selectedPedidoId"
+      [modalVisible]="showObservacionesModal1"
+      [currentUserId]="id"
+      [userRole]="usuario?.rol || ''"
+      (closeModalEvent)="closeObservacionesModal1()">
+    </app-observacionesped>
+
+
+  </main>

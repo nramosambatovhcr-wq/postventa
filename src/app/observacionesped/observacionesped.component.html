@@ -1,0 +1,185 @@
+<!-- Modal Backdrop -->
+<div *ngIf="modalVisible" class="modal-backdrop" (click)="closeModal()">
+  <!-- Modal Dialog -->
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <!-- Modal Content -->
+    <div class="modal-content">
+      
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <h5 class="modal-title">Detalles del Pedido y Observaciones</h5>
+        <button type="button" class="btn-close" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body">
+        
+        <!-- Loading State -->
+        <div *ngIf="isLoading" class="text-center p-4">
+          <div class="spinner-border" role="status">
+            <span class="sr-only">Cargando...</span>
+          </div>
+          <p class="mt-2">Cargando detalles del pedido...</p>
+        </div>
+
+        <!-- Error State -->
+        <div *ngIf="error && !isLoading" class="alert alert-danger">
+          {{ error }}
+          <button class="btn btn-sm btn-outline-primary mt-2" (click)="loadPedidoDetails()">
+            Reintentar
+          </button>
+        </div>
+
+        <!-- Content when data is loaded -->
+        <div *ngIf="pedidoDetail && !isLoading" class="chat-container">
+          
+          <!-- Pedido Information -->
+          <div class="pedido-info mb-4 p-3 bg-light rounded">
+            <h6 class="mb-3">Información del Pedido</h6>
+            <div class="row">
+              <div class="col-md-6">
+                <p><strong>Código:</strong> {{ pedidoDetail.codigo || 'N/A' }}</p>
+                <p><strong>Descripción:</strong> {{ pedidoDetail.descripcion || 'N/A' }}</p>
+                <p><strong>Cantidad:</strong> {{ pedidoDetail.cantidad }}</p>
+                <p><strong>Modelo:</strong> {{ pedidoDetail.modelo || 'N/A' }}</p>
+                <p><strong>Estado:</strong> {{ pedidoDetail.estado || 'N/A' }}</p>
+              </div>
+              <div class="col-md-6">
+                <p><strong>Cliente:</strong> {{ pedidoDetail.cliente || 'N/A' }}</p>
+                <p><strong>OT:</strong> {{ pedidoDetail.ot || 'N/A' }}</p>
+                <p><strong>Tipo:</strong> {{ pedidoDetail.tipo || 'N/A' }}</p>
+                <p><strong>Creado por:</strong> {{ pedidoDetail.nombreUsuarioCreacion }} {{ pedidoDetail.apellidoUsuarioCreacion }}</p>
+                <p><strong>Fecha Creación:</strong> {{ pedidoDetail.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</p>
+              </div>
+            </div>
+            
+            <!-- Observaciones del pedido -->
+            <div *ngIf="pedidoDetail.observaciones" class="mt-3">
+              <p><strong>Observaciones:</strong></p>
+              <p class="bg-white p-2 border rounded">{{ pedidoDetail.observaciones }}</p>
+            </div>
+
+            <!-- Imágenes del pedido -->
+            <div *ngIf="pedidoDetail.pedidoImages && pedidoDetail.pedidoImages.length > 0" class="mt-3">
+              <h6>Imágenes del Pedido:</h6>
+              <div class="message-images">
+                <div *ngFor="let imagen of pedidoDetail.pedidoImages" class="image-thumbnail">
+                  <img [src]="getPedidoImageUrl(imagen.rutaArchivo)" 
+                       [alt]="imagen.nombreArchivo" 
+                       class="img-thumbnail">
+                  <div class="image-name">{{ imagen.nombreArchivo }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Messages Area -->
+          <div class="chat-messages">
+            
+            <!-- No comments message -->
+            <div *ngIf="!pedidoDetail.comentarios || pedidoDetail.comentarios.length === 0" class="no-messages">
+              <div class="no-messages-icon">💬</div>
+              <p>No hay observaciones para este pedido</p>
+              <small>Sé el primero en agregar una observación</small>
+            </div>
+
+            <!-- Comments -->
+            <div *ngFor="let comentario of pedidoDetail.comentarios" class="message-bubble message-other">
+              
+              <!-- Message Header -->
+              <div class="message-header">
+                <div class="user-info">
+                  <span class="user-name">{{ comentario.usuario }}</span>
+                  <span class="user-role">Usuario</span>
+                </div>
+                <span class="message-time">{{ comentario.fechaCreacion | date:'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+
+              <!-- Message Content -->
+              <div class="message-content">
+                <p>{{ comentario.mensaje }}</p>
+                
+                <!-- Comment Images -->
+                <div *ngIf="comentario.commentImages && comentario.commentImages.length > 0" class="message-images">
+                  <div *ngFor="let imagen of comentario.commentImages" class="image-thumbnail">
+                    <img [src]="getCommentImageUrl(imagen.rutaImagen)" 
+                         [alt]="imagen.nombreArchivo">
+                    <div class="image-overlay">
+                      <span>Ver imagen</span>
+                    </div>
+                    <div class="image-name">{{ imagen.nombreArchivo }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div *ngIf="pedidoDetail && !isLoading" class="modal-footer">
+        
+        <!-- Image Preview Area -->
+        <div *ngIf="selectedImages.length > 0" class="image-preview-area">
+          <div class="preview-label">Imágenes seleccionadas:</div>
+          <div class="preview-grid">
+            <div *ngFor="let image of selectedImages; let i = index" class="preview-item">
+              <img [src]="getImagePreview(image)" [alt]="image.name">
+              <button type="button" class="remove-preview" (click)="removeSelectedImage(i)">
+                &times;
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Message Form -->
+        <!-- <form class="message-form" (ngSubmit)="addComment()" #commentForm="ngForm">
+          <div class="input-group">
+            <textarea 
+              class="message-input" 
+              [(ngModel)]="newCommentText" 
+              name="commentText"
+              placeholder="Escribe una observación..." 
+              rows="3"
+              [disabled]="isLoading">
+            </textarea>
+           <div class="input-actions">
+              <input 
+                type="file" 
+                #fileInput 
+                multiple 
+                accept="image/*" 
+                (change)="onFileSelected($event)" 
+                style="display: none;">
+              <button 
+                type="button" 
+                class="btn btn-outline-secondary" 
+                (click)="fileInput.click()"
+                [disabled]="isLoading"
+                title="Adjuntar imágenes">
+                📎
+              </button>
+              <button 
+                type="submit" 
+                class="btn btn-primary" 
+                [disabled]="!canSubmitComment()"
+                title="Enviar observación">
+                ➤
+              </button>
+            </div>
+          </div>
+          <div class="form-footer">
+            <small class="text-muted">
+              Presiona Enter + Shift para nueva línea
+            </small>
+            <small class="text-muted">
+              {{ selectedImages.length }} imagen(es) seleccionada(s)
+            </small>
+          </div>
+        </form>-->
+      </div>
+    </div>
+  </div>
+</div>

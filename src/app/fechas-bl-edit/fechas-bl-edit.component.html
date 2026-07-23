@@ -1,0 +1,77 @@
+<div class="container">
+  <h2 class="heading">Seguimiento de Importación (BL: {{ blId }})</h2>
+
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando datos...</p>
+  </div>
+
+  <div *ngIf="!loading" class="fechas-container">
+    <form [formGroup]="fechasForm" (ngSubmit)="onSubmit()">
+      <div class="seguimiento-panel">
+        <div *ngFor="let etapa of etapas; trackBy: trackByEtapa" class="etapa-container">
+          <div class="fecha-row">
+            <div class="fecha-info">
+              <h3>{{ etapa.nombre }}</h3>
+              <p>{{ etapa.descripcion }}</p>
+            </div>
+
+            <div class="fecha-input">
+              <div class="custom-form-field">
+                <label [for]="etapa.campo">Seleccionar fecha</label>
+                <input 
+                  type="date" 
+                  [id]="etapa.campo" 
+                  class="date-input"
+                  [formControlName]="etapa.campo"
+                  [readonly]="etapa.bloqueado"
+                  [max]="today"
+                  (change)="updateFecha(etapa.campo, $event)"
+                  [class.error]="fechasForm.get(etapa.campo)?.invalid && fechasForm.get(etapa.campo)?.touched">
+                
+                <!-- Mostrar errores si los hay -->
+                <div *ngIf="fechasForm.get(etapa.campo)?.invalid && fechasForm.get(etapa.campo)?.touched" 
+                     class="error-message">
+                  <small>Por favor, seleccione una fecha válida</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="estado-container">
+              <span class="estado" [ngClass]="getEstadoEtapa(etapa.campo)">
+                {{ isFechaCompleta(etapa.campo) ? 'Completado' : 'Pendiente' }}
+              </span>
+              
+              <!-- Mostrar la fecha formateada si existe -->
+              <div *ngIf="isFechaCompleta(etapa.campo)" class="fecha-display">
+                <small>{{ fechasForm.get(etapa.campo)?.value | date:'dd/MM/yyyy' }}</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button 
+          type="submit" 
+          class="btn-primary"
+          [disabled]="loading || fechasForm.invalid">
+          <span *ngIf="loading">Guardando...</span>
+          <span *ngIf="!loading">Guardar Cambios</span>
+        </button>
+        <button 
+          type="button" 
+          class="btn-secondary" 
+          routerLink="/importaciones"
+          [disabled]="loading">
+          Cancelar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Mensaje de error general -->
+  <div *ngIf="!loading && fechasForm.invalid" class="form-errors">
+    <p>Por favor, corrija los errores en el formulario antes de continuar.</p>
+  </div>
+</div>

@@ -1,0 +1,439 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">REVISION COTIZACION</div>
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          placeholder="Buscar "
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard para Revision de Cotizacion</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de las cotizaciones</p>
+    </div>
+    
+    <div class="contenedor-estadisticas">
+      <div class="tarjeta-estadistica" (click)="coti()">
+          <div class="valor-estadistica">COTIZACIONES</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="crear()">
+        <div class="valor-estadistica">CREAR</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="error()">
+          <div class="valor-estadistica">SUBIR DETALLE</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="aprobada()">
+         <div class="valor-estadistica">APROBADAS</div>
+      </div>
+      <div class="tarjeta-estadistica" (click)="rechazada()"> 
+         <div class="valor-estadistica">RECHAZADAS</div>
+      </div>
+    </div>
+    
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">Cotizaciones Detalles</div>
+        <div class="acciones-tabla">
+          <!-- Filtro de fechas -->
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label for="startDate">Desde:</label>
+              <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+            </div>
+            <div class="fecha-hasta">
+              <label for="endDate">Hasta:</label>
+              <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+            </div>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+          </div>
+          <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+          <div class="dropdown">
+            <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+            <div class="dropdown-content" *ngIf="showExportMenu">
+              <a (click)="downloadExcel()">Excel (.xlsx)</a>
+              <a (click)="downloadCSV()">CSV (.csv)</a>
+            </div>
+          </div>
+          <!-- Botón para importar Excel -->
+          <div class="upload-btn-wrapper">
+            <button class="boton boton-contorno">Importar Excel</button>
+            <input type="file" (change)="onFileSelected($event)" accept=".xlsx, .xls" />
+          </div>
+          <!-- Botón para guardar cambios -->
+          <button class="boton boton-primario" [disabled]="!hasChanges" (click)="saveChanges()">
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+      
+      <div class="tabla-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Equivalent Code</th>
+              <th>Description</th>
+              <th>Chinese</th>
+              <th>Qty</th>
+              <th>FOB</th>
+              <th>Observations</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista; let i = index" class="fila-datos">
+              <td data-label="Codigo">{{ item.code }}</td>
+              <td data-label="Codigo"> 
+                <input 
+                  type="text" 
+                  class="input-editable" 
+                  [(ngModel)]="item.equivalent_code" 
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'equivalent_code')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td data-label="Descripcion">{{ item.description }}</td>
+              <td data-label="Chino">{{ item.chinese }}</td>
+              <td data-label="Cantidad">
+                <input 
+                  type="number" 
+                  class="input-editable" 
+                  [(ngModel)]="item.qty" 
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'qty')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td data-label="Precio">
+                <input 
+                  type="number" 
+                  class="input-editable" 
+                  [(ngModel)]="item.price" 
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'price')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td data-label="Observaciones">
+                <input
+                  type="text"
+                  class="input-editable"
+                  [(ngModel)]="item.observations"
+                  [ngClass]="{'campo-modificado': isItemChanged(item, 'observations')}"
+                  (change)="onItemChanged(item, i)">
+              </td>
+              <td data-label="Acciones" class="acciones-columna">
+                <button class="boton-accion" (click)="resetItemChanges(item, i)" *ngIf="isItemChanged(item)">
+                  <i class="fas fa-undo"></i> Deshacer
+                </button>
+                <button class="boton-accion boton-eliminar" (click)="deleteItem(item, i)">
+                  <i class="fas fa-trash"></i> Eliminar
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <div class="pie-tabla">
+        <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos</div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pagina" 
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+  
+  <!-- Modal para confirmación de eliminación -->
+  <div class="modal-overlay" *ngIf="showDeleteConfirmModal">
+    <div class="modal-content">
+      <h3>Confirmar eliminación</h3>
+      <p>¿Está seguro que desea eliminar este ítem?</p>
+      <div class="modal-actions">
+        <button class="boton boton-cancelar" (click)="cancelDelete()">Cancelar</button>
+        <button class="boton boton-confirmar" (click)="confirmDelete()">Eliminar</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal para importación de Excel -->
+  <div class="modal-overlay" *ngIf="showImportModal">
+    <div class="modal-content">
+      <h3>Importar datos desde Excel</h3>
+      <div *ngIf="importProgress === 'uploading'" class="loading-indicator">
+        <p>Procesando archivo...</p>
+        <div class="spinner"></div>
+      </div>
+      <div *ngIf="importProgress === 'preview'" class="excel-preview">
+        <p>Vista previa de los datos (primeras 5 filas):</p>
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th *ngFor="let header of excelPreviewHeaders">{{ header }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of excelPreviewData">
+              <td *ngFor="let cell of row">{{ cell }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="mapping-container" *ngIf="excelPreviewHeaders.length > 0">
+          <h4>Mapeo de columnas</h4>
+          <div class="mapping-row" *ngFor="let field of requiredFields">
+            <label>{{ field.label }}:</label>
+            <select [(ngModel)]="fieldMapping[field.key]">
+              <option value="">-- Seleccionar columna --</option>
+              <option *ngFor="let header of excelPreviewHeaders" [value]="header">{{ header }}</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="boton boton-cancelar" (click)="cancelImport()">Cancelar</button>
+        <button *ngIf="importProgress === 'preview'" class="boton boton-confirmar" 
+                [disabled]="!isValidMapping()" (click)="processExcelImport()">Importar</button>
+      </div>
+    </div>
+  </div>
+    
+  <style>
+    .image-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+  
+    .image-modal-content {
+      position: relative;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 90%;
+      max-height: 90%;
+    }
+  
+    .image-modal-close {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #333;
+    }
+  
+    .image-modal-img {
+      max-width: 100%;
+      max-height: 80vh;
+      display: block;
+    }
+
+    /* Estilos para los campos editables */
+    .input-editable {
+      width: 100%;
+      padding: 4px 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    .campo-modificado {
+      background-color: #fff9e0;
+      border-color: #ffd54f;
+    }
+
+    .boton-accion {
+      background-color: transparent;
+      border: none;
+      color: #0056b3;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 8px;
+      margin-right: 5px;
+    }
+
+    .boton-accion:hover {
+      text-decoration: underline;
+    }
+
+    .boton-eliminar {
+      color: #dc3545;
+    }
+
+    .boton-primario {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .boton-primario:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+
+    /* Estilos para modales */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content {
+      background-color: white;
+      padding: 10px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 1200px;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+      gap: 10px;
+    }
+
+    .boton-cancelar {
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .boton-confirmar {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Estilos para la tabla de acciones */
+    .acciones-columna {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    /* Estilos para la importación de Excel */
+    .upload-btn-wrapper {
+      position: relative;
+      overflow: hidden;
+      display: inline-block;
+    }
+
+    .upload-btn-wrapper input[type=file] {
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
+    }
+
+    .excel-preview {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+
+    .preview-table th, .preview-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    .mapping-container {
+      margin-top: 15px;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+    }
+
+    .mapping-row {
+      display: flex;
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .mapping-row label {
+      width: 150px;
+      font-weight: bold;
+    }
+
+    .mapping-row select {
+      flex: 1;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+
+    .loading-indicator {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #007bff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 2s linear infinite;
+      margin-top: 15px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</main>

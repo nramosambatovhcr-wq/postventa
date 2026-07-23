@@ -1,0 +1,1307 @@
+<!-- ============================================
+     VISTA LISTADO: TODOS LOS B/L
+     ============================================ -->
+
+<div class="container-fluid animate-fade-in" *ngIf="viewMode === 'list'">
+  <!-- Header -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <div class="page-header">
+        <h2><i class="fas fa-ship"></i> Gestión de B/Ls</h2>
+        <p class="subtitle">Administra los Bill of Lading y sus contenedores</p>
+      </div>
+    </div>
+    <div class="col-md-6 text-end">
+      <button class="btn btn-primary" (click)="openCreateBlModal()">
+        <i class="fas fa-plus"></i> Nuevo B/L
+      </button>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="loading-container">
+    <div class="spinner"></div>
+    <p>Cargando B/Ls...</p>
+  </div>
+
+  <!-- Error State -->
+  <div *ngIf="error && !loading" class="alert alert-danger">
+    <h6><i class="fas fa-exclamation-triangle"></i> Error</h6>
+    <p class="mb-0">{{ error }}</p>
+  </div>
+
+  <!-- Tabla de B/Ls -->
+  <div class="card animate-fade-in" *ngIf="!loading && !error">
+    <div class="table-container">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>B/L Number</th>
+              <th>Buque</th>
+              <th>Puerto de Carga</th>
+              <th>Puerto de Descarga</th>
+              <th class="text-center">Contenedores</th>
+              <th class="text-center">Invoices</th>
+              <th class="text-center">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let bl of allBls" 
+                (dblclick)="viewBlDetail(bl.id)" 
+                class="clickable">
+              <td>
+                <strong>{{ bl.blNumber }}</strong>
+              </td>
+              <td>{{ bl.vesselName || 'N/A' }}</td>
+              <td>{{ bl.portOfLoading || 'N/A' }}</td>
+              <td>{{ bl.portOfDischarge || 'N/A' }}</td>
+              <td class="text-center">
+                <span class="badge primary">{{ bl.totalContainers || 0 }}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge info">{{ bl.invoiceCount || 0 }}</span>
+              </td>
+              <td class="text-center">
+                <div class="btn-toolbar justify-content-center">
+                  <button class="btn btn-sm btn-info" 
+                          (click)="viewBlDetail(bl.id); $event.stopPropagation()" 
+                          title="Ver detalle">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                  <button class="btn btn-sm btn-warning" 
+                          (click)="openEditBlModal(bl); $event.stopPropagation()" 
+                          title="Editar">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" 
+                          (click)="deleteBl(bl.id); $event.stopPropagation()" 
+                          title="Eliminar">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            <tr *ngIf="allBls.length === 0">
+              <td colspan="7">
+                <div class="empty-state">
+                  <i class="fas fa-inbox"></i>
+                  <p>No hay B/Ls registrados</p>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     VISTA DETALLE: B/L ESPECÍFICO CON CONTENEDORES
+     ============================================ -->
+
+<div class="container-fluid animate-fade-in" *ngIf="viewMode === 'detail' && blHierarchy">
+  <!-- Header con navegación -->
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-6">
+      <button class="btn btn-outline-secondary mb-2" (click)="backToList()">
+        <i class="fas fa-arrow-left"></i> Volver a lista
+      </button>
+      <div class="page-header mb-0">
+        <h2 class="mb-0">
+          <i class="fas fa-ship"></i> B/L: {{ blHierarchy.blNumber }}
+        </h2>
+        <p class="subtitle mb-0">
+          <i class="fas fa-anchor"></i> {{ blHierarchy.vesselName }} | 
+          {{ blHierarchy.portOfLoading }} → {{ blHierarchy.portOfDischarge }}
+        </p>
+      </div>
+    </div>
+    <div class="col-md-6 text-end">
+      <div class="btn-toolbar justify-content-end">
+        <button class="btn btn-outline-primary" (click)="goToInvoicePage()">
+          <i class="fas fa-file-invoice"></i> Ver Invoices
+        </button>
+        <button class="btn btn-outline-dark" (click)="openBlContainersModal()">
+          <i class="fas fa-boxes"></i> Ver Contenedores
+        </button>
+        <button class="btn btn-success" (click)="openUploadContainersModal()">
+          <i class="fas fa-file-excel"></i> Cargar Excel
+        </button>
+        <button class="btn btn-warning" (click)="openEditBlModal(blHierarchy)">
+          <i class="fas fa-edit"></i> Editar B/L
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Resumen de totales -->
+  <div class="row mb-4">
+    <div class="col-md-3 col-sm-6">
+      <div class="card stat-card primary">
+        <div class="card-body">
+          <h3 class="mb-0">{{ blHierarchy.totalContainers }}</h3>
+          <small>CONTENEDORES</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card stat-card success">
+        <div class="card-body">
+          <h3 class="mb-0">{{ blHierarchy.totalGrossWeight | number:'1.2-2' }}</h3>
+          <small>KG PESO BRUTO</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card stat-card info">
+        <div class="card-body">
+          <h3 class="mb-0">{{ blHierarchy.totalVolume | number:'1.3-3' }}</h3>
+          <small>M³ VOLUMEN</small>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3 col-sm-6">
+      <div class="card stat-card secondary">
+        <div class="card-body">
+          <h3 class="mb-0">{{ blHierarchy.invoices.length }}</h3>
+          <small>INVOICES</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Barra de filtros -->
+  <div class="card mb-3 animate-fade-in">
+    <div class="card-body py-2">
+      <div class="row g-2 align-items-center">
+        <div class="col-auto">
+          <small class="fw-bold text-muted"><i class="fas fa-filter"></i> Filtrar:</small>
+        </div>
+        <div class="col">
+          <input type="text" class="form-control form-control-sm"
+                 placeholder="Invoice..."
+                 [(ngModel)]="filterInvoice">
+        </div>
+        <div class="col">
+          <input type="text" class="form-control form-control-sm"
+                 placeholder="Contenedor..."
+                 [(ngModel)]="filterContainer">
+        </div>
+        <div class="col">
+          <input type="text" class="form-control form-control-sm"
+                 placeholder="Chasis..."
+                 [(ngModel)]="filterChassis">
+        </div>
+        <div class="col">
+          <input type="text" class="form-control form-control-sm"
+                 placeholder="Cabina..."
+                 [(ngModel)]="filterCab">
+        </div>
+        <div class="col-auto">
+          <button class="btn btn-sm btn-outline-secondary" 
+                  (click)="clearFilters()" 
+                  [disabled]="!hasActiveFilter"
+                  title="Limpiar filtros">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div class="col-auto" *ngIf="hasActiveFilter">
+          <small class="text-primary fw-bold">
+            {{ filteredTotalContainers }} contenedor(es) encontrado(s)
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoices y sus contenedores -->
+  <div *ngFor="let invoice of filteredInvoices" class="mb-4 animate-fade-in">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h5 class="card-title">
+            <i class="fas fa-file-invoice-dollar"></i> 
+            Invoice: {{ invoice.invoiceNumber }}
+          </h5>
+          <small class="text-muted">
+            {{ invoice.containerCount }} contenedores | 
+            {{ invoice.totalGrossWeight | number:'1.2-2' }} kg
+          </small>
+        </div>
+        <div class="btn-toolbar">
+          <button class="btn btn-sm btn-outline-info" (click)="openInvoiceDetailModal(invoice)">
+            <i class="fas fa-eye"></i> Detalle Invoice
+          </button>
+          <button class="btn btn-sm btn-success" (click)="openCreateContainerModal(invoice)">
+            <i class="fas fa-plus"></i> Agregar Contenedor
+          </button>
+        </div>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm sub-table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Contenedor</th>
+                <th>Sello</th>
+                <th>Chasis</th>
+                <th>Cabinas</th>
+                <th>Descripción</th>
+                <th class="text-end">Peso Neto</th>
+                <th class="text-end">Peso Bruto</th>
+                <th class="text-end">Volumen</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let container of invoice.containers; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td>
+                  <code class="code">{{ container.containerNumber }}</code>
+                </td>
+                <td>{{ container.sealNumber }}</td>
+                <td>
+                  <ng-container *ngIf="container.chassisNumbers?.length; else noChassisTd">
+                    <div class="tag-container">
+                      <span class="tag tag-dark tag-xs" 
+                            *ngFor="let ch of container.chassisNumbers">{{ ch }}</span>
+                    </div>
+                  </ng-container>
+                  <ng-template #noChassisTd>
+                    <span class="text-muted small">—</span>
+                  </ng-template>
+                </td>
+                <td>
+                  <ng-container *ngIf="container.cabNumbers?.length; else noCabTd">
+                    <div class="tag-container">
+                      <span class="tag tag-info tag-xs" 
+                            *ngFor="let cab of container.cabNumbers">{{ cab }}</span>
+                    </div>
+                  </ng-container>
+                  <ng-template #noCabTd>
+                    <span class="text-muted small">—</span>
+                  </ng-template>
+                </td>
+                <td>
+                  <small>{{ container.contentDescription | slice:0:40 }}...</small>
+                </td>
+                <td class="text-end">{{ container.netWeightKg | number:'1.2-2' }}</td>
+                <td class="text-end fw-bold">{{ container.grossWeightKg | number:'1.2-2' }}</td>
+                <td class="text-end">{{ container.volumeM3 | number:'1.3-3' }}</td>
+                <td class="text-center">
+                  <div class="btn-toolbar justify-content-center">
+                    <button class="btn btn-xs btn-info" 
+                            (click)="openContainerDetailModal(container)" 
+                            title="Ver detalle completo">
+                      <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="btn btn-xs btn-warning" 
+                            (click)="openEditContainerModal(container, invoice)">
+                      <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-xs btn-danger" 
+                            (click)="deleteContainer(container)">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="!invoice.containers || invoice.containers.length === 0">
+                <td colspan="10" class="text-center text-muted py-3">
+                  <i class="fas fa-box-open"></i> No hay contenedores en esta invoice
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================
+     MODALES
+     ============================================ -->
+
+<!-- Modal: Crear B/L -->
+<div class="modal-overlay" *ngIf="showCreateBlModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header primary">
+      <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Nuevo B/L</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form #blForm="ngForm">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de B/L *</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.blNumber" 
+                     name="blNumber" 
+                     required
+                     #blNumber="ngModel"
+                     [class.is-invalid]="blNumber.invalid && blNumber.touched"
+                     placeholder="Ej: 177SZRZRA1761FB">
+              <div class="invalid-feedback" *ngIf="blNumber.invalid && blNumber.touched">
+                El número de B/L es obligatorio
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Fecha de B/L</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.blDate" 
+                     name="blDate">
+            </div>
+          </div>
+        </div>
+        
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Nombre del Buque *</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.vesselName" 
+                     name="vesselName"
+                     required
+                     #vesselName="ngModel"
+                     [class.is-invalid]="vesselName.invalid && vesselName.touched"
+                     placeholder="Ej: MSC OSCAR">
+              <div class="invalid-feedback" *ngIf="vesselName.invalid && vesselName.touched">
+                El nombre del buque es obligatorio
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de Viaje</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.voyageNumber" 
+                     name="voyageNumber" 
+                     placeholder="Ej: 245E">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Naviera</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.shippingLine" 
+                     name="shippingLine" 
+                     placeholder="Ej: MSC">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Agente</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.agentName" 
+                     name="agentName">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Puerto de Carga *</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.portOfLoading" 
+                     name="portOfLoading"
+                     required
+                     #portOfLoading="ngModel"
+                     [class.is-invalid]="portOfLoading.invalid && portOfLoading.touched">
+              <div class="invalid-feedback" *ngIf="portOfLoading.invalid && portOfLoading.touched">
+                El puerto de carga es obligatorio
+              </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Puerto de Descarga *</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.portOfDischarge" 
+                     name="portOfDischarge"
+                     required
+                     #portOfDischarge="ngModel"
+                     [class.is-invalid]="portOfDischarge.invalid && portOfDischarge.touched">
+              <div class="invalid-feedback" *ngIf="portOfDischarge.invalid && portOfDischarge.touched">
+                El puerto de descarga es obligatorio
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">ETD (Salida Estimada)</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.etd" 
+                     name="etd">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">ETA (Llegada Estimada)</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="newBl.eta" 
+                     name="eta">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" 
+                    [(ngModel)]="newBl.remarks" 
+                    name="remarks" 
+                    rows="2"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" 
+              (click)="createBl()" 
+              [disabled]="blForm.invalid || isSubmitting">
+        <i class="fas fa-save"></i> 
+        {{ isSubmitting ? 'Guardando...' : 'Guardar B/L' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar B/L -->
+<div class="modal-overlay" *ngIf="showEditBlModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header warning">
+      <h5 class="modal-title"><i class="fas fa-edit"></i> Editar B/L</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form *ngIf="editBlData" #editBlForm="ngForm">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de B/L</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.blNumber" 
+                     name="editBlNumber">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Fecha</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.blDate" 
+                     name="editBlDate">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Buque</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.vesselName" 
+                     name="editVesselName">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de Viaje</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.voyageNumber" 
+                     name="editVoyageNumber">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Naviera</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.shippingLine" 
+                     name="editShippingLine">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Agente</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.agentName" 
+                     name="editAgentName">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Puerto de Carga</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.portOfLoading" 
+                     name="editPortOfLoading">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Puerto de Descarga</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.portOfDischarge" 
+                     name="editPortOfDischarge">
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">ETD</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.etd" 
+                     name="editEtd">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">ETA</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="editBlData.eta" 
+                     name="editEta">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" 
+                    [(ngModel)]="editBlData.remarks" 
+                    name="editRemarks" 
+                    rows="2"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-warning" 
+              (click)="updateBl()" 
+              [disabled]="isSubmitting">
+        <i class="fas fa-save"></i> 
+        {{ isSubmitting ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Crear Contenedor -->
+<div class="modal-overlay" *ngIf="showCreateContainerModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header success">
+      <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Nuevo Contenedor</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form #containerForm="ngForm">
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Número de Contenedor *</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.containerNumber" 
+                     name="contNumber"
+                     required
+                     #containerNumber="ngModel"
+                     [class.is-invalid]="containerNumber.invalid && containerNumber.touched"
+                     placeholder="TGBU9851080">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Número de Sello *</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.sealNumber" 
+                     name="sealNumber"
+                     required
+                     #sealNumber="ngModel"
+                     [class.is-invalid]="sealNumber.invalid && sealNumber.touched"
+                     placeholder="FX36533834">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Fecha de Empaque</label>
+              <input type="date" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.packingDate" 
+                     name="packingDate">
+            </div>
+          </div>
+        </div>
+
+        <!-- Chassis Numbers -->
+        <div class="form-group">
+          <label class="form-label">Números de Chasis</label>
+          <div class="input-group mb-2">
+            <input type="text" 
+                   class="form-control" 
+                   [(ngModel)]="newChassisNumber" 
+                   name="chassisInput" 
+                   placeholder="TC662135"
+                   (keyup.enter)="addChassisNumber()">
+            <button class="btn btn-outline-secondary" 
+                    type="button" 
+                    (click)="addChassisNumber()">
+              <i class="fas fa-plus"></i> Agregar
+            </button>
+          </div>
+          <div class="tag-container">
+            <span class="tag tag-dark" *ngFor="let ch of newContainer.chassisNumbers; let i = index">
+              {{ ch }} 
+              <i class="fas fa-times tag-remove" (click)="removeChassisNumber(i)"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Cab Numbers -->
+        <div class="form-group">
+          <label class="form-label">Números de Cabinas</label>
+          <div class="input-group mb-2">
+            <input type="text" 
+                   class="form-control" 
+                   [(ngModel)]="newCabNumber" 
+                   name="cabInput" 
+                   placeholder="TC662134"
+                   (keyup.enter)="addCabNumber()">
+            <button class="btn btn-outline-secondary" 
+                    type="button" 
+                    (click)="addCabNumber()">
+              <i class="fas fa-plus"></i> Agregar
+            </button>
+          </div>
+          <div class="tag-container">
+            <span class="tag tag-info" *ngFor="let cab of newContainer.cabNumbers; let i = index">
+              {{ cab }} 
+              <i class="fas fa-times tag-remove" (click)="removeCabNumber(i)"></i>
+            </span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción del Contenido</label>
+          <textarea class="form-control" 
+                    [(ngModel)]="newContainer.contentDescription" 
+                    name="contentDesc" 
+                    rows="2"></textarea>
+        </div>
+
+        <div class="row">
+          <div class="col-md-3">
+            <div class="form-group">
+              <label class="form-label">Unidades de Empaque</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.qtyPackagingUnits" 
+                     name="qtyUnits"
+                     min="0">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label class="form-label">Peso Neto (kg)</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.netWeightKg" 
+                     name="netWeight" 
+                     step="0.01"
+                     min="0">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label class="form-label">Peso Bruto (kg) *</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.grossWeightKg" 
+                     name="grossWeight" 
+                     step="0.01"
+                     required
+                     #grossWeight="ngModel"
+                     [class.is-invalid]="grossWeight.invalid && grossWeight.touched"
+                     min="0.01">
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label class="form-label">Volumen (m³) *</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="newContainer.volumeM3" 
+                     name="volume" 
+                     step="0.001"
+                     required
+                     #volume="ngModel"
+                     [class.is-invalid]="volume.invalid && volume.touched"
+                     min="0.001">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Observaciones</label>
+          <textarea class="form-control" 
+                    [(ngModel)]="newContainer.remarks" 
+                    name="remarks" 
+                    rows="2"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-success" 
+              (click)="createContainer()" 
+              [disabled]="containerForm.invalid || isSubmitting">
+        <i class="fas fa-save"></i> 
+        {{ isSubmitting ? 'Guardando...' : 'Guardar Contenedor' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Editar Contenedor -->
+<div class="modal-overlay" *ngIf="showEditContainerModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header warning">
+      <h5 class="modal-title"><i class="fas fa-edit"></i> Editar Contenedor</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <form *ngIf="editContainerData">
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de Contenedor</label>
+              <input type="text" 
+                     class="form-control" 
+                     [value]="selectedContainer?.containerNumber" 
+                     disabled>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label class="form-label">Número de Sello</label>
+              <input type="text" 
+                     class="form-control" 
+                     [(ngModel)]="editContainerData.sealNumber" 
+                     name="editSealNumber">
+            </div>
+          </div>
+        </div>
+
+        <!-- Chassis Edit -->
+        <div class="form-group">
+          <label class="form-label">Números de Chasis</label>
+          <div class="input-group mb-2">
+            <input type="text" 
+                   class="form-control" 
+                   [(ngModel)]="newChassisNumber" 
+                   name="editChassisInput"
+                   (keyup.enter)="addChassisToEdit()">
+            <button class="btn btn-outline-secondary" (click)="addChassisToEdit()">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div class="tag-container">
+            <span class="tag tag-dark" *ngFor="let ch of editContainerData.chassisNumbers; let i = index">
+              {{ ch }} 
+              <i class="fas fa-times tag-remove" (click)="removeChassisFromEdit(i)"></i>
+            </span>
+          </div>
+        </div>
+
+        <!-- Cab Edit -->
+        <div class="form-group">
+          <label class="form-label">Números de Cabinas</label>
+          <div class="input-group mb-2">
+            <input type="text" 
+                   class="form-control" 
+                   [(ngModel)]="newCabNumber" 
+                   name="editCabInput"
+                   (keyup.enter)="addCabToEdit()">
+            <button class="btn btn-outline-secondary" (click)="addCabToEdit()">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div class="tag-container">
+            <span class="tag tag-info" *ngFor="let cab of editContainerData.cabNumbers; let i = index">
+              {{ cab }} 
+              <i class="fas fa-times tag-remove" (click)="removeCabFromEdit(i)"></i>
+            </span>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Peso Neto (kg)</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="editContainerData.netWeightKg" 
+                     name="editNetWeight" 
+                     step="0.01">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Peso Bruto (kg)</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="editContainerData.grossWeightKg" 
+                     name="editGrossWeight" 
+                     step="0.01">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="form-group">
+              <label class="form-label">Volumen (m³)</label>
+              <input type="number" 
+                     class="form-control" 
+                     [(ngModel)]="editContainerData.volumeM3" 
+                     name="editVolume" 
+                     step="0.001">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select class="form-select" [(ngModel)]="editContainerData.containerStatus" name="editStatus">
+            <option value="empty">Vacío</option>
+            <option value="stuffed">Estufado</option>
+            <option value="in_transit">En Tránsito</option>
+            <option value="arrived">Arribado</option>
+            <option value="delivered">Entregado</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-warning" 
+              (click)="updateContainer()" 
+              [disabled]="isSubmitting">
+        <i class="fas fa-save"></i> 
+        {{ isSubmitting ? 'Actualizando...' : 'Actualizar' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle de Contenedor -->
+<div class="modal-overlay" *ngIf="showContainerDetailModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-xl">
+    <div class="modal-header info">
+      <h5 class="modal-title">
+        <i class="fas fa-box"></i> Detalle del Contenedor
+        <code class="code ms-2" *ngIf="selectedContainer">{{ selectedContainer.containerNumber }}</code>
+      </h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" *ngIf="selectedContainer">
+
+      <!-- Fila 1: Info general -->
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <table class="table table-borderless table-sm mb-0">
+            <tr>
+              <td class="fw-bold text-muted" style="width:45%">Número:</td>
+              <td><code class="code">{{ selectedContainer.containerNumber }}</code></td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Sello:</td>
+              <td>{{ selectedContainer.sealNumber || '—' }}</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Estado:</td>
+              <td>
+                <span class="badge"
+                      [class.primary]="selectedContainer.containerStatus === 'stuffed'"
+                      [class.info]="selectedContainer.containerStatus === 'in_transit'"
+                      [class.success]="selectedContainer.containerStatus === 'arrived'"
+                      [class.secondary]="selectedContainer.containerStatus === 'empty'">
+                  {{ selectedContainer.containerStatus || '—' }}
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Tamaño:</td>
+              <td>{{ selectedContainer['containerSize'] || '—' }}</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Categoría:</td>
+              <td>{{ selectedContainer['itemCategory'] || '—' }}</td>
+            </tr>
+          </table>
+        </div>
+        <div class="col-md-4">
+          <table class="table table-borderless table-sm mb-0">
+            <tr>
+              <td class="fw-bold text-muted" style="width:50%">Peso Neto:</td>
+              <td>{{ selectedContainer.netWeightKg | number:'1.2-2' }} kg</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Peso Bruto:</td>
+              <td class="fw-bold">{{ selectedContainer.grossWeightKg | number:'1.2-2' }} kg</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Volumen:</td>
+              <td>{{ selectedContainer.volumeM3 | number:'1.3-3' }} m³</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Unidades:</td>
+              <td>{{ selectedContainer.qtyPackagingUnits || '—' }}</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Fecha empaque:</td>
+              <td>{{ selectedContainer.packingDate ? (selectedContainer.packingDate | date:'dd/MM/yyyy') : '—' }}</td>
+            </tr>
+          </table>
+        </div>
+        <div class="col-md-4">
+          <table class="table table-borderless table-sm mb-0">
+            <tr>
+              <td class="fw-bold text-muted" style="width:45%">Invoice:</td>
+              <td>
+                <span class="badge secondary">{{ selectedContainer['invoiceNumber'] || '—' }}</span>
+              </td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Serie #:</td>
+              <td>{{ selectedContainer['serialNumber'] || '—' }}</td>
+            </tr>
+            <tr>
+              <td class="fw-bold text-muted">Tipo embalaje:</td>
+              <td>{{ selectedContainer['packagingUnitType'] || '—' }}</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Chasis, Cabinas, Motores -->
+      <div class="row mb-2">
+        <div class="col-md-4">
+          <h6 class="mb-2"><i class="fas fa-cog text-secondary"></i> Chasis</h6>
+          <div class="tag-container">
+            <span class="tag tag-dark" *ngFor="let ch of selectedContainer.chassisNumbers">{{ ch }}</span>
+            <span *ngIf="!selectedContainer.chassisNumbers?.length" class="text-muted small">Sin chasis registrados</span>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="mb-2"><i class="fas fa-truck text-info"></i> Cabinas</h6>
+          <div class="tag-container">
+            <span class="tag tag-info" *ngFor="let cab of selectedContainer.cabNumbers">{{ cab }}</span>
+            <span *ngIf="!selectedContainer.cabNumbers?.length" class="text-muted small">Sin cabinas registradas</span>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <h6 class="mb-2"><i class="fas fa-engine text-success"></i> Motores</h6>
+          <div class="tag-container">
+            <span class="tag tag-success" *ngFor="let eng of selectedContainer['engineNumbers']">{{ eng }}</span>
+            <span *ngIf="!selectedContainer['engineNumbers']?.length" class="text-muted small">Sin motores registrados</span>
+          </div>
+        </div>
+      </div>
+
+      <hr>
+
+      <!-- Descripción y observaciones -->
+      <div class="row">
+        <div class="col-md-8">
+          <h6 class="mb-2"><i class="fas fa-align-left text-muted"></i> Descripción del contenido</h6>
+          <p class="border p-3 bg-light rounded mb-0">
+            {{ selectedContainer.contentDescription || 'Sin descripción' }}
+          </p>
+        </div>
+        <div class="col-md-4" *ngIf="selectedContainer.remarks">
+          <h6 class="mb-2"><i class="fas fa-sticky-note text-warning"></i> Observaciones</h6>
+          <p class="border p-3 bg-light rounded mb-0 text-muted">{{ selectedContainer.remarks }}</p>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-warning btn-sm" (click)="openEditContainerModal(selectedContainer, selectedInvoice); closeModal()">
+        <i class="fas fa-edit"></i> Editar
+      </button>
+      <button class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Cargar Excel -->
+<div class="modal-overlay" *ngIf="showUploadModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-xl">
+    <div class="modal-header success">
+      <h5 class="modal-title"><i class="fas fa-file-excel"></i> Cargar Contenedores desde Excel</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert alert-info">
+        <h6><i class="fas fa-info-circle"></i> Formato requerido:</h6>
+        <ul class="mb-0">
+          <li><strong>containerNumber</strong>: Número del contenedor (obligatorio)</li>
+          <li><strong>sealNumber</strong>: Número de sello (obligatorio)</li>
+          <li><strong>invoiceId</strong>: ID de la invoice (obligatorio)</li>
+          <li><strong>grossWeightKg</strong>: Peso bruto en kg</li>
+          <li><strong>volumeM3</strong>: Volumen en m³</li>
+          <li><strong>chassisNumbers</strong>: Lista separada por comas</li>
+        </ul>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Seleccione archivo Excel</label>
+        <input type="file" 
+               class="form-control" 
+               accept=".xlsx,.xls" 
+               (change)="onFileSelected($event)">
+      </div>
+
+      <div *ngIf="uploadErrors.length > 0" class="alert alert-danger">
+        <ul class="mb-0">
+          <li *ngFor="let err of uploadErrors">{{ err }}</li>
+        </ul>
+      </div>
+
+      <div *ngIf="excelPreview.length > 0">
+        <h6>Vista previa:</h6>
+        <div class="table-responsive">
+          <table class="table table-sm table-bordered">
+            <thead>
+              <tr>
+                <th *ngFor="let key of getObjectKeys(excelPreview[0])">{{ key }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of excelPreview">
+                <td *ngFor="let key of getObjectKeys(row)">{{ row[key] }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-success" 
+              [disabled]="!excelFile || uploadErrors.length > 0 || isSubmitting" 
+              (click)="uploadContainersExcel()">
+        <i class="fas fa-upload"></i> 
+        {{ isSubmitting ? 'Cargando...' : 'Cargar Contenedores' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Detalle de Invoice -->
+<div class="modal-overlay" *ngIf="showInvoiceDetailModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-lg">
+    <div class="modal-header secondary">
+      <h5 class="modal-title"><i class="fas fa-file-invoice"></i> Invoice: {{ selectedInvoice?.invoiceNumber }}</h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" *ngIf="selectedInvoice">
+      <div class="row text-center mb-4">
+        <div class="col-md-4 mb-2">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h4>{{ selectedInvoice.containerCount }}</h4>
+              <small>Contenedores</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-2">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h4>{{ selectedInvoice.totalGrossWeight | number:'1.2-2' }}</h4>
+              <small>KG Peso Bruto</small>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-4 mb-2">
+          <div class="card bg-light">
+            <div class="card-body">
+              <h4>{{ selectedInvoice.totalGrossWeight > 0 ? (selectedInvoice.totalGrossWeight / selectedInvoice.containerCount) : 0 | number:'1.2-2' }}</h4>
+              <small>KG Promedio</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h6 class="mb-3">Ítems de la Invoice:</h6>
+      <div class="list-group">
+        <div class="list-group-item d-flex justify-content-between align-items-start" 
+             *ngFor="let det of selectedInvoice.details">
+          <div>
+            <span class="badge secondary me-2">#{{ det.lineNumber }}</span>
+            <strong>{{ det.itemDescription }}</strong>
+            <small class="text-muted d-block mt-1">
+              <span *ngIf="det.itemCode">Código: {{ det.itemCode }} &nbsp;|&nbsp;</span>
+              Cant: {{ det.quantity }} {{ det.unitOfMeasure }}
+              <span *ngIf="det.hsCode">&nbsp;|&nbsp; HS: {{ det.hsCode }}</span>
+              <span *ngIf="det.originCountry">&nbsp;|&nbsp; Origen: {{ det.originCountry }}</span>
+            </small>
+          </div>
+          <span class="badge primary rounded-pill ms-2">
+            {{ det.totalPrice | number:'1.2-2' }}
+          </span>
+        </div>
+        <div class="list-group-item text-muted text-center" 
+             *ngIf="!selectedInvoice.details || selectedInvoice.details.length === 0">
+          <i class="fas fa-inbox"></i> Sin ítems registrados
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Contenedores del B/L -->
+<div class="modal-overlay" *ngIf="showBlContainersModal" (click)="closeModalOnOverlay($event)">
+  <div class="modal-content modal-xl">
+    <div class="modal-header primary">
+      <h5 class="modal-title">
+        <i class="fas fa-boxes"></i> Contenedores del B/L
+        <span class="badge primary ms-2" *ngIf="blContainersData">
+          {{ blContainersData.totalContainers }} total
+        </span>
+      </h5>
+      <button type="button" class="btn-close" (click)="closeModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <!-- Loading -->
+      <div *ngIf="loadingContainers" class="text-center py-4">
+        <div class="spinner"></div>
+        <p class="mt-2">Cargando contenedores...</p>
+      </div>
+
+      <ng-container *ngIf="!loadingContainers && blContainersData">
+        <!-- Buscador -->
+        <div class="mb-3">
+          <input type="text"
+                 class="form-control"
+                 placeholder="Buscar por contenedor, sello, invoice, chasis o cabina..."
+                 [(ngModel)]="containerSearchTerm">
+        </div>
+
+        <!-- Tabla -->
+        <div class="table-responsive">
+          <table class="table table-sm table-hover mb-0">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Contenedor</th>
+                <th>Sello</th>
+                <th>Invoice</th>
+                <th>Chasis</th>
+                <th>Cabinas</th>
+                <th>Motores</th>
+                <th class="text-end">Peso Bruto</th>
+                <th class="text-end">Volumen</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let c of filteredBlContainers; let i = index">
+                <td>{{ i + 1 }}</td>
+                <td><code class="code">{{ c.containerNumber }}</code></td>
+                <td>{{ c.sealNumber }}</td>
+                <td>
+                  <span class="badge secondary">{{ c.invoiceNumber || '—' }}</span>
+                </td>
+                <td>
+                  <div class="tag-container" *ngIf="c.chassisNumbers?.length; else noChassis">
+                    <span class="tag tag-dark" *ngFor="let ch of c.chassisNumbers">{{ ch }}</span>
+                  </div>
+                  <ng-template #noChassis><span class="text-muted">—</span></ng-template>
+                </td>
+                <td>
+                  <div class="tag-container" *ngIf="c.cabNumbers?.length; else noCab">
+                    <span class="tag tag-info" *ngFor="let cab of c.cabNumbers">{{ cab }}</span>
+                  </div>
+                  <ng-template #noCab><span class="text-muted">—</span></ng-template>
+                </td>
+                <td>
+                  <div class="tag-container" *ngIf="c.engineNumbers?.length; else noEngine">
+                    <span class="tag tag-success" *ngFor="let eng of c.engineNumbers">{{ eng }}</span>
+                  </div>
+                  <ng-template #noEngine><span class="text-muted">—</span></ng-template>
+                </td>
+                <td class="text-end fw-bold">{{ c.grossWeightKg | number:'1.2-2' }}</td>
+                <td class="text-end">{{ c.volumeM3 | number:'1.3-3' }}</td>
+                <td>
+                  <span class="badge" 
+                        [class.primary]="c.containerStatus === 'stuffed'"
+                        [class.info]="c.containerStatus === 'in_transit'"
+                        [class.success]="c.containerStatus === 'arrived'"
+                        [class.secondary]="c.containerStatus === 'empty'">
+                    {{ c.containerStatus || '—' }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="filteredBlContainers.length === 0">
+                <td colspan="10" class="text-center text-muted py-3">
+                  <i class="fas fa-inbox"></i> No se encontraron contenedores
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </ng-container>
+    </div>
+
+    <div class="modal-footer">
+      <small class="text-muted me-auto" *ngIf="blContainersData">
+        Mostrando {{ filteredBlContainers.length }} de {{ blContainersData.totalContainers }} contenedores
+      </small>
+      <button class="btn btn-secondary" (click)="closeModal()">Cerrar</button>
+    </div>
+  </div>
+</div>

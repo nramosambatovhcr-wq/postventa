@@ -1,0 +1,428 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     ECOMMERCE — Catálogo de Repuestos (con Live Update + Galería)
+════════════════════════════════════════════════════════════════ -->
+<div class="ec-root">
+
+  <!-- ── TOPBAR ── -->
+  <header class="ec-topbar">
+    <div class="ec-topbar__brand">
+      <span class="ec-topbar__logo">⚙</span>
+      <span class="ec-topbar__name">Repuestos <strong>VHCR</strong></span>
+    </div>
+
+    <div class="ec-search-wrap">
+      <svg class="ec-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input [formControl]="searchCtrl" class="ec-search" placeholder="Buscar por código o descripción…" autocomplete="off"/>
+      <button *ngIf="searchCtrl.value" class="ec-search-clear" (click)="searchCtrl.setValue('')">✕</button>
+    </div>
+
+    <button class="ec-cart-btn" (click)="carritoAbierto = !carritoAbierto">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="22" height="22">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      <span class="ec-cart-badge" *ngIf="cantidadCarrito > 0">{{ cantidadCarrito }}</span>
+    </button>
+  </header>
+
+  <!-- ── BARRA DE ESTADO LIVE UPDATE ── -->
+  <div class="ec-live-bar">
+    <div class="ec-live-bar__left">
+      <span class="ec-pulse" [class.ec-pulse--active]="autoRefreshActivo"></span>
+      <span class="ec-live-bar__label">{{ autoRefreshActivo ? 'Actualizando en vivo' : 'Pausado' }}</span>
+      <span class="ec-live-bar__time" *ngIf="ultimaActualizacion">
+        · Última actualización {{ tiempoDesdeActualizacion }}
+      </span>
+    </div>
+    <div class="ec-countdown-wrap" *ngIf="autoRefreshActivo">
+      <div class="ec-countdown-bar">
+        <div class="ec-countdown-fill" [style.width.%]="countdownPct"></div>
+      </div>
+      <span class="ec-countdown-secs">{{ (countdownPct / 100 * 30) | number:'1.0-0' }}s</span>
+    </div>
+    <div class="ec-live-bar__actions">
+      <button class="ec-live-btn" [class.ec-live-btn--pause]="autoRefreshActivo"
+        (click)="toggleAutoRefresh()"
+        [title]="autoRefreshActivo ? 'Pausar' : 'Reanudar'">
+        <svg *ngIf="autoRefreshActivo" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>
+        <svg *ngIf="!autoRefreshActivo" viewBox="0 0 24 24" fill="currentColor" width="13" height="13">
+          <polygon points="5,3 19,12 5,21"/>
+        </svg>
+        {{ autoRefreshActivo ? 'Pausar' : 'Reanudar' }}
+      </button>
+      <button class="ec-live-btn" (click)="refrescarAhora()" [disabled]="cargando">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"
+          [class.ec-spin]="cargando">
+          <polyline points="23 4 23 10 17 10"/>
+          <path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/>
+        </svg>
+        Refrescar
+      </button>
+    </div>
+  </div>
+
+  <!-- ── BANNER DE CAMBIOS ── -->
+  <div class="ec-changes-banner" *ngIf="mostrarBannerCambios">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+      <polyline points="17 6 23 6 23 12"/>
+    </svg>
+    {{ cambiosUltimoCiclo }} campo{{ cambiosUltimoCiclo !== 1 ? 's' : '' }} actualizado{{ cambiosUltimoCiclo !== 1 ? 's' : '' }}
+  </div>
+
+  <!-- ── LAYOUT PRINCIPAL ── -->
+  <div class="ec-layout">
+
+    <!-- SIDEBAR -->
+    <aside class="ec-sidebar">
+      <div class="ec-sidebar__title">Filtros</div>
+      <div class="ec-filter-group">
+        <label class="ec-toggle-label">
+          <span>Solo con stock</span>
+          <button class="ec-toggle" [class.ec-toggle--on]="soloStock" (click)="toggleSoloStock()">
+            <span class="ec-toggle__knob"></span>
+          </button>
+        </label>
+      </div>
+      <div class="ec-filter-group">
+        <label class="ec-filter-label">Clase</label>
+        <select [formControl]="claseCtrl" class="ec-select">
+          <option value="">Todas las clases</option>
+          <option *ngFor="let c of clases" [value]="c">{{ c }}</option>
+        </select>
+      </div>
+      <div class="ec-filter-group">
+        <label class="ec-filter-label">Grupo</label>
+        <select [formControl]="grupoCtrl" class="ec-select">
+          <option value="">Todos los grupos</option>
+          <option *ngFor="let g of grupos" [value]="g">{{ g }}</option>
+        </select>
+      </div>
+      <button class="ec-btn-ghost" (click)="limpiarFiltros()">Limpiar filtros</button>
+      <div class="ec-sidebar__summary" *ngIf="!cargando">
+        <div class="ec-summary-num">{{ itemsFiltrados.length }}</div>
+        <div class="ec-summary-lbl">artículos encontrados</div>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="ec-main">
+      <div class="ec-loading" *ngIf="cargando">
+        <div class="ec-spinner"></div>
+        <p>Cargando catálogo…</p>
+      </div>
+      <div class="ec-error" *ngIf="error && !cargando">
+        <span>⚠ {{ error }}</span>
+        <button class="ec-btn-primary" (click)="cargarInicial()">Reintentar</button>
+      </div>
+
+      <!-- GRID -->
+      <div class="ec-grid" *ngIf="!cargando && !error">
+        <article class="ec-card" *ngFor="let item of itemsPagina"
+          [class.ec-card--changed]="camposCambiados.has(item.codigoArticulo)"
+          (click)="abrirDetalle(item)"
+          (mouseenter)="onCardHoverEnter(item.codigoArticulo)"
+          (mouseleave)="onCardHoverLeave(item.codigoArticulo)">
+
+          <!-- ── Área de imagen: slide on hover ── -->
+          <div class="ec-card__img"
+            [style.background]="getCardImagenUrl(item.codigoArticulo) ? 'transparent' : getColorGradient(item.codigoArticulo)">
+
+            <!-- Spinner mientras carga la primera vez -->
+            <div class="ec-card__img-loading" *ngIf="isCardCargando(item.codigoArticulo)">
+              <div class="ec-spinner ec-spinner--sm"></div>
+            </div>
+
+            <!-- Imagen real cuando ya está disponible -->
+            <img
+              *ngIf="getCardImagenUrl(item.codigoArticulo)"
+              [src]="getCardImagenUrl(item.codigoArticulo)"
+              [alt]="item.descripcion"
+              class="ec-card__slide-img"
+              (error)="$any($event.target).style.display='none'"
+            />
+
+            <!-- Iniciales de fallback (solo si no hay foto) -->
+            <span class="ec-card__initials"
+              *ngIf="!getCardImagenUrl(item.codigoArticulo) && !isCardCargando(item.codigoArticulo)">
+              {{ getIniciales(item.codigoArticulo) }}
+            </span>
+
+            <!-- Badge stock -->
+            <span class="ec-card__stock-badge" [ngClass]="stockClass(item.stockDisponible)">
+              {{ stockLabel(item.stockDisponible) }}
+            </span>
+
+            <!-- Indicador de múltiples fotos (puntos) -->
+            <div class="ec-card__slide-dots" *ngIf="getCardImageCount(item.codigoArticulo) > 1">
+              <span
+                *ngFor="let img of imagenCache.get(item.codigoArticulo); let i = index"
+                class="ec-card__slide-dot"
+                [class.ec-card__slide-dot--active]="i === getCardSlideIdx(item.codigoArticulo)">
+              </span>
+            </div>
+
+            <!-- Contador de fotos (solo si hay más de 1) -->
+            <span class="ec-card__img-counter" *ngIf="getCardImageCount(item.codigoArticulo) > 1">
+              📷 {{ getCardImageCount(item.codigoArticulo) }}
+            </span>
+
+            <!-- Live dot -->
+            <span class="ec-card__live-dot" *ngIf="camposCambiados.has(item.codigoArticulo)"></span>
+          </div>
+          <div class="ec-card__body">
+            <div class="ec-card__code">{{ item.codigoArticulo }}</div>
+            <h3 class="ec-card__name" [title]="item.descripcion">{{ item.descripcion }}</h3>
+            <div class="ec-card__meta">
+              <span class="ec-tag">{{ item.clase }}</span>
+              <span class="ec-tag ec-tag--light">{{ item.grupo }}</span>
+            </div>
+            <div class="ec-card__stock-row">
+              <div class="ec-stock-item" [class.ec-field--changed]="campoCambio(item.codigoArticulo, 'stockDisponible')">
+                <span class="ec-stock-val">{{ item.stockDisponible | number:'1.0-0' }}</span>
+                <span class="ec-stock-lbl">Disponible</span>
+              </div>
+              <div class="ec-stock-divider"></div>
+              <div class="ec-stock-item" [class.ec-field--changed]="campoCambio(item.codigoArticulo, 'stockReservado')">
+                <span class="ec-stock-val ec-stock-val--reserved">{{ item.stockReservado | number:'1.0-0' }}</span>
+                <span class="ec-stock-lbl">Reservado</span>
+              </div>
+              <div class="ec-stock-divider"></div>
+              <div class="ec-stock-item" [class.ec-field--changed]="campoCambio(item.codigoArticulo, 'stockTotal')">
+                <span class="ec-stock-val ec-stock-val--total">{{ item.stockTotal | number:'1.0-0' }}</span>
+                <span class="ec-stock-lbl">Total</span>
+              </div>
+            </div>
+            <div class="ec-card__agencies" *ngIf="item.agenciasConDisponible"
+              [class.ec-field--changed]="campoCambio(item.codigoArticulo, 'agenciasConDisponible')">
+              <span class="ec-agency-pill" *ngFor="let ag of getAgencias(item.agenciasConDisponible).slice(0,3)">
+                {{ ag.nombre }}: <strong>{{ ag.cantidad }}</strong>
+              </span>
+              <span class="ec-agency-more" *ngIf="getAgencias(item.agenciasConDisponible).length > 3">
+                +{{ getAgencias(item.agenciasConDisponible).length - 3 }} más
+              </span>
+            </div>
+            <div class="ec-card__pricing">
+              <div class="ec-price-block" [class.ec-field--changed]="campoCambio(item.codigoArticulo, 'precioSinIva')">
+                <span class="ec-price-label">Sin IVA</span>
+                <span class="ec-price-value">{{ item.precioSinIva | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="ec-price-main" [class.ec-field--changed]="campoCambio(item.codigoArticulo, 'precioConIva')">
+                <span class="ec-price-label">Con IVA</span>
+                <span class="ec-price-final">{{ item.precioConIva | currency:'USD':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+            <button class="ec-card__add-btn"
+              (click)="$event.stopPropagation(); agregarAlCarrito(item)"
+              [disabled]="item.stockDisponible <= 0">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Agregar al carrito
+            </button>
+          </div>
+        </article>
+
+        <div class="ec-empty" *ngIf="itemsFiltrados.length === 0">
+          <span class="ec-empty-icon">🔍</span>
+          <p>No se encontraron artículos con los filtros actuales.</p>
+          <button class="ec-btn-ghost" (click)="limpiarFiltros()">Limpiar filtros</button>
+        </div>
+      </div>
+
+      <!-- Paginación -->
+      <nav class="ec-pagination" *ngIf="totalPaginas > 1 && !cargando">
+        <button class="ec-page-btn" (click)="irPagina(paginaActual - 1)" [disabled]="paginaActual === 1">‹</button>
+        <button class="ec-page-btn" *ngIf="paginas[0] > 1" (click)="irPagina(1)">1</button>
+        <span class="ec-page-ellipsis" *ngIf="paginas[0] > 2">…</span>
+        <button class="ec-page-btn" *ngFor="let p of paginas"
+          [class.ec-page-btn--active]="p === paginaActual" (click)="irPagina(p)">{{ p }}</button>
+        <span class="ec-page-ellipsis" *ngIf="paginas[paginas.length-1] < totalPaginas - 1">…</span>
+        <button class="ec-page-btn" *ngIf="paginas[paginas.length-1] < totalPaginas" (click)="irPagina(totalPaginas)">{{ totalPaginas }}</button>
+        <button class="ec-page-btn" (click)="irPagina(paginaActual + 1)" [disabled]="paginaActual === totalPaginas">›</button>
+      </nav>
+    </main>
+  </div>
+</div>
+
+<!-- ═══════════════════ DRAWER CARRITO ═══════════════════ -->
+<div class="ec-overlay" *ngIf="carritoAbierto" (click)="carritoAbierto = false"></div>
+<aside class="ec-drawer" [class.ec-drawer--open]="carritoAbierto">
+  <div class="ec-drawer__header">
+    <span>Carrito ({{ cantidadCarrito }})</span>
+    <button class="ec-icon-btn" (click)="carritoAbierto = false">✕</button>
+  </div>
+  <div class="ec-drawer__empty" *ngIf="carrito.length === 0">
+    <span>🛒</span><p>Tu carrito está vacío</p>
+  </div>
+  <div class="ec-drawer__items" *ngIf="carrito.length > 0">
+    <div class="ec-cart-item" *ngFor="let c of carrito">
+      <div class="ec-cart-item__img">
+  <img *ngIf="getCardImagenUrl(c.articulo.codigoArticulo)"
+       [src]="getCardImagenUrl(c.articulo.codigoArticulo)"
+       (error)="$any($event.target).style.display='none'" />
+  <span *ngIf="!getCardImagenUrl(c.articulo.codigoArticulo)"
+        [style.background]="getColorGradient(c.articulo.codigoArticulo)">
+    {{ getIniciales(c.articulo.codigoArticulo) }}
+  </span>
+</div>
+      <div class="ec-cart-item__info">
+        <div class="ec-cart-item__code">{{ c.articulo.codigoArticulo }}</div>
+        <div class="ec-cart-item__name">{{ c.articulo.descripcion }}</div>
+        <div class="ec-cart-item__price">{{ c.articulo.precioConIva | currency:'USD':'symbol':'1.2-2' }}</div>
+      </div>
+      <div class="ec-cart-item__qty">
+        <button (click)="cambiarCantidad(c, -1)">−</button>
+        <span>{{ c.cantidad }}</span>
+        <button (click)="cambiarCantidad(c, +1)">+</button>
+      </div>
+      <button class="ec-cart-item__remove" (click)="removerDelCarrito(c.articulo.codigoArticulo)">✕</button>
+    </div>
+  </div>
+  <div class="ec-drawer__footer" *ngIf="carrito.length > 0">
+    <div class="ec-drawer__total">
+      <span>Total</span>
+      <strong>{{ totalCarrito | currency:'USD':'symbol':'1.2-2' }}</strong>
+    </div>
+    <button class="ec-btn-primary ec-btn-primary--full">Proceder al pago</button>
+    <button class="ec-btn-ghost ec-btn-ghost--sm" (click)="limpiarCarrito()">Vaciar carrito</button>
+  </div>
+</aside>
+
+<!-- ═══════════════════ MODAL DETALLE ═══════════════════ -->
+<div class="ec-modal-overlay" *ngIf="itemDetalle" (click)="cerrarDetalle()"></div>
+<div class="ec-modal" *ngIf="itemDetalle" (click)="$event.stopPropagation()">
+  <button class="ec-modal__close" (click)="cerrarDetalle()">✕</button>
+
+  <!-- ════════════ SECCIÓN DE IMÁGENES ════════════ -->
+  <div class="ec-modal__gallery">
+
+    <!-- Estado: cargando imágenes -->
+    <div class="ec-gallery__loading" *ngIf="cargandoImagenes">
+      <div class="ec-spinner ec-spinner--sm"></div>
+      <span>Cargando imágenes…</span>
+    </div>
+
+    <!-- Estado: sin imágenes → muestra el placeholder de color como antes -->
+    <div class="ec-modal__img" *ngIf="!cargandoImagenes && imagenesDetalle.length === 0"
+      [style.background]="getColorGradient(itemDetalle.codigoArticulo)">
+      <span>{{ getIniciales(itemDetalle.codigoArticulo) }}</span>
+      <span class="ec-gallery__no-photo">Sin fotos</span>
+    </div>
+
+    <!-- Estado: hay imágenes → carrusel -->
+    <div class="ec-gallery__viewer" *ngIf="!cargandoImagenes && imagenesDetalle.length > 0">
+
+      <!-- Imagen principal -->
+      <div class="ec-gallery__main">
+        <!-- Imagen cargada correctamente -->
+        <img
+          *ngIf="imagenActiva && !imagenError"
+          [src]="imagenActiva.url"
+          [alt]="itemDetalle.descripcion"
+          class="ec-gallery__img"
+          (error)="onImagenError()"
+        />
+
+        <!-- Fallback si la imagen da error -->
+        <div class="ec-gallery__img-error"
+          *ngIf="imagenError"
+          [style.background]="getColorGradient(itemDetalle.codigoArticulo)">
+          <span>{{ getIniciales(itemDetalle.codigoArticulo) }}</span>
+          <small>No se pudo cargar</small>
+        </div>
+
+        <!-- Flechas de navegación (solo si hay más de 1 imagen) -->
+        <button class="ec-gallery__arrow ec-gallery__arrow--prev"
+          *ngIf="imagenesDetalle.length > 1"
+          (click)="imagenAnterior()">
+          ‹
+        </button>
+        <button class="ec-gallery__arrow ec-gallery__arrow--next"
+          *ngIf="imagenesDetalle.length > 1"
+          (click)="imagenSiguiente()">
+          ›
+        </button>
+
+        <!-- Contador y fuente -->
+        <div class="ec-gallery__counter" *ngIf="imagenesDetalle.length > 1">
+          {{ imagenActivaIdx + 1 }} / {{ imagenesDetalle.length }}
+          <span class="ec-gallery__source" [class.ec-gallery__source--lab]="imagenActiva?.fuente === 'laboratorio'">
+            {{ imagenActiva?.fuente === 'laboratorio' ? '🔬 Lab' : '📦 Bodega' }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Miniaturas (solo si hay más de 1 imagen) -->
+      <div class="ec-gallery__thumbs" *ngIf="imagenesDetalle.length > 1">
+        <button
+          class="ec-gallery__thumb"
+          *ngFor="let img of imagenesDetalle; let i = index"
+          [class.ec-gallery__thumb--active]="i === imagenActivaIdx"
+          (click)="irAImagen(i)"
+          [title]="img.fuente + ': ' + img.nombre"
+        >
+          <img [src]="img.url" [alt]="'Imagen ' + (i + 1)"
+            (error)="$any($event.target).style.display='none'" />
+          <span class="ec-gallery__thumb-badge"
+            [class.ec-gallery__thumb-badge--lab]="img.fuente === 'laboratorio'">
+            {{ img.fuente === 'laboratorio' ? '🔬' : '📦' }}
+          </span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+  <!-- ══════════════════════════════════════════════ -->
+
+  <div class="ec-modal__body">
+    <div class="ec-modal__code">{{ itemDetalle.codigoArticulo }}</div>
+    <h2 class="ec-modal__name">{{ itemDetalle.descripcion }}</h2>
+    <div class="ec-modal__tags">
+      <span class="ec-tag">{{ itemDetalle.clase }}</span>
+      <span class="ec-tag ec-tag--light">{{ itemDetalle.grupo }}</span>
+    </div>
+
+    <div class="ec-modal__section-title">Stock</div>
+    <div class="ec-modal__stock-grid">
+      <div class="ec-modal__stock-box">
+        <span class="ec-modal__stock-num">{{ itemDetalle.stockTotal | number:'1.0-0' }}</span><span>Total</span>
+      </div>
+      <div class="ec-modal__stock-box ec-modal__stock-box--reserved">
+        <span class="ec-modal__stock-num">{{ itemDetalle.stockReservado | number:'1.0-0' }}</span><span>Reservado</span>
+      </div>
+      <div class="ec-modal__stock-box ec-modal__stock-box--avail">
+        <span class="ec-modal__stock-num">{{ itemDetalle.stockDisponible | number:'1.0-0' }}</span><span>Disponible</span>
+      </div>
+    </div>
+
+    <div class="ec-modal__section-title" *ngIf="itemDetalle.agenciasConDisponible">Disponible por agencia</div>
+    <div class="ec-modal__agencies" *ngIf="itemDetalle.agenciasConDisponible">
+      <div class="ec-modal__agency" *ngFor="let ag of getAgencias(itemDetalle.agenciasConDisponible)">
+        <span class="ec-modal__agency-name">{{ ag.nombre }}</span>
+        <span class="ec-modal__agency-qty">{{ ag.cantidad }} uds</span>
+      </div>
+    </div>
+
+    <div class="ec-modal__section-title">Precios</div>
+    <div class="ec-modal__prices">
+      <div class="ec-modal__price-row"><span>Costo promedio</span><span>{{ itemDetalle.costoPromedio | currency:'USD':'symbol':'1.2-2' }}</span></div>
+      <div class="ec-modal__price-row"><span>Precio sin IVA</span><span>{{ itemDetalle.precioSinIva | currency:'USD':'symbol':'1.2-2' }}</span></div>
+      <div class="ec-modal__price-row ec-modal__price-row--highlight">
+        <span>Precio con IVA</span>
+        <strong>{{ itemDetalle.precioConIva | currency:'USD':'symbol':'1.2-2' }}</strong>
+      </div>
+    </div>
+
+    <button class="ec-btn-primary ec-btn-primary--full"
+      (click)="agregarAlCarrito(itemDetalle!); cerrarDetalle()"
+      [disabled]="itemDetalle.stockDisponible <= 0">
+      Agregar al carrito
+    </button>
+  </div>
+</div>

@@ -1,0 +1,323 @@
+<div class="bl-container">
+  <div class="bl-header">
+    <div class="bl-title-block">
+      <span class="bl-label">BILL OF LADING</span>
+      <h2 class="bl-title">{{ blnombre }}</h2>
+    </div>
+    <div class="bl-controls">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          [(ngModel)]="searchTerm"
+          (input)="applyFilter()"
+          placeholder="Buscar por código o descripción..."
+          class="search-input"
+        />
+        <button *ngIf="searchTerm" class="clear-btn" (click)="searchTerm = ''; applyFilter()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <label class="toggle-no-reconocidos" [class.active]="soloNoReconocidos">
+        <input type="checkbox" [checked]="soloNoReconocidos" (change)="toggleSoloNoReconocidos()">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>Ver solo con problemas</span>
+        <span class="badge-count" *ngIf="getNoReconocidos() > 0">{{ getNoReconocidos() }}</span>
+      </label>
+
+      <label class="toggle-no-reconocidos toggle-no-en-orden" [class.active]="soloNoEnOrden">
+        <input type="checkbox" [checked]="soloNoEnOrden" (change)="toggleSoloNoEnOrden()">
+        <i class="fas fa-ban"></i>
+        <span>No en orden</span>
+        <span class="badge-count" *ngIf="getNoEnOrden() > 0">{{ getNoEnOrden() }}</span>
+      </label>
+
+      <label class="toggle-no-reconocidos toggle-excede" [class.active]="soloExcedeCantidad">
+        <input type="checkbox" [checked]="soloExcedeCantidad" (change)="toggleSoloExcedeCantidad()">
+        <i class="fas fa-arrow-up"></i>
+        <span>Excede cantidad</span>
+        <span class="badge-count" *ngIf="getExcedeCantidad() > 0">{{ getExcedeCantidad() }}</span>
+      </label>
+
+      <label class="toggle-no-reconocidos toggle-consolidado" [class.active]="soloConsolidados">
+        <input type="checkbox" [checked]="soloConsolidados" (change)="toggleSoloConsolidados()">
+        <i class="fas fa-compress-arrows-alt"></i>
+        <span>Consolidados</span>
+        <span class="badge-count" *ngIf="getConsolidados() > 0">{{ getConsolidados() }}</span>
+      </label>
+
+      <button
+        (click)="exportNoReconocidosToExcel()"
+        class="export-btn export-btn-warning"
+        [disabled]="isLoadingDetails"
+        title="Exporta filas con códigos no encontrados en el maestro de partes (Oracle), que no pertenecen a la orden original, o que exceden la cantidad solicitada"
+      >
+        <i class="fas fa-file-export"></i>
+        <span>Reporte de problemas</span>
+      </button>
+
+      <button
+        (click)="exportToExcel()"
+        class="export-btn"
+        [disabled]="isLoadingDetails"
+      >
+        <i class="fas fa-file-excel"></i>
+        <span>Exportar Excel</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="bl-stats" *ngIf="!isLoadingDetails">
+    <span class="stat-badge">
+      <i class="fas fa-layer-group"></i>
+      <strong>{{ filteredBlDetails.length }}</strong>
+      {{ filteredBlDetails.length === 1 ? 'ítem' : 'ítems' }}
+      <ng-container *ngIf="searchTerm"> — "<em>{{ searchTerm }}</em>"</ng-container>
+    </span>
+    <span class="stat-badge contados" *ngIf="!searchTerm">
+      <i class="fas fa-check-circle"></i>
+      <strong>{{ getContados() }}</strong> contados
+    </span>
+    <span class="stat-badge pendientes" *ngIf="!searchTerm">
+      <i class="fas fa-clock"></i>
+      <strong>{{ getPendientes() }}</strong> pendientes
+    </span>
+    <span class="stat-badge no-reconocidos" *ngIf="!searchTerm && getNoReconocidos() > 0">
+      <i class="fas fa-exclamation-triangle"></i>
+      <strong>{{ getNoReconocidos() }}</strong> con problemas
+    </span>
+    <span class="stat-badge consolidados" *ngIf="!searchTerm && getConsolidados() > 0">
+      <i class="fas fa-compress-arrows-alt"></i>
+      <strong>{{ getConsolidados() }}</strong> consolidados
+    </span>
+  </div>
+
+  <!-- ── Resumen del BL: cantidades y económico (estilo Detalles de Orden) ── -->
+  <div class="bl-summary" *ngIf="!isLoadingDetails && currentBlDetails.length > 0">
+
+    <div class="summary-card summary-cantidades">
+      <div class="summary-card-header">
+        <i class="fas fa-boxes"></i>
+        <span>CANTIDADES</span>
+      </div>
+      <div class="summary-card-body">
+        <div class="summary-metric">
+          <span class="metric-value">{{ currentBlDetails.length }}</span>
+          <span class="metric-label">Total ítems</span>
+        </div>
+        <div class="summary-metric">
+          <span class="metric-value">{{ totalUnidades | number }}</span>
+          <span class="metric-label">Unidades facturadas</span>
+        </div>
+        <div class="summary-metric metric-invoices">
+          <span class="metric-value">{{ resumenPorInvoice.length }}</span>
+          <span class="metric-label">{{ resumenPorInvoice.length === 1 ? 'Invoice' : 'Invoices' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="summary-card summary-economico">
+      <div class="summary-card-header">
+        <i class="fas fa-chart-line"></i>
+        <span>ECONÓMICO (USD)</span>
+      </div>
+      <div class="summary-card-body">
+        <div class="summary-metric">
+          <span class="metric-value metric-money">$ {{ totalFacturado | number:'1.2-2' }}</span>
+          <span class="metric-label">Total facturado (FOB)</span>
+        </div>
+      </div>
+
+      <!-- Desglose por invoice: un BL puede contener líneas de varios invoices -->
+      <div class="invoice-breakdown" *ngIf="resumenPorInvoice.length > 1">
+        <div class="invoice-row" *ngFor="let inv of resumenPorInvoice">
+          <span class="invoice-name">{{ inv.invoice }}</span>
+          <span class="invoice-items">{{ inv.items }} {{ inv.items === 1 ? 'ítem' : 'ítems' }} · {{ inv.unidades | number }} uds</span>
+          <span class="invoice-total">$ {{ inv.total | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="table-wrapper">
+    <table class="bl-table">
+      <thead>
+        <tr>
+          <th class="col-num">#</th>
+          <th (click)="sortBy('codigo')" [class.active]="sortColumn === 'codigo'" class="sortable">
+            CÓDIGO
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('codigo')"></i></span>
+          </th>
+          <!-- Fusión: codigoVhcrInvoice || codigoVhcrOrden -->
+          <th (click)="sortBy('codigoVhcrInvoice')" [class.active]="sortColumn === 'codigoVhcrInvoice'" class="sortable">
+            CÓD. VHCR
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('codigoVhcrInvoice')"></i></span>
+          </th>
+          <!-- Fusión: codeNew || equivalentCode -->
+          <th (click)="sortBy('codeNew')" [class.active]="sortColumn === 'codeNew'" class="sortable">
+            CODE NEW
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('codeNew')"></i></span>
+          </th>
+          <th (click)="sortBy('descripcionEspanol')" [class.active]="sortColumn === 'descripcionEspanol'" class="sortable">
+            DESCRIPCIÓN
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('descripcionEspanol')"></i></span>
+          </th>
+          <th (click)="sortBy('cantidadContada')" [class.active]="sortColumn === 'cantidadContada'" class="sortable">
+            CANTIDAD
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('cantidadContada')"></i></span>
+          </th>
+          <th (click)="sortBy('invoiceN')" [class.active]="sortColumn === 'invoiceN'" class="sortable">
+            ORDEN
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('invoiceN')"></i></span>
+          </th>
+          <th (click)="sortBy('unitFobInvoice')" [class.active]="sortColumn === 'unitFobInvoice'" class="sortable">
+            FOB INVOICE
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('unitFobInvoice')"></i></span>
+          </th>
+          <th (click)="sortBy('unitFobOrden')" [class.active]="sortColumn === 'unitFobOrden'" class="sortable">
+            FOB ORDEN
+            <span class="sort-icon"><i class="fas" [ngClass]="getSortIcon('unitFobOrden')"></i></span>
+          </th>
+          <th class="col-orden-check">
+            VALIDACIÓN ORDEN
+          </th>
+          <th class="col-recibido-solicitado">
+            RECIBIDO / SOLICITADO
+          </th>
+          <th class="col-consolidado">
+            CONSOLIDADO
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isLoadingDetails">
+          <td colspan="12" class="state-cell">
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <span>Cargando detalles...</span>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="filteredBlDetails.length === 0 && !isLoadingDetails && !errorMessage">
+          <td colspan="12" class="state-cell">
+            <div class="empty-state">
+              <i class="fas" [ngClass]="soloNoReconocidos ? 'fa-check-circle' : 'fa-inbox'"></i>
+              <span *ngIf="!soloNoReconocidos">No se encontraron resultados</span>
+              <span *ngIf="soloNoReconocidos">Todos los códigos están reconocidos en el maestro de partes</span>
+            </div>
+          </td>
+        </tr>
+        <tr *ngIf="errorMessage">
+          <td colspan="12" class="state-cell">
+            <div class="error-state">
+              <i class="fas fa-exclamation-triangle"></i>
+              <span>{{ errorMessage }}</span>
+            </div>
+          </td>
+        </tr>
+        <tr *ngFor="let detail of filteredBlDetails; let i = index"
+            [class.row-contado]="detail.liquidacionId"
+            [class.row-pendiente]="!detail.liquidacionId"
+            [class.row-no-pertenece-orden]="esNoPerteneceOrden(detail)"
+            [class.row-excede-solicitado]="!esNoPerteneceOrden(detail) && esExcedeLoSolicitado(detail)"
+            [class.row-consolidado]="esConsolidado(detail)">
+          <td class="col-num">
+            <span class="row-number">{{ i + 1 }}</span>
+          </td>
+          <td>
+            <span class="codigo-tag"
+                  [class.celda-no-validada]="!esCodigoValidado(detail)">
+              {{ detail.codigo }}
+              <i class="fas fa-check-circle icono-validado" *ngIf="esCodigoValidado(detail)" title="Validado en maestro de partes"></i>
+              <i class="fas fa-times-circle icono-no-validado" *ngIf="!esCodigoValidado(detail)" title="No encontrado en maestro de partes (Oracle)"></i>
+            </span>
+          </td>
+          <!-- CÓD. VHCR: primero codigoVhcrInvoice, fallback codigoVhcrOrden -->
+          <td>
+            <ng-container *ngIf="detail.codigoVhcrInvoice || detail.codigoVhcrOrden; else sinVhcr">
+              <span class="vhcr-tag"
+                    [class.celda-no-validada]="detail.codigoVhcrInvoice && !esCodigoVhcrValidado(detail)">
+                {{ detail.codigoVhcrInvoice || detail.codigoVhcrOrden }}
+                <i class="fas fa-check-circle icono-validado" *ngIf="detail.codigoVhcrInvoice && esCodigoVhcrValidado(detail)" title="Validado en maestro de partes"></i>
+                <i class="fas fa-times-circle icono-no-validado" *ngIf="detail.codigoVhcrInvoice && !esCodigoVhcrValidado(detail)" title="No encontrado en maestro de partes (Oracle)"></i>
+              </span>
+            </ng-container>
+            <ng-template #sinVhcr><span class="empty-value">—</span></ng-template>
+          </td>
+          <!-- CODE NEW: primero codeNew, fallback equivalentCode -->
+          <td>
+            <ng-container *ngIf="detail.codeNew || detail.equivalentCode; else sinCodeNew">
+              <span class="code-tag"
+                    [class.celda-no-validada]="detail.codeNew && !esCodeNewValidado(detail)">
+                {{ detail.codeNew || detail.equivalentCode }}
+                <i class="fas fa-check-circle icono-validado" *ngIf="detail.codeNew && esCodeNewValidado(detail)" title="Validado en maestro de partes"></i>
+                <i class="fas fa-times-circle icono-no-validado" *ngIf="detail.codeNew && !esCodeNewValidado(detail)" title="No encontrado en maestro de partes (Oracle)"></i>
+              </span>
+            </ng-container>
+            <ng-template #sinCodeNew><span class="empty-value">—</span></ng-template>
+          </td>
+          <td class="col-desc">{{ detail.descripcionEspanol }}</td>
+          <td>
+            <span class="cantidad-value">{{ detail.cantidadContada }}</span>
+            <span class="unidad-tag">{{ detail.unidadSeleccionada }}</span>
+          </td>
+          <td>
+            <span class="invoice-value">{{ detail.invoiceN }}</span>
+          </td>
+          <!-- FOB INVOICE: siempre presente -->
+          <td>
+            <span class="precio-value">{{ detail.unitFobInvoice | number:'1.2-4' }}</span>
+          </td>
+          <!-- FOB ORDEN: nullable por LEFT JOIN -->
+          <td>
+            <ng-container *ngIf="detail.unitFobOrden != null; else sinFobOrden">
+              <span class="precio-value"
+                    [class.fob-diff]="detail.unitFobOrden !== detail.unitFobInvoice">
+                {{ detail.unitFobOrden | number:'1.2-4' }}
+              </span>
+            </ng-container>
+            <ng-template #sinFobOrden><span class="empty-value">—</span></ng-template>
+          </td>
+          <td class="col-recibido-solicitado">
+            <ng-container *ngIf="detail.cantidadOrden != null; else sinCantidadOrden">
+              <span class="recibido-solicitado-value" [class.recibido-excede]="esExcedeLoSolicitado(detail)">
+                {{ detail.cantidadRecibidaTotal }} / {{ detail.cantidadOrden }}
+              </span>
+            </ng-container>
+            <ng-template #sinCantidadOrden><span class="empty-value">—</span></ng-template>
+          </td>
+          <!-- Validación contra la orden de compra original -->
+          <td class="col-orden-check">
+            <span class="orden-badge orden-badge-fuera"
+                  *ngIf="esNoPerteneceOrden(detail)"
+                  title="Este código no estaba en la orden de compra original">
+              <i class="fas fa-ban"></i>
+              <span>No en orden</span>
+            </span>
+            <span class="orden-badge orden-badge-excede"
+                  *ngIf="!esNoPerteneceOrden(detail) && esExcedeLoSolicitado(detail)"
+                  [title]="'Recibido: ' + detail.cantidadRecibidaTotal + ' / Solicitado: ' + detail.cantidadOrden">
+              <i class="fas fa-arrow-up"></i>
+              <span>Excede ({{ detail.cantidadRecibidaTotal }}/{{ detail.cantidadOrden }})</span>
+            </span>
+            <span class="empty-value" *ngIf="!esNoPerteneceOrden(detail) && !esExcedeLoSolicitado(detail)">—</span>
+          </td>
+          <!-- Cantidad recibida (todos los invoices de la orden) vs solicitada en la orden -->
+          
+          <!-- Consolidado: el registro fue sumado desde múltiples filas del Excel -->
+          <td class="col-consolidado">
+            <span class="consolidado-badge"
+                  *ngIf="esConsolidado(detail)"
+                  title="Este ítem fue consolidado al subir el Excel: sus filas duplicadas fueron sumadas en cantidad y promediadas en FOB">
+              <i class="fas fa-compress-arrows-alt"></i>
+              <span>Consolidado</span>
+            </span>
+            <span class="empty-value" *ngIf="!esConsolidado(detail)">—</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

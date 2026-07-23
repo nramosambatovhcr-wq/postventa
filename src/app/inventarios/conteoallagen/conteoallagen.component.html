@@ -1,0 +1,403 @@
+<div class="conteo-container">
+  <button class="back-button" (click)="goBack()">
+    <i class="fas fa-arrow-left"></i> Regresar
+  </button>
+  <h2>{{ nombreAgencia }}</h2>
+
+  <div class="search-and-actions-container">
+    <div class="search-container">
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="applyFilter()"
+        placeholder="Buscar por código o descripción"
+        class="search-input"
+      />
+    </div>
+
+    <div class="action-buttons-group">
+      <button class="action-button" (click)="contarFueraDeTabla()">Contar</button>
+      <button  *ngIf="rol=='inventarioad'" class="action-button" (click)="diferencia()">Diferencia</button>
+      <button  *ngIf="rol=='inventarioad'" class="action-button" (click)="conteoCompleto()">Conteo Completo</button>
+      
+      <button 
+        class="action-button finalize-btn" 
+        *ngIf="rol=='inventarioad'"
+        [disabled]="isFinalizing || rol !== 'inventarioad'"
+        (click)="finalizarConteo()"
+      >
+        <span *ngIf="!isFinalizing">
+          <i class="fas fa-lock"></i> Finalizar Conteo
+        </span>
+        <span *ngIf="isFinalizing">
+          <i class="fas fa-spinner fa-spin"></i> Finalizando...
+        </span>
+      </button>
+      <button class="action-button toggle-view" (click)="toggleView()">
+        <i class="fas" [ngClass]="showAnalysisView ? 'fa-list' : 'fa-chart-bar'"></i>
+        {{ showAnalysisView ? 'Vista Simple' : 'Vista Análisis' }}
+      </button>
+      <button class="action-button export-btn" *ngIf="showAnalysisView" (click)="exportToexcel()">
+        <i class="fas fa-download"></i> Exportar
+      </button>
+    </div>
+  </div>
+
+  <div class="stats-row" *ngIf="showAnalysisView && conteosFiltered.length > 0">
+    <div class="stat-card stat-primary" >
+      <div class="stat-value">{{ totalItemsc }}</div>
+      <div class="stat-label">Total Contar</div>
+    </div>
+    <div class="stat-card stat-primary" (click)="usercont()">
+      <div class="stat-value">{{ getStats().total }}</div>
+      <div class="stat-label">Total Registros</div>
+    </div>
+    <div 
+      class="stat-card stat-warning" 
+      (click)="canClickReservados()"
+    >
+      <div class="stat-value">{{ totalreserdis }}</div>
+      <div class="stat-label">RESERVADOS</div>
+    </div>
+    <div class="stat-card stat-warning">
+      <div class="stat-value">{{ getStats().conReconteo }}</div>
+      <div class="stat-label">Reconteos</div>
+    </div>
+    <div class="stat-card stat-success">
+      <div class="stat-value">{{ getStats().sobrantes }}</div>
+      <div class="stat-label">Sobrantes</div>
+    </div>
+    <div class="stat-card stat-danger">
+      <div class="stat-value">{{ getStats().faltantes }}</div>
+      <div class="stat-label">Faltantes</div>
+    </div>
+    <div class="stat-card stat-info">
+      <div class="stat-value">{{ getStats().exactos }}</div>
+      <div class="stat-label">Exactos</div>
+    </div>
+  </div>
+
+  <div class="analysis-filters" *ngIf="showAnalysisView">
+    <div class="filter-group">
+      <label>Diferencia de Stock:</label>
+      <select class="filter-select" [(ngModel)]="filterDiferencia" (change)="applyFilter()">
+        <option value="todos">Todas</option>
+        <option value="exacto">Exacto (0)</option>
+        <option value="sobrante">Sobrante (+)</option>
+        <option value="faltante">Faltante (-)</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Estado:</label>
+      <select class="filter-select" [(ngModel)]="filterEstadoReconteo" (change)="applyFilter()">
+        <option value="todos">Todos</option>
+        <option value="ok">Sin Reconteo</option>
+        <option value="reconteo">Requiere Reconteo</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="table-responsive" *ngIf="!showAnalysisView">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN</th>
+          <th>CANTIDAD TOTAL</th>
+          <th>UNIDADES</th>
+          <th>ESTADOS</th>
+          <th>UBICACIONES</th>
+          <th>USUARIOS</th>
+          <th>FECHAS</th>
+          <th>OBSERVACIONES</th>        
+          <th>IMÁGENES</th> 
+          <th>CONTEOS</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of conteosFiltered">
+          <td>{{ item.codigo_interno_agencia }}</td>
+          <td>{{ item.descripcion }}</td>
+          <td><strong>{{ item.cantidad_total }}</strong></td>
+          <td>{{ item.unidades }}</td>        
+          <td>{{ item.estados }}</td>
+          <td>{{ item.ubicaciones }}</td>
+          <td>{{ item.usuariosnombre }}</td>
+          <td>
+            <div><small>Inicio: {{ item.primera_fecha_conteo | date:'short' }}</small></div>
+            <div><small>Fin: {{ item.ultima_fecha_conteo | date:'short' }}</small></div>
+          </td>
+          <td>{{ item.observaciones_consolidadas }}</td>
+          <td>
+            <button 
+              *ngIf="item.imagenes && item.imagenes.length > 0" 
+              class="action-button view-images-button"
+              (click)="openImagesModal(item.imagenes)">
+              <i class="fas fa-image"></i> Ver Imágenes ({{ item.imagenes.length }})
+            </button>
+          </td>
+          <td>
+            <span class="badge badge-info">{{ item.numero_conteos }}</span>
+          </td>
+          <td>
+            <button *ngIf="item.imagenes && item.imagenes.length > 0" class="action-button view-images-button" (click)="openImagesModal(item.imagenes)">
+                <i class="fas fa-image"></i> Ver Imágenes ({{ item.imagenes.length }})
+            </button>
+            
+            <button 
+                class="action-button re-conteo-button" 
+                (click)="contarArticuloParaReconteo(item)" 
+                title="Reconteo / Modificar Conteo"
+            >
+                <i class="fas fa-edit"></i> Contar
+            </button>
+            </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="table-responsive" *ngIf="showAnalysisView">
+    <table class="table table-bordered table-striped analysis-table">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>ARTÍCULO</th>
+          <th>CANT. FÍSICA</th>
+          <th>STOCK SISTEMA</th>
+          <th>STOCK DISPONIBLE</th>
+          <th>STOCK RESERVADO</th>
+          <th>DIFERENCIA</th>
+          <th>TIPO DIF.</th>
+          <th>VALOR DIF.</th>
+          <th>ESTADO</th>
+          <th>UBICACIONES</th>
+          <th>USUARIO</th>
+          <th>FECHA</th>
+          <th>IMÁGENES</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let conteo of conteosFiltered" [class.row-warning]="conteo.requiere_reconteo">
+          <td><strong>{{ conteo.codigo_interno_agencia }}</strong></td>
+          <td>
+            <div class="truncate-text" [title]="conteo.descripcion">
+              {{ conteo.descripcion || 'N/A' }}
+            </div>
+            <small class="text-muted">{{ conteo.clase || '' }}</small>
+          </td>
+          <td>
+            <span class="badge badge-primary">{{ conteo.cantidad_contada }}</span>
+          </td>
+          <td>
+            <span class="badge badge-secondary">{{ conteo.stock_sistema }}</span>
+          </td>
+          <td>
+            <span class="badge badge-info">{{ conteo.stock_sistema_disponible }}</span>
+          </td>
+          <td>
+            <span class="badge badge-dark">{{ conteo.stock_reservado }}</span>
+          </td>
+          <td>
+            <span [ngClass]="getDiferenciaColor(conteo.diferencia_stock)" class="diferencia-value">
+              <strong>
+                {{ getDiferenciaIcon(conteo.diferencia_stock) }} {{ conteo.diferencia_stock }}
+              </strong>
+            </span>
+          </td>
+          <td>
+            <span class="badge-tipo-diferencia" [ngClass]="getTipoDiferenciaBadge(conteo.diferencia_stock)">
+              {{ getTipoDiferenciaText(conteo.diferencia_stock) }}
+            </span>
+          </td>
+          <td>{{ formatCurrency(conteo.costo_promedio * conteo.diferencia_stock) }}</td>
+          <td>
+            <span class="badge" [ngClass]="conteo.requiere_reconteo ? 'badge-warning' : 'badge-success'">
+              {{ conteo.requiere_reconteo ? 'Reconteo' : 'Finalizado' }}
+            </span>
+          </td>
+          <td>
+            <div class="truncate-text" [title]="conteo.ubicaciones">
+              {{ conteo.ubicaciones || 'N/A' }}
+            </div>
+          </td>
+          <td>{{ conteo.usuario_ult_conteo_nombre || 'N/A' }}</td>
+          <td>
+            <div><small>{{ conteo.ultima_fecha_conteo | date:'short' }}</small></div>
+          </td>
+          <td>
+            <button 
+              *ngIf="conteo.imagenes && conteo.imagenes.length > 0" 
+              class="btn btn-info btn-sm"
+              (click)="openImagesModal(conteo.imagenes)">
+              <i class="fas fa-image"></i> ({{ conteo.imagenes.length }})
+            </button>
+            <span *ngIf="!conteo.imagenes || conteo.imagenes.length === 0">N/A</span>
+          </td>
+          <td data-label="ACCIONES">
+            <button 
+              class="btn btn-primary btn-sm" 
+              *ngIf="rol!=='inventarioad' && conteo.requiere_reconteo"
+              (click)="contarArticuloParaReconteo(conteo)">
+              Recontar
+            </button>
+            <button 
+              class="btn btn-primary btn-sm" 
+              *ngIf="rol=='inventarioad'"
+              (click)="openModal(conteo)">
+              Detalle
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <div *ngIf="conteosRealizados.length === 0 && !isLoading" class="no-results">
+    <i class="fas fa-search-minus"></i>
+    <p>No se encontraron registros de conteo para esta agencia.</p>
+  </div>
+  
+  <div *ngIf="isLoading" class="loading-message">
+    <i class="fas fa-spinner fa-spin"></i> Cargando conteos unificados...
+  </div>
+  
+  <div *ngIf="errorMessage" class="error-message">
+    <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+  </div>
+
+
+  <div class="modal-overlay" [ngClass]="{'active': isModalOpen}">
+    <div class="modal-content" [ngClass]="{'large-modal': selectedDetail?.imagenes}">
+      <div class="modal-header">
+        <h3 *ngIf="!selectedDetail?.id">Contar Artículo: {{ selectedDetail?.codigo }}</h3>
+        <h3 *ngIf="selectedDetail?.id">Editar Conteo de: {{ selectedDetail?.codigo }}</h3>
+        <button class="close-button" (click)="closeModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div *ngIf="selectedDetail" class="detail-container">
+          <p><strong>Descripción:</strong> {{ selectedDetail.descripcionEspanol }}</p>
+          <p><strong>Stock en Sistema:</strong> {{ selectedDetail.cantidad }}</p>
+
+          <form (ngSubmit)="saveConteo()">
+            <div class="form-group">
+              <label for="cantidadContada">Cantidad Contada:</label>
+              <input 
+                type="number" 
+                id="cantidadContada" 
+                [(ngModel)]="selectedDetail.cantidadContada" 
+                name="cantidadContada" 
+                class="form-control"
+                required
+                min="0"
+                placeholder="Ingrese la cantidad física real"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="ubicacion">Ubicación (Bodega/Estante):</label>
+              <input 
+                type="text" 
+                id="ubicacion" 
+                [(ngModel)]="selectedDetail.ubicacion" 
+                name="ubicacion" 
+                class="form-control"
+                placeholder="Ubicación física del artículo"
+              >
+            </div>
+
+            <div class="form-group">
+              <label for="estado">Estado del Artículo:</label>
+              <select 
+                id="estado" 
+                [(ngModel)]="selectedDetail.estado" 
+                name="estado" 
+                class="form-control"
+              >
+                <option *ngFor="let state of availableStates" [value]="state">{{ state | uppercase }}</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="unidad">Unidad de Medida:</label>
+              <select 
+                id="unidad" 
+                [(ngModel)]="selectedDetail.unidad" 
+                name="unidad" 
+                class="form-control"
+              >
+                <option *ngFor="let unit of availableUnits" [value]="unit">{{ unit | uppercase }}</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="observaciones">Observaciones:</label>
+              <textarea 
+                id="observaciones" 
+                [(ngModel)]="selectedDetail.observaciones" 
+                name="observaciones" 
+                class="form-control"
+                rows="3"
+                placeholder="Detalles adicionales sobre el conteo o el estado del artículo"
+              ></textarea>
+            </div>
+
+            <div class="form-group file-upload-group">
+              <label>Imágenes:</label>
+              <p class="text-muted"><small>Funcionalidad de subida de imágenes debe ser implementada en el TS.</small></p>
+            </div>
+
+            <div class="modal-footer">
+              <button 
+                type="submit" 
+                class="action-button" 
+                [disabled]="isSaving"
+              >
+                <span *ngIf="!isSaving">
+                  <i class="fas fa-save"></i> Guardar Conteo
+                </span>
+                <span *ngIf="isSaving">
+                  <i class="fas fa-spinner fa-spin"></i> Guardando...
+                </span>
+              </button>
+              <button type="button" class="button cancel-button" (click)="closeModal()">
+                <i class="fas fa-times"></i> Cancelar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="modal-overlay" [ngClass]="{'active': isModalOpenI}">
+    <div class="modal-content large-modal">
+      <div class="modal-header">
+        <h3>Imágenes del Artículo</h3>
+        <button class="close-button" (click)="closeImagesModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body image-modal-body">
+        <div *ngIf="currentImages.length > 0" class="image-grid">
+          <div *ngFor="let image of currentImages" class="image-card">
+            <img [src]="image.ruta_archivo" [alt]="image.nombre_archivo">
+            <p class="image-name">{{ image.nombre_archivo }}</p>
+            <p class="image-date"><small>{{ image.fecha_subida | date:'short' }}</small></p>
+          </div>
+        </div>
+        <div *ngIf="currentImages.length === 0" class="no-results">
+          <p>No hay imágenes disponibles.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="button cancel-button" (click)="closeImagesModal()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

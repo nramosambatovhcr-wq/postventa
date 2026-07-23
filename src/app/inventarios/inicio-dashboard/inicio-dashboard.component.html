@@ -1,0 +1,141 @@
+<div class="inicio-dashboard">
+  
+  <!-- Bienvenida -->
+  <div class="welcome-section">
+    <h1>¡Bienvenido al Sistema de Inventarios!</h1>
+    <p>Gestiona tus inventarios, campañas y usuarios desde un solo lugar</p>
+  </div>
+
+  <!-- Cards de Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card primary">
+      <div class="stat-icon">
+        <i class="fas fa-building"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticasGenerales.totalAgencias }}</h3>
+        <p>Agencias</p>
+      </div>
+    </div>
+
+    <div class="stat-card success">
+      <div class="stat-icon">
+        <i class="fas fa-bullhorn"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticasGenerales.campanasActivas }}</h3>
+        <p>Campañas Activas</p>
+      </div>
+    </div>
+
+    <div class="stat-card warning">
+      <div class="stat-icon">
+        <i class="fas fa-clipboard-check"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticasGenerales.conteosHoy }}</h3>
+        <p>Conteos Hoy</p>
+      </div>
+    </div>
+
+    <div class="stat-card info">
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-info">
+        <h3>{{ estadisticasGenerales.usuariosActivos }}</h3>
+        <p>Usuarios Activos</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Accesos Rápidos -->
+  <div class="quick-access">
+    <h2>Accesos Rápidos</h2>
+    <div class="access-grid">
+      <a routerLink="/dashboard/inventarios/conteos" class="access-card">
+        <i class="fas fa-plus-circle"></i>
+        <span>Nuevo Conteo</span>
+      </a>
+      <a routerLink="/dashboard/campanas" class="access-card">
+        <i class="fas fa-bullhorn"></i>
+        <span>Crear Campaña</span>
+      </a>
+      <a routerLink="/dashboard/usuarios" class="access-card">
+        <i class="fas fa-user-plus"></i>
+        <span>Nuevo Usuario</span>
+      </a>
+      <a routerLink="/dashboard/sincronizacion" class="access-card">
+        <i class="fas fa-sync"></i>
+        <span>Sincronizar Oracle</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Sección de Campañas y Actividades -->
+  <div class="dashboard-sections">
+    
+    <!-- Campañas Activas -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3><i class="fas fa-bullhorn"></i> Campañas Activas</h3>
+        <a routerLink="/dashboard/campanas" class="btn-link">Ver todas</a>
+      </div>
+      <div class="campanas-list">
+        <div class="campana-item" *ngFor="let campana of campanasActivas">
+          <div class="campana-info">
+            <h4>{{ campana.nombre }}</h4>
+            <p>{{ campana.descripcion }}</p>
+            <span class="badge badge-success">Activa</span>
+          </div>
+          <div class="campana-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="campana.progreso || 65"></div>
+            </div>
+            <small>{{ campana.progreso || 65 }}% completado</small>
+          </div>
+        </div>
+        <div *ngIf="campanasActivas.length === 0" class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <p>No hay campañas activas</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actividades Recientes -->
+    <div class="section-card">
+      <div class="section-header">
+        <h3><i class="fas fa-history"></i> Actividades Recientes</h3>
+      </div>
+      <div class="activity-list">
+        <div class="activity-item">
+          <div class="activity-icon success">
+            <i class="fas fa-check"></i>
+          </div>
+          <div class="activity-info">
+            <p>Conteo completado en <strong>Agencia Norte</strong></p>
+            <small>Hace 5 minutos</small>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon warning">
+            <i class="fas fa-exclamation"></i>
+          </div>
+          <div class="activity-info">
+            <p>Inconsistencia detectada en <strong>Repuesto #4521</strong></p>
+            <small>Hace 15 minutos</small>
+          </div>
+        </div>
+        <div class="activity-item">
+          <div class="activity-icon info">
+            <i class="fas fa-sync"></i>
+          </div>
+          <div class="activity-info">
+            <p>Sincronización con Oracle completada</p>
+            <small>Hace 1 hora</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,137 @@
+<!-- Modal para Chat de Observaciones -->
+<div class="modal-backdrop" *ngIf="modalVisible" (click)="closeModal()">
+  <div class="modal-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <!-- Header del Modal -->
+      <div class="modal-header">
+        <h4 class="modal-title">Observaciones - Pedido #{{pedido?.idPedido}}</h4>
+        <button type="button" class="btn-close" (click)="closeModal()">
+          <span>&times;</span>
+        </button>
+      </div>
+      
+      <!-- Body del Modal -->
+      <div class="modal-body">
+        <!-- Área de chat -->
+        <div class="chat-container">
+          <div class="chat-messages" #chatMessages>
+            <!-- Mensaje cuando no hay observaciones -->
+            <div *ngIf="observaciones.length === 0" class="no-messages">
+              <div class="no-messages-icon">💬</div>
+              <p>No hay observaciones para este pedido.</p>
+              <small>Sé el primero en agregar una observación</small>
+            </div>
+            
+            <!-- Lista de observaciones -->
+            <div *ngFor="let obs of observaciones; trackBy: trackByObservacion" 
+                 class="message-bubble" 
+                 [ngClass]="{'message-own': obs.idUsuarioCreacion === currentUserId, 'message-other': obs.idUsuarioCreacion !== currentUserId}">
+              
+              <div class="message-header">
+                <div class="user-info">
+                  <span class="user-name">{{obs.usuario || 'Usuario'}}</span>
+                  <span class="user-role">{{obs.rolUsuario || 'Rol'}}</span>
+                </div>
+                <span class="message-time">{{obs.fechaCreacion | date:'dd/MM/yyyy HH:mm'}}</span>
+              </div>
+              
+              <div class="message-content">
+                <p *ngIf="obs.mensaje">{{obs.mensaje}}</p>
+                
+                <!-- Imágenes asociadas al mensaje -->
+                <div class="message-images" *ngIf="obs.imagenes && obs.imagenes.length > 0">
+                  <div *ngFor="let img of obs.imagenes; trackBy: trackByImagen" 
+                       class="image-thumbnail" 
+                       (click)="openImageViewer(img.rutaImagen)">
+                    <img [src]="getImageUrl(img.rutaImagen)" 
+                         [alt]="img.nombreArchivo || 'Imagen adjunta'" 
+                         (error)="onImageError($event)"
+                         loading="lazy">
+                    <div class="image-overlay">
+                      <i class="fa fa-search-plus"></i>
+                    </div>
+                    <div class="image-name" *ngIf="img.nombreArchivo">
+                      {{img.nombreArchivo}}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Footer del Modal (Solo si tiene permisos) -->
+      <div class="modal-footer" *ngIf="canAddObservation()">
+        <!-- Vista previa de imágenes -->
+        <div class="image-preview-area" *ngIf="previewImages.length > 0">
+          <div class="preview-label">Imágenes a enviar:</div>
+          <div class="preview-grid">
+            <div *ngFor="let preview of previewImages; let i = index" class="preview-item">
+              <img [src]="preview" alt="Vista previa">
+              <button class="remove-preview" (click)="removeImage(i)" title="Eliminar imagen">
+                <i class="fa fa-times"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Formulario de nueva observación -->
+        <div class="message-form">
+          <div class="input-group">
+            <textarea 
+              [(ngModel)]="nuevaObservacion" 
+              placeholder="Escribe tu observación..." 
+              class="form-control message-input"
+              rows="3"
+              maxlength="1000"
+              (keydown)="onKeyDown($event)"></textarea>
+            
+            <div class="input-actions">
+              <label for="file-input" class="btn btn-outline-secondary btn-attach" title="Adjuntar imagen">
+                <i class="fa fa-paperclip"></i>
+              </label>
+              <input 
+                type="file" 
+                id="file-input" 
+                accept="image/*" 
+                multiple 
+                (change)="onFileSelected($event)" 
+                #fileInput
+                style="display: none;">
+              
+              <button 
+                class="btn btn-primary btn-send" 
+                [disabled]="!canSendMessage() || isSending" 
+                (click)="enviarObservacion()"
+                title="Enviar mensaje">
+                <i class="fa fa-paper-plane" *ngIf="!isSending"></i>
+                <i class="fa fa-spinner fa-spin" *ngIf="isSending"></i>
+              </button>
+            </div>
+          </div>
+          
+          <div class="form-footer">
+            <small class="character-count">{{nuevaObservacion.length}}/1000</small>
+            <small class="file-info" *ngIf="selectedFiles.length > 0">
+              {{selectedFiles.length}} archivo(s) seleccionado(s)
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Visor de imágenes -->
+<div class="image-modal-backdrop" *ngIf="imageViewerVisible" (click)="closeImageViewer()">
+  <div class="image-modal-content" (click)="$event.stopPropagation()">
+    <button class="image-close-btn" (click)="closeImageViewer()" title="Cerrar">
+      <i class="fa fa-times"></i>
+    </button>
+    <img [src]="selectedImageUrl" 
+         alt="Imagen ampliada" 
+         class="full-image" 
+         (error)="onImageError($event)">
+  </div>
+</div>

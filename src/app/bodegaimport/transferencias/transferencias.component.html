@@ -1,0 +1,277 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">REPUESTOS IMPORTACIONES</div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Transferencias</h1>
+      <p class="panel-subtitulo">Monitoreo de transferencias solicitadas con información de stock y movimientos</p>
+    </div>
+
+    <div class="panel-contenido">
+      <div class="opciones-tabla">
+        <div>
+          <input
+            type="text"
+            class="busqueda"
+            placeholder="Buscar por Número, Fecha, Estado, Oficina, Artículo o Movimientos"
+            [(ngModel)]="searchTerm"
+            (input)="applyFilters()"
+            (keyup.enter)="applyFilters()">
+        </div>
+        <div class="acciones-tabla" *ngIf="!loading && transferencias.length > 0">
+          <button 
+            class="btn-expand-all"
+            [class.expanded]="showAllMovimientos"
+            (click)="toggleAllMovimientos()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2z"/>
+            </svg>
+            <span class="btn-text">
+              {{ showAllMovimientos ? 'Contraer Todo' : 'Expandir Todo' }}
+            </span>
+          </button>
+
+          <button
+            class="boton-secundario"
+            (click)="refrescarDatos()"
+            title="Refrescar datos">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+              <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+            </svg>
+            Refrescar
+          </button>
+        </div>
+      </div>
+
+      <div class="contenedor-estadisticas" *ngIf="!loading && transferencias.length > 0">
+        <div class="tarjeta-estadistica">
+          <div class="valor-estadistica">{{ getEstadisticasMovimientos().totalTransferencias }}</div>
+          <div class="etiqueta-estadistica">Total Transferencias</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="valor-estadistica">{{ getEstadisticasMovimientos().conMovimientos }}</div>
+          <div class="etiqueta-estadistica">Con Movimientos</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="valor-estadistica">{{ getEstadisticasMovimientos().stockSuficiente }}</div>
+          <div class="etiqueta-estadistica">Stock Suficiente</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="valor-estadistica">{{ getEstadisticasMovimientos().stockInsuficiente }}</div>
+          <div class="etiqueta-estadistica">Stock Insuficiente</div>
+        </div>
+        <div class="tarjeta-estadistica">
+          <div class="valor-estadistica">{{ getEstadisticasMovimientos().sinStock }}</div>
+          <div class="etiqueta-estadistica">Sin Stock</div>
+        </div>
+      </div>
+
+      <div class="contenedor-tabla">
+        <div class="loading-indicator" *ngIf="loading">Cargando transferencias...</div>
+        <div class="no-results" *ngIf="!loading && transferencias.length === 0">No se encontraron transferencias.</div>
+<table class="tabla-pedidos" *ngIf="!loading && transferencias.length > 0">
+  <thead>
+    <tr>
+      <th>Número</th>
+      <th>Usuario</th>
+      <th>Oficina Origen</th>
+      <th>Fecha/Hora Solicitud</th>
+      <th>Estado General</th>
+      <th>Estado Armado</th>
+      <th>Oficina Destino</th>
+      <th>Acciones</th>
+    </tr>
+  </thead>
+  <tbody>
+  <tr *ngFor="let item of transferenciasUnicas">
+    <td>{{ item.numero }}</td>
+     <td>{{ item.usuarioCreacion }}</td>
+    <td>
+      <div class="oficina-info">
+        <strong>{{ item.oficinaOrigenNombre }}</strong>
+        <small class="oficina-codigo">({{ item.oficinaOrigenCodigo }})</small>
+      </div>
+    </td>
+    <td>{{ item.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+    <td>
+      <span class="estado" [ngClass]="getEstadoGeneralClase(item.estadoGeneral)">
+        {{ item.estadoGeneral || 'Pendientes' }}
+      </span>
+    </td>
+   <td>
+  <span class="estado" [ngClass]="getEstadoArmadoClase(estadosMap.get(item.numero.toString()))">
+    {{ estadosMap.get(item.numero.toString()) || 'Sin estado' }}
+  </span>
+</td>
+   
+    <td>
+      <div class="oficina-info">
+        <strong>{{ item.oficinaDestinoNombre }}</strong>
+        <small class="oficina-codigo">({{ item.oficinaDestinoCodigo }})</small>
+      </div>
+    </td>
+    <td>
+      <div class="acciones-tabla-celda">
+        <!-- Botón para ver todos los items de la transferencia -->
+        <button
+          class="details-icon info-icon"
+          (click)="abrirModalDetalle(item.numero)"
+          title="Ver todos los artículos">
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+            <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+          </svg>
+        </button>
+        <button
+            class="details-icon add-icon"
+            (click)="abrirModalAsignar(item.numero)"
+            title="Asignar armador">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+              <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/>
+            </svg>
+          </button>
+          <!-- Botón para ver todos los artículos de la transferencia -->
+<button
+  class="details-icon info-icon"
+  (click)="abrirModalArticulos(item.numero)"
+  title="Ver todos los artículos">
+  <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3A1.5 1.5 0 0 1 13.5 7h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3A1.5 1.5 0 0 1 15 10.5v3A1.5 1.5 0 0 1 13.5 15h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z"/>
+  </svg>
+</button>
+      </div>
+    </td>
+  </tr>
+</tbody>
+</table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ✅ MODAL DETALLE -->
+  <div class="modal-custom" *ngIf="showModalDetalle">
+    <div class="modal-content-custom">
+      <div class="modal-header-custom">
+        <h5>Detalle de Transferencia #{{ modalDetalleData?.numero }}</h5>
+        <span class="close" (click)="cerrarModalDetalle()">&times;</span>
+      </div>
+      <div class="modal-body-custom">
+        <p><strong>Estado General:</strong> {{ modalDetalleData?.estadoGeneral }}</p>
+        <table class="table-modal">
+          <thead>
+            <tr>
+              <th>Artículo</th>
+              <th>Cantidad</th>
+              <th>Armado</th>
+              <th>Revisión</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of modalDetalleData?.items">
+              <td>{{ item.articulo }} - {{ item.nombre }}</td>
+              <td>{{ item.cantidadSolicitada }}</td>
+              <td>
+                <span class="badge" [ngClass]="getEstadoArmadoClase(item.armado.estado)">
+                  {{ item.armado.estado }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="getEstadoRevisionClase(item.revision.estado)">
+                  {{ item.revision.estado }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer-custom">
+        <button class="btn btn-secondary" (click)="cerrarModalDetalle()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ MODAL ASIGNAR ARMADOR -->
+ <!-- ✅ MODAL ASIGNAR ARMADORES (DISEÑO MEJORADO) -->
+<div class="modal-custom" *ngIf="showModalAsignar">
+  <div class="modal-content-custom asignar-modal">
+    <div class="modal-header-custom">
+      <h5>Asignar Armadores</h5>
+      <span class="close" (click)="cerrarModalAsignar()">&times;</span>
+    </div>
+
+    <div class="modal-body-custom asignar-body">
+      <div class="form-group compact">
+        <label>Transferencia #</label>
+        <input type="text" class="form-control" [value]="modalAsignarData.numero" readonly />
+      </div>
+
+      <div class="form-group compact">
+        <label>Seleccione usuarios armadores</label>
+        <div class="usuarios-lista">
+          <div *ngFor="let u of usuariosBodegaImpor1" class="checkbox-item">
+            <input
+              type="checkbox"
+              [id]="'user-' + u.nombre"
+              [value]="u.nombre"
+              (change)="onUsuarioToggle($event, u.nombre)"
+              [checked]="modalAsignarData.usuarios.includes(u.nombre)"
+            />
+            <label [for]="'user-' + u.nombre" class="checkbox-label">
+              {{ u.nombre }}
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer-custom">
+      <button class="btn btn-secondary" (click)="cerrarModalAsignar()">Cancelar</button>
+      <button class="btn btn-primary" (click)="guardarAsignacion()" [disabled]="modalAsignarData.usuarios.length === 0">
+        Guardar
+      </button>
+    </div>
+  </div>
+</div>
+</main>
+
+<!-- ✅ MODAL ARTÍCULOS POR TRANSFERENCIA -->
+<div class="modal-custom" *ngIf="showModalArticulos">
+  <div class="modal-content-custom">
+    <div class="modal-header-custom">
+      <h5>Artículos de Transferencia #{{ numeroArticulosModal }}</h5>
+      <span class="close" (click)="cerrarModalArticulos()">&times;</span>
+    </div>
+    <div class="modal-body-custom">
+      <table class="table-modal">
+        <thead>
+          <tr>
+            <th>Artículo</th>
+            <th>Nombre</th>
+            <th>Cantidad Solicitada</th>
+            <th>Stock Disponible</th>
+            <th>Ubicación</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of articulosModal">
+            <td>{{ item.articulo }}</td>
+            <td>{{ item.nombreArticulo }}</td>
+            <td>{{ item.cantidadSolicitada }}</td>
+            <td>{{ item.stockDisponible }}</td>
+            <td>{{ item.ubicacion || 'N/A' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="modal-footer-custom">
+      <button class="btn btn-secondary" (click)="cerrarModalArticulos()">Cerrar</button>
+    </div>
+  </div>
+</div>

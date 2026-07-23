@@ -1,0 +1,138 @@
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">REPUESTOS IMPORTACIONES</div>
+        </div>
+    </div>
+</header>
+
+<main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Detalle de Invoice BL</h1>
+        <p class="panel-subtitulo">Información detallada y partidas de la Invoice BL</p>
+      </div>
+
+      <div class="panel-contenido">
+        <div *ngIf="loading" class="text-center p-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="sr-only">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando detalles de Invoice BL...</p>
+        </div>
+
+        <div *ngIf="errorMessage" class="alert alert-danger mt-3">
+            <i class="fas fa-exclamation-triangle"></i> {{ errorMessage }}
+        </div>
+
+        <div *ngIf="successMessage" class="alert alert-success mt-3">
+            <i class="fas fa-check-circle"></i> {{ successMessage }}
+        </div>
+
+        <div *ngIf="!loading && !errorMessage && invoiceBlDetail" class="invoicebl-detail-card card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Invoice BL: {{ invoiceBlDetail.invoiceNumber }}</h4>
+                <button class="btn btn-sm btn-outline-light" (click)="goBack()">
+                    <i class="fas fa-arrow-left"></i> Volver al Dashboard
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>ID:</strong> {{ invoiceBlDetail.id }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Número BL:</strong> {{ invoiceBlDetail.blNumber }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Fecha Creación:</strong> {{ invoiceBlDetail.creationDate | date: 'yyyy-MM-dd' }}
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Estado:</strong>
+                        <span class="estado" [ngClass]="{
+                            'pendiente': invoiceBlDetail.status === 'PENDIENTE',
+                            'transito': invoiceBlDetail.status === 'TRANSITO',
+                            'activa': invoiceBlDetail.status === 'ESPERANDO CONTENEDOR',
+                            'embarque': invoiceBlDetail.status === 'EMBARQUE',
+                            'aduana': invoiceBlDetail.status === 'ADUANA',
+                            'liquidado': invoiceBlDetail.status === 'LIQUIDADO',
+                            'aprobada': invoiceBlDetail.status === 'APROBADA',
+                            'revision': invoiceBlDetail.status === 'REVISION',
+                            'entregada': invoiceBlDetail.status === 'ENTREGADA',
+                            'anulada': invoiceBlDetail.status === 'ANULADA'
+                        }">
+                            {{ invoiceBlDetail.status }}
+                        </span>
+                    </div>
+                 
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-1">
+
+                    </div>
+                       <div class="col-md-9">
+                        <strong>Descripción:</strong> {{ invoiceBlDetail.description || 'N/A' }}
+                    </div>
+                </div>
+                <hr>
+
+                <h5 class="mb-3">Partidas / Detalles de la Invoice BL</h5>
+                <button class="boton-primario mb-3" (click)="addDetalle()" style="color: black;">
+                  <i class="fas fa-plus-circle"></i> Agregar Detalle (Excel)
+                </button>
+
+                <div class="contenedor-tabla">
+                    <table class="tabla-pedidos">
+                        <thead>
+                            <tr>
+                                <th>Ítem</th>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unit.</th>
+                             
+                                <th>Total</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <ng-container *ngIf="invoiceBlDetail ; else noDetails">
+                                <tr *ngFor="let detalle of invoiceBlDetail; let i = index">
+                                    <td data-label="Ítem">{{ i + 1 }}</td>
+                                    <td data-label="Código">{{ detalle.codigo }}</td>
+                                    <td data-label="Descripción">{{ detalle.descripcion }}</td>
+                                    <td data-label="Cantidad">{{ detalle.cantidad }}</td>
+                                    <td data-label="Precio Unit.">{{ detalle.precio_Unitario | currency }}</td>
+                                     
+                                    <td data-label="Total">{{ detalle.total | currency }}</td>
+                                    <td data-label="Acciones">
+                                        <div class="acciones-celda">
+                                            <button class="boton-accion editar" (click)="editDetalle(detalle.id)">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </button>
+                                            <button class="boton-accion eliminar" (click)="deleteDetalle(detalle.id)">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </ng-container>
+                            <ng-template #noDetails>
+                                <tr>
+                                    <td colspan="9" class="text-center">No hay detalles de ítems para esta Invoice BL.</td>
+                                </tr>
+                            </ng-template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div *ngIf="!loading && !errorMessage && !invoiceBlDetail" class="alert alert-info mt-3">
+          <i class="fas fa-info-circle"></i> No se encontraron detalles para esta Invoice BL o el ID es inválido.
+          <button class="btn btn-link" (click)="goBack()">Volver al Dashboard</button>
+        </div>
+      </div>
+    </section>
+</main>
+
+ 

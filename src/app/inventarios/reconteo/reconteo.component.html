@@ -1,0 +1,581 @@
+<div class="conteo-container">
+  <button class="back-button" (click)="goBack()">
+    <i class="fas fa-arrow-left"></i> Regresar
+  </button>
+  <h2 class="page-title">{{ nombreAgencia }}</h2>
+  <h3 class="page-subtitle">Análisis Detallado de Inconsistencias</h3>
+
+  <!-- Cards de Resumen - Inconsistencias Originales -->
+  <div *ngIf="resumen" class="resumen-cards-grid">
+    <div class="card card-general">
+      <span class="card-label">Total Inconsistencias</span>
+      <span class="card-value">{{ resumen.total_inconsistencias | number }}</span>
+    </div>
+    <div class="card card-loss">
+      <span class="card-label">Faltantes</span>
+      <span class="card-value">{{ resumen.faltantes | number }}</span>
+    </div>
+    <div class="card card-gain">
+      <span class="card-label">Sobrantes</span>
+      <span class="card-value">{{ resumen.sobrantes | number }}</span>
+    </div>
+    <div class="card card-fuera">
+      <span class="card-label">Fuera de Inventario</span>
+      <span class="card-value">{{ resumen.fuera_de_inventario | number }}</span>
+    </div>
+    <div class="card card-fuera" (click)="ir()" style="cursor: pointer;">
+      <span class="card-label">RESUMEN RECONTEO</span>
+      <span class="card-value"><i class="fas fa-arrow-right"></i></span>
+    </div>
+    <div class="card card-fuera" (click)="ir2()" style="cursor: pointer;">
+      <span class="card-label">RESUMEN</span>
+      <span class="card-value"><i class="fas fa-arrow-right"></i></span>
+    </div>
+  </div>
+
+  <!-- Cards de Resumen - Reconteos -->
+  <div *ngIf="resumenReconteos && resumenReconteos.total_reconteos > 0" class="resumen-cards-grid resumen-reconteos-section">
+    <div class="card card-info">
+      <span class="card-label">
+        <i class="fas fa-redo-alt"></i> Total Reconteos
+      </span>
+      <span class="card-value">{{ resumenReconteos.total_reconteos | number }}</span>
+    </div>
+    <div class="card card-success">
+      <span class="card-label">
+        <i class="fas fa-check-circle"></i> Exactos (Diferencia = 0)
+      </span>
+      <span class="card-value">{{ resumenReconteos.exactos | number }}</span>
+    </div>
+    <div class="card card-loss">
+      <span class="card-label">
+        <i class="fas fa-arrow-down"></i> Faltantes (Diferencia &lt; 0)
+      </span>
+      <span class="card-value">{{ resumenReconteos.faltantes_reconteo | number }}</span>
+    </div>
+    <div class="card card-gain">
+      <span class="card-label">
+        <i class="fas fa-arrow-up"></i> Sobrantes (Diferencia &gt; 0)
+      </span>
+      <span class="card-value">{{ resumenReconteos.sobrantes_reconteo | number }}</span>
+    </div>
+    <div class="card card-warning">
+      <span class="card-label">
+        <i class="fas fa-exclamation-triangle"></i> Fuera de Inventario
+      </span>
+      <span class="card-value">{{ resumenReconteos.fuera_inventario_reconteo | number }}</span>
+    </div>
+  </div>
+  
+  <!-- Barra de Controles y Filtros -->
+  <div class="filter-controls-bar">
+    <div class="search-container">
+      <i class="fas fa-search search-icon"></i>
+      <input
+        type="text"
+        [(ngModel)]="searchTerm"
+        (input)="applyFilter()"
+        placeholder="Buscar por código, artículo o ubicación..."
+        class="search-input"
+      />
+    </div>
+
+    <div class="filter-clasificacion-container">
+      <label for="clasificacion-select">Clasificación:</label>
+      <select
+        id="clasificacion-select"
+        [(ngModel)]="selectedClasificacion" 
+        (change)="applyFilter()"
+        class="select-filter"
+      >
+        <option *ngFor="let clas of clasificaciones" [value]="clas">{{ clas }}</option>
+      </select>
+    </div>
+    
+    <button 
+      (click)="exportar()" 
+      [disabled]="isLoading || filteredInconsistencias.length === 0"
+      title="Exportar datos filtrados a Excel (.xlsx)"
+      class="export-button"
+    >
+      <i class="fas fa-file-excel"></i> Exportar ({{ filteredInconsistencias.length }})
+    </button>
+  </div>
+
+  <!-- Estado de Carga -->
+  <div *ngIf="isLoading" class="loading-state">
+    <i class="fas fa-spinner fa-spin"></i> Cargando datos de inconsistencias...
+  </div>
+
+  <!-- Sin Resultados -->
+  <div *ngIf="!isLoading && filteredInconsistencias.length === 0" class="no-results">
+    <p><i class="fas fa-search"></i> No se encontraron inconsistencias o no hay coincidencias con el filtro.</p>
+  </div>
+
+  <!-- Tabla de Inconsistencias -->
+  <div *ngIf="!isLoading && filteredInconsistencias.length > 0" class="table-container">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th class="action-col">Item</th> 
+          <th class="action-col">Acción</th> 
+          <th class="code-col">Código</th>
+          <th class="name-col">Descripción</th>
+          <th class="count-col">Contada</th>
+          <th class="count-col">Sistema</th>
+          <th class="count-col">Reservado</th>
+          <th class="count-col">Disponible</th>
+          <th class="count-col">Cant. Reconteo</th>           
+          <th class="diff-col">Diferencia</th>
+          <th class="user-col">Usuario Reconteo</th> 
+          <th class="clasif-col">Clasificación</th>
+          <th class="prioridad-col">Costo Prom.</th>
+          <th class="money-col">Impacto Financiero</th>
+          <th class="image-col">Imágenes</th>
+          <th class="ubicacion-col">Ubicación</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of filteredInconsistencias; let i = index">
+          
+          <!-- Columna de numeración -->
+          <td data-label="Item">
+            <span class="item-number">{{ i + 1 }}</span>
+          </td>
+
+          <!-- Botón de Acción -->
+          <td data-label="Acción">
+            <button 
+              class="action-btn-reconteo" 
+              title="Iniciar Reconteo" 
+              (click)="iniciarReconteo(item)"
+            >
+              <i class="fas fa-edit"></i> Revisar
+            </button>
+          </td>
+
+          <!-- Código del Artículo -->
+          <td data-label="Código" class="code-col">
+            {{ item.codigo_articulo || 'N/A' }}
+          </td>
+
+          <!-- Descripción -->
+          <td data-label="Descripción" class="item-name-col">
+            {{ item.descripcion_conteo || item.nombre_articulo }}
+          </td>
+
+          <!-- Cantidad Contada -->
+          <td data-label="Contada" class="count-col">
+            {{ item.cantidad_contada | number }}
+          </td>
+
+          <!-- Cantidad Sistema -->
+          <td data-label="Sistema" class="count-col">
+            {{ item.cantidad_sistema | number }}
+          </td>
+
+          <!-- Stock Reservado -->
+          <td data-label="Reservado" class="count-col">
+            {{ item.stock_reservado | number }}
+          </td>
+
+          <!-- Stock Disponible -->
+          <td data-label="Disponible" class="count-col">
+            {{ item.stock_disponible | number }}
+          </td>
+          
+          <!-- Cantidad de Reconteo (Fusionado) -->
+           <td 
+  data-label="Cant. Reconteo" 
+  class="count-col" 
+  [ngClass]="{'has-reconteo': getReconteoData(item).cantidad !== null}"
+>
+  <ng-container *ngIf="getReconteoData(item) as reconteoData">
+    <span 
+      *ngIf="reconteoData.cantidad !== null" 
+      class="reconteo-chip highlighted"
+      [title]="'Reconteo registrado: ' + reconteoData.cantidad"
+    >
+      <i class="fas fa-check-circle"></i> {{ reconteoData.cantidad | number }}
+    </span>
+    <span *ngIf="reconteoData.cantidad === null" class="text-muted">—</span>
+  </ng-container>
+</td>
+
+          <!-- Diferencia -->
+<td 
+  data-label="Diferencia" 
+  class="diff-col"
+>
+  <ng-container *ngIf="getReconteoData(item) as reconteoData; else sinReconteo">
+    <span 
+      *ngIf="reconteoData.cantidad !== null; else sinReconteo"
+      class="diff-chip"
+      [ngClass]="{
+        'loss-text': (reconteoData.cantidad - item.stock_disponible) < 0, 
+        'gain-text': (reconteoData.cantidad - item.stock_disponible) > 0
+      }"
+    >
+      {{ (reconteoData.cantidad - item.stock_disponible) | number }}
+    </span>
+  </ng-container>
+  
+  <ng-template #sinReconteo>
+    <span 
+      class="diff-chip"
+      [ngClass]="{
+        'loss-text': (0 - item.stock_disponible) < 0, 
+        'gain-text': (0 - item.stock_disponible) > 0
+      }"
+    >
+      {{ (0 - item.stock_disponible) | number }}
+    </span>
+  </ng-template>
+</td>
+
+          <!-- Usuario que realizó el Reconteo -->
+          <td data-label="Usuario Reconteo" class="user-col">
+            <ng-container *ngIf="getReconteoData(item) as reconteoData">
+              <span *ngIf="reconteoData.usuario">
+                {{ reconteoData.usuario }}
+              </span>
+              <span *ngIf="!reconteoData.usuario" class="text-muted">—</span>
+            </ng-container>
+             
+          </td>
+
+
+          <!-- Clasificación -->
+          <td data-label="Clasificación" class="clasif-col">
+            <span 
+              class="clasif-chip" 
+              [ngClass]="getClasificacionClass(item.clasificacion)"
+            >
+              {{ item.clasificacion }}
+            </span>
+            <small *ngIf="item.detalle_faltante" class="detalle-text">
+              ({{ item.detalle_faltante }})
+            </small>
+          </td>
+
+          <!-- Costo Promedio -->
+          <td data-label="Costo Prom." class="prioridad-col">
+            <span 
+              class="prioridad-chip" 
+              [ngClass]="getPrioridadClass(item.prioridad_accion)"
+            >
+              {{ item.costo_promedio | currency:'USD':'symbol':'1.2-2' }}
+            </span>
+          </td>
+
+          <!-- Impacto Financiero -->
+          <td data-label="Impacto" class="money-col">
+            <span 
+              [ngClass]="{
+                'loss-text': item.impacto_financiero < 0, 
+                'gain-text': item.impacto_financiero > 0
+              }"
+            >
+              {{ item.impacto_financiero | currency:'USD':'symbol':'1.2-2' }}
+            </span>
+          </td>
+          
+          <!-- Imágenes -->
+          <td data-label="Imágenes" class="image-col">
+            <button 
+              class="image-btn" 
+              [disabled]="!item.imagenes || item.imagenes.length === 0"
+              (click)="openImagesModal(item)"
+              [title]="item.imagenes && item.imagenes.length > 0 
+                ? 'Ver ' + item.imagenes.length + ' imagen(es)' 
+                : 'Sin imágenes'"
+            >
+              <i class="fas fa-image"></i> 
+              ({{ item.imagenes ? item.imagenes.length : 0 }})
+            </button>
+          </td>
+
+          <!-- Ubicación -->
+          <td data-label="Ubicación" class="ubicacion-col">
+            {{ item.ubicaciones_conteo || 'N/A' }}
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Modal de Imágenes -->
+  <div class="modal-overlay" [ngClass]="{'active': isModalOpenI}">
+    <div class="modal-content large-modal">
+      <div class="modal-header">
+        <h3>Imágenes del Artículo: {{ selectedArticuloName }}</h3>
+        <button class="close-button" (click)="closeImagesModal()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="modal-body image-modal-body">
+        <div *ngIf="currentImages.length > 0" class="image-grid">
+          <div *ngFor="let image of currentImages" class="image-card">
+            <img 
+              [src]="image.ruta_archivo" 
+              [alt]="image.nombre_archivo"
+              loading="lazy"
+            >
+            <p class="image-name">{{ image.nombre_archivo }}</p>
+            <p class="image-date">
+              <small>Subida: {{ image.fecha_subida | date:'short' }}</small>
+            </p>
+            <p class="image-id">
+              <small>Conteo ID: {{ image.conteo_id }}</small>
+            </p>
+          </div>
+        </div>
+        <div *ngIf="currentImages.length === 0" class="no-results">
+          <p>No hay imágenes disponibles para este registro de inconsistencia.</p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="button cancel-button" (click)="closeImagesModal()">
+          Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Modal de Reconteo -->
+  <div class="modal-overlay" [class.active]="isReconteoModalOpen">
+    <div class="modal-content small-modal" *ngIf="isReconteoModalOpen && selectedInconsistencia">
+      
+      <div class="modal-header">
+        <h3>Registrar Reconteo: {{ selectedInconsistencia.codigo_articulo }}</h3>
+        <button 
+          class="close-button" 
+          (click)="closeReconteoModal()" 
+          aria-label="Cerrar"
+        >
+          &times;
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <h4 style="margin-top: 0; color: var(--color-texto);">
+          Detalles de la Inconsistencia
+        </h4>
+        
+        <!-- Grid de Detalles -->
+        <div class="reconteo-details-grid">
+          <div>
+            <span class="label">Artículo (Descripción):</span>
+            <strong class="value">
+              {{ selectedInconsistencia.nombre_articulo || 'N/A' }}
+            </strong>
+          </div>
+          <div>
+            <span class="label">Ubicación Sistema:</span>
+            <strong class="value">
+              {{ selectedInconsistencia.ubicaciones_conteo || selectedInconsistencia.ubicacion_sistema }}
+            </strong>
+          </div>
+          
+          <div>
+            <span class="label">Cantidad Contada (Original):</span>
+            <strong class="value">
+              {{ selectedInconsistencia.cantidad_contada | number:'1.0-2' }}
+            </strong>
+          </div>
+          <div>
+            <span class="label">Cantidad Sistema:</span>
+            <strong class="value">
+              {{ selectedInconsistencia.cantidad_sistema | number:'1.0-2' }}
+            </strong>
+          </div>
+          
+          <div>
+            <span class="label">Cantidad Reservada:</span>
+            <strong class="value">
+              {{ selectedInconsistencia.stock_reservado | number:'1.0-2' }}
+            </strong>
+          </div>
+          <div>
+            <span class="label">Cantidad Disponible:</span>
+            <strong class="value">
+              {{ selectedInconsistencia.stock_disponible | number:'1.0-2' }}
+            </strong>
+          </div>
+          
+          <div>
+            <span class="label">Unidad:</span>
+            <strong class="value">
+              {{ selectedInconsistencia.unidad || 'UND' }}
+            </strong>
+          </div>
+          
+          <div>
+            <span class="label">Diferencia (vs. Disponible):</span>
+            <strong 
+              class="value"
+              [ngClass]="{
+                'loss-text': (selectedInconsistencia.cantidad_contada - selectedInconsistencia.stock_disponible) < 0,
+                'gain-text': (selectedInconsistencia.cantidad_contada - selectedInconsistencia.stock_disponible) > 0
+              }"
+            >
+              {{ selectedInconsistencia.cantidad_contada - selectedInconsistencia.stock_disponible | number:'1.0-2' }}
+            </strong>
+          </div>
+          
+          <div>
+            <span class="label">Clasificación:</span>
+            <strong 
+              class="value"
+              [ngClass]="getClasificacionClass(selectedInconsistencia.clasificacion)"
+            >
+              {{ selectedInconsistencia.clasificacion }}
+            </strong>
+          </div>
+          <div></div> 
+        </div>
+
+        <hr style="margin: 15px 0; border-color: var(--gris-2);">
+        
+        <!-- Formulario de Reconteo -->
+        <form #reconteoForm="ngForm">
+          
+          <!-- Estado del Producto -->
+          <div class="form-group">
+            <label for="estado-producto">
+              Estado del Producto <span class="required-star">*</span>
+            </label>
+            <select 
+              id="estado-producto"
+              name="estadoProducto"
+              [(ngModel)]="estadoProducto" 
+              class="form-control"
+              required
+              #estadoInput="ngModel"
+            >
+              <option value="" disabled>Seleccione un estado</option>
+              <option value="BUENO">BUENO</option>
+              <option value="DAÑADO">DAÑADO</option>
+              <option value="VENCIDO">VENCIDO</option>
+              <option value="DETERIORADO">DETERIORADO</option>
+              <option value="OTRO">OTRO</option>
+            </select>
+            <small 
+              class="error-message" 
+              *ngIf="estadoInput.invalid && estadoInput.touched"
+            >
+              El estado del producto es requerido
+            </small>
+          </div>
+
+          <!-- Cantidad de Reconteo -->
+          <div class="form-group">
+            <label for="cantidad-reconteo">
+              Nueva Cantidad Contada (Reconteo) <span class="required-star">*</span>
+            </label>
+            <input 
+              id="cantidad-reconteo"
+              name="cantidadReconteo"
+              type="number" 
+              [(ngModel)]="cantidadReconteo" 
+              class="form-control"
+              min="0"
+              step="0.01"
+              required
+              #cantidadInput="ngModel"
+            />
+            <small 
+              class="error-message" 
+              *ngIf="cantidadInput.invalid && cantidadInput.touched"
+            >
+              La cantidad debe ser mayor o igual a 0
+            </small>
+            
+            <!-- Indicador de Nueva Diferencia -->
+            <div *ngIf="cantidadReconteo !== null && cantidadReconteo >= 0" class="info-box">
+              <small>
+                <strong>Nueva Diferencia vs. Disponible:</strong> 
+                <span 
+                  [ngClass]="{
+                    'loss-text': getNuevaDiferencia() < 0,
+                    'gain-text': getNuevaDiferencia() > 0
+                  }"
+                >
+                  {{ getNuevaDiferencia() | number:'1.0-2' }}
+                </span>
+              </small>
+            </div>
+          </div>
+
+          <!-- Ubicación Física -->
+          <div class="form-group">
+            <label for="ubicacion-reconteo">
+              Ubicación Física <span class="required-star">*</span>
+            </label>
+            <input 
+              id="ubicacion-reconteo"
+              name="ubicacionReconteo"
+              type="text" 
+              [(ngModel)]="ubicacionReconteo" 
+              class="form-control"
+              placeholder="Ej: A-01-15, BODEGA-2"
+              required
+              #ubicacionInput="ngModel"
+            />
+            <small 
+              class="error-message" 
+              *ngIf="ubicacionInput.invalid && ubicacionInput.touched"
+            >
+              La ubicación es requerida
+            </small>
+          </div>
+
+          <!-- Motivo del Reconteo -->
+          <div class="form-group">
+            <label for="motivo-reconteo">
+              Motivo del Reconteo / Observaciones <span class="required-star">*</span>
+            </label>
+            <textarea 
+              id="motivo-reconteo"
+              name="motivoReconteo"
+              rows="3" 
+              [(ngModel)]="motivoReconteo" 
+              class="form-control"
+              placeholder="Describa el motivo del reconteo y cualquier observación relevante"
+              required
+              #motivoInput="ngModel"
+            ></textarea>
+            <small 
+              class="error-message" 
+              *ngIf="motivoInput.invalid && motivoInput.touched"
+            >
+              El motivo es requerido
+            </small>
+          </div>
+        </form>
+
+      </div>
+      
+      <!-- Footer del Modal -->
+      <div class="modal-footer">
+        <button 
+          class="button cancel-button" 
+          (click)="closeReconteoModal()"
+          [disabled]="isSubmittingReconteo"
+        >
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button 
+          class="button primary-button" 
+          [disabled]="!isReconteoFormValid() || isSubmittingReconteo" 
+          (click)="guardarReconteo()"
+        >
+          <i class="fas" [ngClass]="isSubmittingReconteo ? 'fa-spinner fa-spin' : 'fa-save'"></i> 
+          {{ isSubmittingReconteo ? 'Guardando...' : 'Guardar Reconteo' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+    
+</div>

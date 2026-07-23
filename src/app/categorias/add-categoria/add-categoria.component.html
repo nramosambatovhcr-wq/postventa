@@ -1,0 +1,75 @@
+<div class="list row">
+
+
+<div class="col-md-6">  
+    <div class="submit-form">
+      <div *ngIf="!submitted">
+         
+           
+        <div class="form-group">
+          <label for="title">Codigo</label>
+          <input
+            type="text"
+            class="form-control"
+            id="title"
+            required
+            [(ngModel)]="title"
+            name="title"
+          />
+        </div>
+        <div class="form-group">
+            <label for="title">Nombre</label>
+            <input
+              type="text"
+              class="form-control"
+              id="title"
+              required
+              [(ngModel)]="nombre"
+              name="nombre"
+            />
+          </div>
+  
+        <div class="form-group">
+          <label for="description">Descripcion</label>
+          <input
+            class="form-control"
+            id="description"
+            required
+            [(ngModel)]="descripcion"
+            name="description"
+          />
+        </div>
+         <!--     <div class="form-group">
+            <label for="contactMethod">Lineas</label>
+            <select 
+                name="contactMethod" 
+                id="contactMethod" 
+                class="form-control"
+                [ngModel]="linea"  >
+                 <option *ngFor="let method of tutorials" [value]="method.id">{{ method.nombre }}</option>
+            </select>
+            <div *ngIf="ver==true">
+                <h4>Lista categorias</h4>
+                <ul class="list-group">
+                  <li
+                    class="list-group-item"
+                    *ngFor="let tutorial of lista; let i = index"
+                    [class.active]="i == currentIndex"
+                     
+                  >
+                    {{ tutorial.categoriaNombre }}
+                  </li>
+                </ul>
+            </div>
+        </div>-->
+  
+        <button (click)="saveTutorial()" class="btn btn-success">Submit</button>
+      </div>
+  
+      <div *ngIf="submitted">
+        <h4>Tutorial was submitted successfully!</h4>
+        <button class="btn btn-success" (click)="newTutorial()">Add</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,1005 @@
+<div class="container-fluid bitacora-container">
+  <!-- Header del Dashboard -->
+  <div class="dashboard-header">
+    <div class="header-content">
+      <h1 class="dashboard-title">
+        <i class="fas fa-clipboard-list"></i> Bitácora de Actividades
+      </h1>
+      <p class="dashboard-subtitle">Registro diario de actividades del laboratorio</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="abrirModalNuevo()">
+        <i class="fas fa-plus"></i> Nueva Actividad
+      </button>
+    </div>
+  </div>
+
+  <!-- Mensajes de alerta -->
+  <div *ngIf="mensaje" class="alert alert-success alert-dismissible fade show" role="alert">
+    <i class="fas fa-check-circle"></i> {{ mensaje }}
+    <button type="button" class="btn-close" (click)="mensaje = ''" aria-label="Close"></button>
+  </div>
+
+  <div *ngIf="error" class="alert alert-danger alert-dismissible fade show" role="alert">
+    <i class="fas fa-exclamation-circle"></i> {{ error }}
+    <button type="button" class="btn-close" (click)="error = ''" aria-label="Close"></button>
+  </div>
+
+  <!-- Estadísticas -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+        <i class="fas fa-tasks"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.totalActividades }}</h3>
+        <p>TOTAL ACTIVIDADES</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.pendientes }}</h3>
+        <p>PENDIENTES</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+        <i class="fas fa-spinner"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.enProceso }}</h3>
+        <p>EN PROCESO</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+        <i class="fas fa-check-double"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ estadisticas.completadas }}</h3>
+        <p>COMPLETADAS</p>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+        <i class="fas fa-hourglass-half"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatDuracion(estadisticas.tiempoTotal) }}</h3>
+        <p>TIEMPO TOTAL</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Controles y Filtros -->
+  <div class="controls-section">
+    <div class="filters-row">
+      <div class="filter-group">
+        <label for="busqueda">
+          <i class="fas fa-search"></i> Buscar:
+        </label>
+        <input 
+          id="busqueda"
+          type="text" 
+          class="form-control" 
+          placeholder="Título, descripción..." 
+          [(ngModel)]="terminoBusqueda"
+          (input)="onFiltroChange()">
+      </div>
+
+      <div class="filter-group">
+        <label for="categoria">
+          <i class="fas fa-tag"></i> Categoría:
+        </label>
+        <select 
+          id="categoria"
+          class="form-select" 
+          [(ngModel)]="filtroCategoria"
+          (change)="onFiltroChange()">
+          <option value="">Todas</option>
+          <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="estado">
+          <i class="fas fa-flag"></i> Estado:
+        </label>
+        <select 
+          id="estado"
+          class="form-select" 
+          [(ngModel)]="filtroEstado"
+          (change)="onFiltroChange()">
+          <option *ngFor="let estado of estados" [value]="estado.value">
+            {{ estado.label }}
+          </option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="prioridad">
+          <i class="fas fa-exclamation-triangle"></i> Prioridad:
+        </label>
+        <select 
+          id="prioridad"
+          class="form-select" 
+          [(ngModel)]="filtroPrioridad"
+          (change)="onFiltroChange()">
+          <option value="">Todas</option>
+          <option *ngFor="let p of prioridades" [value]="p.value">{{ p.label }}</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+  <label for="usuario">
+    <i class="fas fa-user"></i> Usuario:
+  </label>
+  <select 
+    id="usuario"
+    class="form-select" 
+    [(ngModel)]="filtroUsuario"
+    (change)="onFiltroChange()">
+    <option value="">Todos</option>
+    <option *ngFor="let user of usuariosDisponibles" [value]="user.nombre">
+      {{ user.nombre }}
+    </option>
+  </select>
+</div>
+
+      <div class="filter-group">
+        <label for="fechaDesde">
+          <i class="fas fa-calendar-alt"></i> Desde:
+        </label>
+        <input 
+          id="fechaDesde"
+          type="date" 
+          class="form-control" 
+          [(ngModel)]="fechaDesde"
+          (change)="onFiltroChange()">
+      </div>
+
+      <div class="filter-group">
+        <label for="fechaHasta">
+          <i class="fas fa-calendar-check"></i> Hasta:
+        </label>
+        <input 
+          id="fechaHasta"
+          type="date" 
+          class="form-control" 
+          [(ngModel)]="fechaHasta"
+          (change)="onFiltroChange()">
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-outline-secondary" (click)="limpiarFiltros()">
+          <i class="fas fa-times"></i> Limpiar
+        </button>
+        <button class="btn btn-outline-primary" (click)="cargarActividades()" [disabled]="cargando">
+          <i class="fas fa-sync-alt" [class.fa-spin]="cargando"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="view-controls">
+      <div class="btn-group" role="group">
+        <button 
+          type="button" 
+          class="btn" 
+          [class.btn-primary]="vistaActual === 'lista'"
+          [class.btn-outline-secondary]="vistaActual !== 'lista'"
+          (click)="cambiarVista('lista')">
+          <i class="fas fa-list"></i> Lista
+        </button>
+        <button 
+          type="button" 
+          class="btn" 
+          [class.btn-primary]="vistaActual === 'tarjetas'"
+          [class.btn-outline-secondary]="vistaActual !== 'tarjetas'"
+          (click)="cambiarVista('tarjetas')">
+          <i class="fas fa-th-large"></i> Tarjetas
+        </button>
+        <button 
+          type="button" 
+          class="btn" 
+          [class.btn-primary]="vistaActual === 'calendario'"
+          [class.btn-outline-secondary]="vistaActual !== 'calendario'"
+          (click)="cambiarVista('calendario')">
+          <i class="fas fa-calendar"></i> Calendario
+        </button>
+      </div>
+
+      <div class="export-buttons">
+        <button class="btn btn-success" (click)="exportarExcel()">
+          <i class="fas fa-file-excel"></i> Excel
+        </button>
+        <button class="btn btn-info" (click)="exportarPDF()">
+          <i class="fas fa-file-pdf"></i> PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista de Lista -->
+  <div *ngIf="vistaActual === 'lista'" class="table-container">
+    <div *ngIf="cargando" class="loading-overlay">
+      <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Cargando...</span>
+      </div>
+    </div>
+
+    <table class="table table-modern">
+      <thead>
+        <tr>
+          <th>FECHA</th>
+          <th>TÍTULO</th>
+          <th>CATEGORÍA</th>
+          <th>PRIORIDAD</th>
+          <th>ESTADO</th>
+          <th>DURACIÓN</th>
+          <th>USUARIO</th>
+          <th>SOPORTE</th>
+          <th>ADJUNTOS</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let actividad of actividadesFiltradas; let i = index" 
+            [class.table-row-even]="i % 2 === 0">
+          <td>
+            <div class="fecha-cell">
+              <strong>{{ formatearFecha(actividad.fecha) }}</strong>
+              <small>{{ formatearHora(actividad.fecha) }}</small>
+            </div>
+          </td>
+          <td>
+            <div class="titulo-cell">
+              <strong>{{ actividad.titulo }}</strong>
+              <p class="text-muted">{{ actividad.descripcion | slice:0:50 }}...</p>
+            </div>
+          </td>
+          <td>
+            <span class="badge badge-categoria">{{ actividad.categoria }}</span>
+          </td>
+          <td>
+            <span class="badge badge-prioridad" 
+                  [style.background-color]="getColorPrioridad(actividad.prioridad)">
+              {{ getPrioridadLabel(actividad.prioridad) }}
+            </span>
+          </td>
+          <td>
+            <span class="badge" [ngClass]="obtenerClaseEstado(actividad.estado)">
+              {{ getEstadoLabel(actividad.estado) }}
+            </span>
+          </td>
+          <td>{{ formatDuracion(actividad.duracion) }}</td>
+          <td>
+            <div class="usuario-cell">
+              <i class="fas fa-user-circle"></i>
+              {{ actividad.usuarioNombre || 'N/A' }}
+            </div>
+          </td>
+          <td>
+            <span *ngIf="actividad.soporteCodigo" class="badge badge-soporte">
+              {{ actividad.soporteCodigo }}
+            </span>
+            <span *ngIf="!actividad.soporteCodigo" class="text-muted">N/A</span>
+          </td>
+          <td>
+            <div class="adjuntos-cell">
+              <span *ngIf="actividad.imagenes && actividad.imagenes.length > 0" 
+                    class="badge badge-info me-1">
+                <i class="fas fa-images"></i> {{ actividad.imagenes.length }}
+              </span>
+              <span *ngIf="actividad.archivos && actividad.archivos.length > 0" 
+                    class="badge badge-secondary">
+                <i class="fas fa-paperclip"></i> {{ actividad.archivos.length }}
+              </span>
+            </div>
+          </td>
+          <td>
+            <div class="action-buttons">
+              <button 
+                class="btn btn-sm btn-outline-info" 
+                (click)="verDetalle(actividad)"
+                title="Ver detalle">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-warning" 
+                (click)="abrirModalArchivos(actividad)"
+                title="Archivos">
+                <i class="fas fa-paperclip"></i>
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-primary" 
+                (click)="abrirModalEditar(actividad)"
+                title="Editar">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button 
+                class="btn btn-sm btn-outline-danger" 
+                (click)="eliminarActividad(actividad)"
+                title="Eliminar">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="actividadesFiltradas.length === 0 && !cargando" class="no-data">
+      <i class="fas fa-inbox"></i>
+      <p>No se encontraron actividades con los criterios seleccionados</p>
+      <button class="btn btn-primary mt-3" (click)="abrirModalNuevo()">
+        <i class="fas fa-plus"></i> Crear Primera Actividad
+      </button>
+    </div>
+  </div>
+
+  <!-- Vista de Tarjetas -->
+  <div *ngIf="vistaActual === 'tarjetas'" class="cards-container">
+    <div class="row">
+      <div class="col-md-6 col-lg-4 mb-4" *ngFor="let actividad of actividadesFiltradas">
+        <div class="actividad-card" [class.card-urgente]="actividad.prioridad === 'URGENTE'">
+          <div class="card-header-custom" 
+               [style.border-left-color]="getColorPrioridad(actividad.prioridad)">
+            <div class="card-fecha">
+              <i class="fas fa-calendar"></i>
+              {{ formatearFecha(actividad.fecha) }}
+              <span class="hora">{{ formatearHora(actividad.fecha) }}</span>
+            </div>
+            <span class="badge" [ngClass]="obtenerClaseEstado(actividad.estado)">
+              {{ getEstadoLabel(actividad.estado) }}
+            </span>
+          </div>
+          
+          <div class="card-body">
+            <h5 class="card-title">{{ actividad.titulo }}</h5>
+            <p class="card-text">{{ actividad.descripcion }}</p>
+            
+            <div class="card-meta">
+              <span class="badge badge-categoria">
+                <i class="fas fa-tag"></i> {{ actividad.categoria }}
+              </span>
+              <span class="badge badge-prioridad" 
+                    [style.background-color]="getColorPrioridad(actividad.prioridad)">
+                <i class="fas fa-flag"></i> {{ getPrioridadLabel(actividad.prioridad) }}
+              </span>
+              <span *ngIf="actividad.duracion" class="badge badge-info">
+                <i class="fas fa-clock"></i> {{ formatDuracion(actividad.duracion) }}
+              </span>
+            </div>
+
+            <div class="card-usuario">
+              <i class="fas fa-user"></i> {{ actividad.usuarioNombre }}
+            </div>
+
+            <div class="card-adjuntos" *ngIf="(actividad.imagenes && actividad.imagenes.length > 0) || (actividad.archivos && actividad.archivos.length > 0)">
+              <span *ngIf="actividad.imagenes && actividad.imagenes.length > 0">
+                <i class="fas fa-images text-info"></i> {{ actividad.imagenes.length }}
+              </span>
+              <span *ngIf="actividad.archivos && actividad.archivos.length > 0">
+                <i class="fas fa-paperclip text-secondary"></i> {{ actividad.archivos.length }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-footer-custom">
+            <button class="btn btn-sm btn-outline-info" (click)="verDetalle(actividad)">
+              <i class="fas fa-eye"></i> Ver
+            </button>
+            <button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditar(actividad)">
+              <i class="fas fa-edit"></i> Editar
+            </button>
+            <button class="btn btn-sm btn-outline-danger" (click)="eliminarActividad(actividad)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="actividadesFiltradas.length === 0 && !cargando" class="no-data">
+      <i class="fas fa-inbox"></i>
+      <p>No se encontraron actividades</p>
+    </div>
+  </div>
+
+  <!-- Vista de Calendario -->
+  <div *ngIf="vistaActual === 'calendario'" class="calendario-container">
+    <div class="calendario-header">
+      <button class="btn btn-outline-secondary" (click)="mesAnterior()">
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <h3>{{ nombreMesActual }} {{ anioActual }}</h3>
+      <button class="btn btn-outline-secondary" (click)="mesSiguiente()">
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+    <div class="calendario-grid">
+  <div class="calendario-dia-header" *ngFor="let dia of diasSemana">{{ dia }}</div>
+  
+  <div class="calendario-dia" 
+    *ngFor="let dia of diasCalendario"
+    [class.dia-otro-mes]="!dia.esDelMes"
+    [class.dia-hoy]="dia.esHoy"
+    (click)="seleccionarDia(dia)"> <div class="dia-numero">{{ dia.numero }}</div>
+    
+    <div class="dia-actividades">
+      <div *ngFor="let act of dia.actividades; let i = index"
+           class="actividad-calendario-item"
+           [class.hidden-activity]="i >= 2" [style.border-left-color]="getColorPrioridad(act.prioridad)"
+           [title]="act.titulo + ' (' + act.estado + ')'"
+           (click)="$event.stopPropagation(); verDetalle(act)"> {{ act.titulo | slice:0:15 }}{{ act.titulo.length > 15 ? '...' : '' }}
+      </div>
+      <div *ngIf="dia.actividades.length > 2" class="actividad-mas">
+         + {{ dia.actividades.length - 2 }} más
+      </div>
+    </div>
+  </div>
+</div>
+   <!-- <div class="calendario-grid">
+      <div class="calendario-dia-header" *ngFor="let dia of diasSemana">{{ dia }}</div>
+      <div class="calendario-dia" 
+           *ngFor="let dia of diasCalendario"
+           [class.dia-otro-mes]="!dia.esDelMes"
+           [class.dia-hoy]="dia.esHoy"
+           (click)="seleccionarDia(dia)">
+        <div class="dia-numero">{{ dia.numero }}</div>
+        <div class="dia-actividades">
+          <div class="actividad-punto" 
+               *ngFor="let act of dia.actividades"
+               [style.background-color]="getColorPrioridad(act.prioridad)"
+               [title]="act.titulo"></div>
+        </div>
+      </div>
+    </div>-->
+  </div>
+  
+</div>
+
+<!-- Modal Crear/Editar Actividad -->
+<div class="modal fade" [class.show]="mostrarModal" [style.display]="mostrarModal ? 'block' : 'none'" 
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-clipboard-list"></i>
+          {{ modoEdicion ? 'Editar Actividad' : 'Nueva Actividad' }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModal()"></button>
+      </div>
+      <div class="modal-body">
+        <form #formulario="ngForm">
+          <div class="row">
+            <div class="col-md-8">
+              <div class="mb-3">
+                <label for="titulo" class="form-label">Título *</label>
+                <input 
+                  type="text" 
+                  id="titulo"
+                  class="form-control" 
+                  [(ngModel)]="formularioActividad.titulo"
+                  name="titulo"
+                  placeholder="Ej: Reparación de equipo XYZ"
+                  required>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label for="fecha" class="form-label">Fecha y Hora *</label>
+                <input 
+                  type="datetime-local" 
+                  id="fecha"
+                  class="form-control" 
+                  [(ngModel)]="formularioActividad.fecha"
+                  name="fecha"
+                  required>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="descripcion" class="form-label">Descripción *</label>
+            <textarea 
+              id="descripcion"
+              class="form-control" 
+              rows="4"
+              [(ngModel)]="formularioActividad.descripcion"
+              name="descripcion"
+              placeholder="Describe detalladamente la actividad realizada..."
+              required></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="categoria" class="form-label">Categoría *</label>
+                <select 
+                  id="categoria"
+                  class="form-select" 
+                  [(ngModel)]="formularioActividad.categoria"
+                  name="categoria"
+                  required>
+                  <option value="">Seleccionar...</option>
+                  <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="prioridad" class="form-label">Prioridad *</label>
+                <select 
+                  id="prioridad"
+                  class="form-select" 
+                  [(ngModel)]="formularioActividad.prioridad"
+                  name="prioridad"
+                  required>
+                  <option value="">Seleccionar...</option>
+                  <option *ngFor="let p of prioridades" [value]="p.value">{{ p.label }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="estado" class="form-label">Estado *</label>
+                <select 
+                  id="estado"
+                  class="form-select" 
+                  [(ngModel)]="formularioActividad.estado"
+                  name="estado"
+                  required>
+                  <option *ngFor="let e of estados" [value]="e.value">{{ e.label }}</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="duracion" class="form-label">Duración (minutos)</label>
+                <input 
+                  type="number" 
+                  id="duracion"
+                  class="form-control" 
+                  [(ngModel)]="formularioActividad.duracion"
+                  name="duracion"
+                  min="0"
+                  placeholder="Ej: 120">
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="ubicacion" class="form-label">Ubicación</label>
+                <input 
+                  type="text" 
+                  id="ubicacion"
+                  class="form-control" 
+                  [(ngModel)]="formularioActividad.ubicacion"
+                  name="ubicacion"
+                  placeholder="Ej: Laboratorio A, Sala 3">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="soporteId" class="form-label">Soporte Relacionado</label>
+                <select 
+                  id="soporteId"
+                  class="form-select" 
+                  [(ngModel)]="formularioActividad.soporteId"
+                  name="soporteId">
+                  <option [value]="undefined">Sin soporte asociado</option>
+                  <option *ngFor="let soporte of soportesDisponibles" [value]="soporte.id">
+                    {{ soporte.codigo }} - {{ soporte.descripcion }}
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="etiquetas" class="form-label">Etiquetas</label>
+            <input 
+              type="text" 
+              id="etiquetas"
+              class="form-control" 
+              [(ngModel)]="etiquetasInput"
+              name="etiquetas"
+              placeholder="Separe por comas: urgente, importante, revisión">
+            <small class="form-text text-muted">
+              Separe las etiquetas con comas
+            </small>
+          </div>
+
+          <div class="mb-3">
+            <label for="observaciones" class="form-label">Observaciones</label>
+            <textarea 
+              id="observaciones"
+              class="form-control" 
+              rows="3"
+              [(ngModel)]="formularioActividad.observaciones"
+              name="observaciones"
+              placeholder="Notas adicionales, comentarios, seguimiento..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModal()">
+          <i class="fas fa-times"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarActividad()" [disabled]="cargando">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargando" class="fas fa-save"></i>
+          {{ modoEdicion ? 'Actualizar' : 'Crear' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Archivos e Imágenes -->
+<div class="modal fade" [class.show]="mostrarModalArchivos" [style.display]="mostrarModalArchivos ? 'block' : 'none'" 
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-paperclip"></i>
+          Archivos y Documentos: {{ actividadSeleccionada?.titulo }}
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalArchivos()"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Tabs para Imágenes y Archivos -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" 
+                    [class.active]="tabActivo === 'imagenes'"
+                    (click)="tabActivo = 'imagenes'"
+                    type="button">
+              <i class="fas fa-images"></i> Imágenes
+              <span class="badge bg-primary ms-2">
+                {{ actividadSeleccionada?.imagenes?.length || 0 }}
+              </span>
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" 
+                    [class.active]="tabActivo === 'archivos'"
+                    (click)="tabActivo = 'archivos'"
+                    type="button">
+              <i class="fas fa-file-alt"></i> Documentos
+              <span class="badge bg-primary ms-2">
+                {{ actividadSeleccionada?.archivos?.length || 0 }}
+              </span>
+            </button>
+          </li>
+        </ul>
+
+        <!-- Tab de Imágenes -->
+        <div *ngIf="tabActivo === 'imagenes'">
+          <!-- Imágenes existentes -->
+          <!--<div *ngIf="actividadSeleccionada?.imagenes && actividadSeleccionada?.imagenes.length > 0" class="mb-4">-->
+          <div   *ngIf="(actividadSeleccionada?.imagenes || []).length > 0" class="mb-4">
+            <h6><i class="fas fa-images"></i> Imágenes actuales:</h6>
+            <div class="images-grid">
+              <div *ngFor="let imagen of actividadSeleccionada?.imagenes" class="image-item">
+                <img [src]="obtenerUrlImagen(imagen)" [alt]="imagen" class="img-thumbnail">
+                <div class="image-overlay">
+                  <button class="btn btn-sm btn-light" (click)="verImagenGrande(imagen)">
+                    <i class="fas fa-search-plus"></i>
+                  </button>
+                  <button class="btn btn-sm btn-danger" (click)="eliminarImagen(imagen)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+                <p class="image-name">{{ imagen }}</p>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!actividadSeleccionada?.imagenes" class="text-center text-muted py-4">
+            <i class="fas fa-images fa-3x mb-3"></i>
+            <p>No hay imágenes adjuntas</p>
+          </div>
+
+          <!-- Subir nuevas imágenes -->
+          <div class="upload-section">
+            <h6><i class="fas fa-cloud-upload-alt"></i> Subir nuevas imágenes:</h6>
+            <div class="mb-3">
+              <input 
+                type="file" 
+                class="form-control" 
+                multiple 
+                accept="image/*"
+                (change)="onImagenesSeleccionadas($event)">
+              <div class="form-text">
+                Formatos: JPG, PNG, GIF, WEBP. Tamaño máximo: 10MB por archivo.
+              </div>
+            </div>
+
+            <div *ngIf="imagenesSeleccionadas.length > 0" class="selected-files">
+              <h6>Archivos seleccionados:</h6>
+              <ul class="list-group">
+                <li *ngFor="let archivo of imagenesSeleccionadas" class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="fas fa-file-image text-info me-2"></i>
+                    {{ archivo.name }}
+                    <small class="text-muted">({{ (archivo.size / 1024 / 1024).toFixed(2) }} MB)</small>
+                  </div>
+                  <button class="btn btn-sm btn-danger" (click)="removerImagenSeleccionada(archivo)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab de Archivos/Documentos -->
+        <div *ngIf="tabActivo === 'archivos'">
+          <!-- Archivos existentes -->
+          <div *ngIf="(actividadSeleccionada?.archivos || []).length > 0"  class="mb-4">
+            <h6><i class="fas fa-file-alt"></i> Documentos actuales:</h6>
+            <div class="files-list">
+              <div *ngFor="let archivo of actividadSeleccionada?.archivos" class="file-item">
+                <div class="file-icon">
+                  <i [class]="obtenerIconoArchivo(archivo)"></i>
+                </div>
+                <div class="file-info">
+                  <h6>{{ archivo }}</h6>
+                  <small class="text-muted">{{ obtenerExtension(archivo) }}</small>
+                </div>
+                <div class="file-actions">
+                  <a [href]="obtenerUrlArchivo(archivo)" 
+                     class="btn btn-sm btn-outline-primary" 
+                     download
+                     target="_blank">
+                    <i class="fas fa-download"></i> Descargar
+                  </a>
+                  <button class="btn btn-sm btn-outline-danger" (click)="eliminarArchivo(archivo)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!actividadSeleccionada?.archivos" class="text-center text-muted py-4">
+            <i class="fas fa-file-alt fa-3x mb-3"></i>
+            <p>No hay documentos adjuntos</p>
+          </div>
+
+          <!-- Subir nuevos archivos -->
+          <div class="upload-section">
+            <h6><i class="fas fa-cloud-upload-alt"></i> Subir nuevos documentos:</h6>
+            <div class="mb-3">
+              <input 
+                type="file" 
+                class="form-control" 
+                multiple 
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                (change)="onArchivosSeleccionados($event)">
+              <div class="form-text">
+                Formatos: PDF, DOC, DOCX, XLS, XLSX, TXT. Tamaño máximo: 10MB por archivo.
+              </div>
+            </div>
+
+            <div *ngIf="archivosSeleccionados.length > 0" class="selected-files">
+              <h6>Archivos seleccionados:</h6>
+              <ul class="list-group">
+                <li *ngFor="let archivo of archivosSeleccionados" class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <i [class]="obtenerIconoArchivo(archivo.name)" class="me-2"></i>
+                    {{ archivo.name }}
+                    <small class="text-muted">({{ (archivo.size / 1024 / 1024).toFixed(2) }} MB)</small>
+                  </div>
+                  <button class="btn btn-sm btn-danger" (click)="removerArchivoSeleccionado(archivo)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalArchivos()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button 
+          *ngIf="tabActivo === 'imagenes'"
+          type="button" 
+          class="btn btn-primary" 
+          (click)="subirImagenes()" 
+          [disabled]="imagenesSeleccionadas.length === 0 || cargando">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargando" class="fas fa-upload"></i>
+          Subir Imágenes
+        </button>
+        <button 
+          *ngIf="tabActivo === 'archivos'"
+          type="button" 
+          class="btn btn-primary" 
+          (click)="subirArchivos()" 
+          [disabled]="archivosSeleccionados.length === 0 || cargando">
+          <span *ngIf="cargando" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!cargando" class="fas fa-upload"></i>
+          Subir Documentos
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Detalle -->
+<div class="modal fade" [class.show]="mostrarModalDetalle" [style.display]="mostrarModalDetalle ? 'block' : 'none'" 
+     tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">
+          <i class="fas fa-info-circle"></i>
+          Detalle de Actividad
+        </h5>
+        <button type="button" class="btn-close" (click)="cerrarModalDetalle()"></button>
+      </div>
+      <div class="modal-body" *ngIf="actividadSeleccionada">
+        <div class="detalle-header">
+          <h3>{{ actividadSeleccionada.titulo }}</h3>
+          <div class="detalle-badges">
+            <span class="badge" [ngClass]="obtenerClaseEstado(actividadSeleccionada.estado)">
+              {{ getEstadoLabel(actividadSeleccionada.estado) }}
+            </span>
+            <span class="badge badge-prioridad" 
+                  [style.background-color]="getColorPrioridad(actividadSeleccionada.prioridad)">
+              {{ getPrioridadLabel(actividadSeleccionada.prioridad) }}
+            </span>
+            <span class="badge badge-categoria">
+              {{ actividadSeleccionada.categoria }}
+            </span>
+          </div>
+        </div>
+
+        <div class="detalle-info">
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-calendar"></i> Fecha:
+            </div>
+            <div class="info-value">
+              {{ formatearFecha(actividadSeleccionada.fecha) }} - {{ formatearHora(actividadSeleccionada.fecha) }}
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-user"></i> Usuario:
+            </div>
+            <div class="info-value">
+              {{ actividadSeleccionada.usuarioNombre || 'N/A' }}
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="actividadSeleccionada.duracion">
+            <div class="info-label">
+              <i class="fas fa-clock"></i> Duración:
+            </div>
+            <div class="info-value">
+              {{ formatDuracion(actividadSeleccionada.duracion) }}
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="actividadSeleccionada.ubicacion">
+            <div class="info-label">
+              <i class="fas fa-map-marker-alt"></i> Ubicación:
+            </div>
+            <div class="info-value">
+              {{ actividadSeleccionada.ubicacion }}
+            </div>
+          </div>
+
+          <div class="info-row" *ngIf="actividadSeleccionada.soporteCodigo">
+            <div class="info-label">
+              <i class="fas fa-tools"></i> Soporte:
+            </div>
+            <div class="info-value">
+              <span class="badge badge-soporte">{{ actividadSeleccionada.soporteCodigo }}</span>
+            </div>
+          </div>
+
+          <div class="info-row full-width">
+            <div class="info-label">
+              <i class="fas fa-align-left"></i> Descripción:
+            </div>
+            <div class="info-value">
+              {{ actividadSeleccionada.descripcion }}
+            </div>
+          </div>
+
+          <div class="info-row full-width" *ngIf="actividadSeleccionada.observaciones">
+            <div class="info-label">
+              <i class="fas fa-comment"></i> Observaciones:
+            </div>
+            <div class="info-value">
+              {{ actividadSeleccionada.observaciones }}
+            </div>
+          </div>
+
+          <div class="info-row full-width" *ngIf="actividadSeleccionada.etiquetas && actividadSeleccionada.etiquetas.length > 0">
+            <div class="info-label">
+              <i class="fas fa-tags"></i> Etiquetas:
+            </div>
+            <div class="info-value">
+              <span class="badge badge-tag me-1" *ngFor="let etiqueta of actividadSeleccionada.etiquetas">
+                {{ etiqueta }}
+              </span>
+            </div>
+          </div>
+
+          <div class="info-row">
+            <div class="info-label">
+              <i class="fas fa-paperclip"></i> Adjuntos:
+            </div>
+            <div class="info-value">
+              <span class="badge badge-info me-2" *ngIf="actividadSeleccionada.imagenes && actividadSeleccionada.imagenes.length > 0">
+                <i class="fas fa-images"></i> {{ actividadSeleccionada.imagenes.length }} imágenes
+              </span>
+              <span class="badge badge-secondary" *ngIf="actividadSeleccionada.archivos && actividadSeleccionada.archivos.length > 0">
+                <i class="fas fa-file-alt"></i> {{ actividadSeleccionada.archivos.length }} documentos
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Galería de imágenes -->
+        <div *ngIf="actividadSeleccionada.imagenes && actividadSeleccionada.imagenes.length > 0" class="detalle-gallery mt-4">
+          <h6><i class="fas fa-images"></i> Galería de Imágenes:</h6>
+          <div class="images-grid-small">
+            <img *ngFor="let imagen of actividadSeleccionada.imagenes" 
+                 [src]="obtenerUrlImagen(imagen)" 
+                 [alt]="imagen" 
+                 class="img-thumbnail"
+                 (click)="verImagenGrande(imagen)">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalDetalle()">
+          <i class="fas fa-times"></i> Cerrar
+        </button>
+        <button type="button" class="btn btn-warning" (click)="abrirModalArchivos(actividadSeleccionada!)">
+          <i class="fas fa-paperclip"></i> Ver Archivos
+        </button>
+        <button type="button" class="btn btn-primary" (click)="editarDesdeDetalle()">
+          <i class="fas fa-edit"></i> Editar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Ver Imagen Grande -->
+<div class="modal fade" [class.show]="mostrarModalImagenGrande" [style.display]="mostrarModalImagenGrande ? 'block' : 'none'" 
+     tabindex="-1" role="dialog" (click)="cerrarModalImagenGrande()">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+    <div class="modal-content bg-transparent border-0">
+      <div class="modal-body text-center p-0">
+        <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3" 
+                (click)="cerrarModalImagenGrande()" style="z-index: 1000;"></button>
+        <img [src]="imagenGrandeUrl" class="img-fluid" alt="Imagen">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overlay para modales -->
+<div *ngIf="mostrarModal || mostrarModalArchivos || mostrarModalDetalle || mostrarModalImagenGrande" 
+     class="modal-backdrop fade show"></div>

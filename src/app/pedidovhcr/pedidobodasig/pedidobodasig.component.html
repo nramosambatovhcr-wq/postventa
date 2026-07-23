@@ -1,0 +1,225 @@
+<!-- Updated dashboard.component.html with date filtering -->
+<header class="cabecera">
+    <div class="contenedor">
+      <div class="contenido-cabecera">
+        <div class="logo">Pedidos Bodega</div>
+        <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          placeholder="Buscar código, descripción, observaciones, cliente, OT o usuario"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+       
+      </div>
+      </div>
+    </div>
+  </header>
+  
+  <main class="contenedor">
+    <section class="panel">
+      <div class="panel-cabecera">
+        <h1 class="panel-titulo">Dashboard de Pedidos Asignados de Bodega</h1>
+        <p class="panel-subtitulo">Monitoreo en tiempo real de los pedidos asignados</p>
+      </div>
+      
+      <div class="contenedor-estadisticas">
+        <div class="tarjeta-estadistica pendiente" 
+          [ngClass]="{'activa-pendiente': paginaActual === 'pendiente'}"
+          (click)="pendiente()">
+        <div class="valor-estadistica">PENDIENTE</div>
+      </div>
+        <div class="tarjeta-estadistica pendiente" 
+          [ngClass]="{'activa-pendiente': paginaActual === 'clocal'}"
+          (click)="clocal()">
+        <div class="valor-estadistica">COMPRA LOCAL</div>
+      </div>
+      <div class="tarjeta-estadistica proceso" 
+       [ngClass]="{'activa-proceso': paginaActual === 'proceso'}"
+       (click)="proceso()">
+        <div class="valor-estadistica">EN PROCESO</div>
+      </div>
+      <div class="tarjeta-estadistica asignado" 
+       [ngClass]="{'activa-asignado': paginaActual === 'asignado'}"
+       (click)="asignado()">
+        <div class="valor-estadistica">ASIGNADO</div>
+      </div>
+        <div class="tarjeta-estadistica revisados" 
+       [ngClass]="{'activa-revisados': paginaActual === 'revisados'}"
+       (click)="revisado()">
+        <div class="valor-estadistica">FINALIZADOS</div>
+      </div>
+      
+        <div class="tarjeta-estadistica error" 
+       [ngClass]="{'activa-error': paginaActual === 'error'}"
+       (click)="error()">
+        <div class="valor-estadistica">INFORMACION ERRONEA</div>
+      </div>
+      </div>
+      <div class="contenedor-tabla-importaciones">
+        <div class="cabecera-tabla">
+          <div class="titulo-tabla">Pedidos Asignados Recientes</div>
+          <div class="acciones-tabla">
+            <!-- Filtro de fechas -->
+            <div class="filtro-fechas">
+              <div class="fecha-desde">
+                <label for="startDate">Desde:</label>
+                <input type="date" id="startDate" [(ngModel)]="startDate" (change)="applyDateFilter()">
+              </div>
+              <div class="fecha-hasta">
+                <label for="endDate">Hasta:</label>
+                <input type="date" id="endDate" [(ngModel)]="endDate" (change)="applyDateFilter()">
+              </div>
+              <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+            </div>
+            <button class="boton boton-contorno" (click)="filterData()">Filtrar</button>
+            <div class="dropdown">
+              <button class="boton boton-contorno" (click)="toggleExportMenu()">Exportar</button>
+              <div class="dropdown-content" *ngIf="showExportMenu">
+                <a (click)="downloadExcel()">Excel (.xlsx)</a>
+                <a (click)="downloadCSV()">CSV (.csv)</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="tabla-responsive">
+          <table>
+            <thead>
+              <tr>
+                <th (click)="sortBy('codigo')" class="th-sortable">
+                  Codigo <i class="fa" [ngClass]="getSortIcon('codigo')"></i>
+                </th>
+                <th (click)="sortBy('descripcion')" class="th-sortable">
+                  Descripcion <i class="fa" [ngClass]="getSortIcon('descripcion')"></i>
+                </th>
+                <th (click)="sortBy('cantidad')" class="th-sortable">
+                  Cantidad <i class="fa" [ngClass]="getSortIcon('cantidad')"></i>
+                </th>
+                <th>Observaciones</th>
+                <th (click)="sortBy('cliente')" class="th-sortable">
+                  Cliente <i class="fa" [ngClass]="getSortIcon('cliente')"></i>
+                </th>
+                <th (click)="sortBy('ot')" class="th-sortable">
+                  OT <i class="fa" [ngClass]="getSortIcon('ot')"></i>
+                </th>
+                <th (click)="sortBy('nombre')" class="th-sortable">
+                  Usuario <i class="fa" [ngClass]="getSortIcon('nombre')"></i>
+                </th>
+                <th (click)="sortBy('fecha_creacion')" class="th-sortable hide-mobile">
+                  Fecha <i class="fa" [ngClass]="getSortIcon('fecha_creacion')"></i>
+                </th>
+                <th>Imagen</th>
+                <th (click)="sortBy('estado')" class="th-sortable">
+                  Estado <i class="fa" [ngClass]="getSortIcon('estado')"></i>
+                </th>
+                <th>Acciones</th><!-- Nueva columna para acciones -->
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of lista" class="fila-datos">
+                <td data-label="Codigo">{{ item.codigo }}</td>
+                <td data-label="Descripcion">{{ item.descripcion }}</td>
+                <td data-label="Cantidad">{{ item.cantidad }}</td>
+                <td data-label="Observacion">{{ item.ultimo_mensaje }}</td>
+               <!-- <td data-label="Observacion" >
+                  <div *ngIf="usuario?.rol === 'admin'||usuario?.rol === 'repuestos' || usuario?.rol === 'repuestoslv'|| usuario?.rol === 'repuestoslk' || usuario?.rol === 'repuestosc' else content1">
+                    <textarea
+                    [(ngModel)]="item.observaciones"
+                    placeholder="Escribe tu observación"
+                    rows="3"
+                    style="width: 100%; resize: vertical;">
+                  </textarea>
+                  </div>
+                  <ng-template #content1>{{item.observaciones}}</ng-template>
+                  
+                    </td>-->
+                    <td data-label="Cliente">{{ item.cliente }}</td>
+                    <td data-label="OT">{{ item.ot }}</td>
+                    <td data-label="Usuario">{{ item.nombre }} {{item.apellido}}</td>
+                <td data-label="Fecha" class="hide-mobile">{{ item.fecha_creacion | date:'dd/MM/yyyy' }}</td>
+                <td data-label="Imagen">
+                    <div *ngFor="let imagePath of item.imagenes" class="image-container">
+                        <div *ngIf="imagePath!=null">
+                            <img [src]="getImageUrl(imagePath)" alt="Imagen del pedido" (click)="openImageModal(getImageUrl(imagePath))" class="pedido-image" width="100px" height="100px">
+                     
+                        </div>
+                        </div>
+                  </td>
+                <td data-label="Estado">
+                  <div *ngIf="usuario?.rol === 'admin'||usuario?.rol === 'repuestos' || usuario?.rol === 'repuestoslv'|| usuario?.rol === 'repuestoslk' || usuario?.rol === 'repuestosc'|| usuario?.rol === 'laboratorio1' || usuario?.rol === 'laboratorio2' else content">
+                    <select [(ngModel)]="item.estado" (change)="actualizarEstado(item)">
+                      <option value="PENDIENTE">PENDIENTE</option>
+                      <option value="PROCESO">EN PROCESO</option>
+                      <option value="ASIGNADO">ASIGNADO</option>
+                      <option value="ERRONEO">MAL PEDIDO</option>
+                      <option value="REVISADO">FINALIZADO</option>
+                       
+                  </select>
+                  </div>
+                  <ng-template #content>{{item.estado}}</ng-template>
+                </td>
+               <td data-label="Acciones">
+                <div class="acciones-container">
+                  <button class="boton-accion" (click)="openObservacionesModal(item)" title="Ver Observaciones">
+                    <i class="fa fa-comments"></i> Comentarios
+                  </button>   
+                  <button class="boton-accion view-details-button" (click)="verObservaciones(item.id_pedido)" title="Ver Detalles del Pedido">
+                    <i class="fa fa-info-circle"></i> Ver Detalles
+                  </button>              
+                </div>
+              </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="pie-tabla">
+          <div class="items-count">Mostrando {{ lista?.length || 0 }} de {{ filteredData?.length || 0 }} pedidos</div>
+          <div class="paginacion">
+            <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+            <button 
+              *ngFor="let page of getPaginationArray()" 
+              class="boton-pagina" 
+              [ngClass]="{'activo': page === currentPage}"
+              (click)="changePage(page)">
+              <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+              <ng-container *ngIf="page === -1">...</ng-container>
+            </button>
+            <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+    
+    <!-- Modal para ver imágenes -->
+    <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+        <div class="image-modal-content" (click)="$event.stopPropagation()">
+          <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+          <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+        </div>
+    </div>
+    
+    <!-- Componente Modal de Observaciones -->
+    <app-observaciones
+      [pedido]="selectedPedido"
+      [currentUserId]="id"
+      [userRole]="usuario?.rol || ''"
+      [modalVisible]="observacionesModalVisible"
+      (closeModalEvent)="closeObservacionesModal()">
+    </app-observaciones>
+      
+        
+    <app-observacionesped 
+  [pedidoId]="selectedPedidoId"
+  [modalVisible]="showObservacionesModal1"
+  [currentUserId]="id"
+  [userRole]="usuario?.rol || ''"
+  (closeModalEvent)="closeObservacionesModal1()">
+</app-observacionesped>
+
+   
+  </main>

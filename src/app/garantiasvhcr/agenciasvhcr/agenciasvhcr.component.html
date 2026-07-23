@@ -1,0 +1,132 @@
+<div class="agencias-container">
+
+  <!-- ── HERO HEADER ──────────────────────────────────────── -->
+  <header class="page-header">
+    <div class="header-inner">
+      <div class="header-icon">🏭</div>
+      <h1>Oficinas Disponibles</h1>
+      <p class="subtitle">Selecciona una oficina/bodega para iniciar el proceso de revisión de partes</p>
+    </div>
+  </header>
+
+  <!-- ── CUERPO ────────────────────────────────────────────── -->
+  <div class="page-body">
+
+    <!-- ── CARGANDO ─────────────────────────────────────────── -->
+    <div class="loading-state" *ngIf="cargando">
+      <div class="spinner"></div>
+      <p>Cargando oficinas…</p>
+    </div>
+
+    <!-- ── ERROR ────────────────────────────────────────────── -->
+    <div class="error-state" *ngIf="error && !cargando">
+      <span class="error-icon">⚠️</span>
+      <h3>Error al cargar</h3>
+      <p>{{ error }}</p>
+      <button class="btn-reintentar" (click)="reintentar()">🔄 Reintentar</button>
+    </div>
+
+    <!-- ── CONTENIDO ────────────────────────────────────────── -->
+    <ng-container *ngIf="!cargando && !error">
+
+      <!-- Barra de búsqueda -->
+      <div class="search-bar-wrapper" *ngIf="oficinas.length > 0">
+        <span class="search-icon">🔍</span>
+        <input
+          class="search-input"
+          type="text"
+          [(ngModel)]="textoBusqueda"
+          (input)="aplicarBusqueda()"
+          placeholder="Buscar por bodega, oficina o ID…"
+          autocomplete="off"
+          aria-label="Buscar oficina"
+        >
+        <span class="search-count">{{ oficinasFiltradas.length }} resultado(s)</span>
+        <button
+          class="btn-clear-search"
+          *ngIf="textoBusqueda"
+          (click)="limpiarBusqueda()"
+          title="Limpiar búsqueda"
+          aria-label="Limpiar búsqueda">
+          ✕
+        </button>
+      </div>
+
+      <!-- Grid de cards -->
+      <div class="cards-grid" *ngIf="oficinasFiltradas.length > 0">
+        <div
+          class="agency-card active"
+          *ngFor="let oficina of oficinasFiltradas"
+          (click)="goToRevision(oficina.oficinaId)"
+          role="button"
+          [attr.aria-label]="'Ir a revisión de ' + oficina.bodega"
+          tabindex="0"
+          (keydown.enter)="goToRevision(oficina.oficinaId)"
+          (keydown.space)="goToRevision(oficina.oficinaId)">
+
+          <!-- Franja de color superior -->
+          <div class="card-accent"></div>
+
+          <div class="card-header">
+            <div class="agency-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+              </svg>
+            </div>
+            <span class="status-badge activa">Activa</span>
+          </div>
+
+          <div class="card-body">
+            <h3 class="agency-name">{{ oficina.bodega }}</h3>
+            <p class="agency-code">{{ oficina.oficina }}</p>
+            <p class="agency-location">📍 Oficina ID: {{ oficina.oficinaId }}</p>
+
+            <div class="agency-stats">
+              <div class="stat">
+                <span class="stat-value">{{ oficina.bodegaId }}</span>
+                <span class="stat-label">Bodega ID</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <span class="action-text">Iniciar revisión</span>
+            <span class="arrow-icon">→</span>
+          </div>
+
+        </div><!-- /agency-card -->
+      </div><!-- /cards-grid -->
+
+      <!-- Sin resultados de búsqueda -->
+      <div class="no-results-search"
+           *ngIf="oficinas.length > 0 && oficinasFiltradas.length === 0">
+        <span class="error-icon">🔎</span>
+        <h3>Sin resultados</h3>
+        <p>No se encontró ninguna oficina con "<strong>{{ textoBusqueda }}</strong>".</p>
+        <button class="btn-limpiar-busqueda" (click)="limpiarBusqueda()">
+          Limpiar búsqueda
+        </button>
+      </div>
+
+      <!-- Sin oficinas en absoluto -->
+      <div class="no-agencies" *ngIf="oficinas.length === 0">
+        <div class="no-data-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+               fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <h3>No hay oficinas disponibles</h3>
+        <p>No se encontraron oficinas/bodegas activas para revisión en este momento.</p>
+      </div>
+
+    </ng-container><!-- /ng-container -->
+
+  </div><!-- /page-body -->
+</div>

@@ -1,0 +1,792 @@
+<div class="container-fluid mt-4 px-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white py-3">
+            <h4 class="mb-1 fw-bold">
+                <i class="fas fa-clipboard-list me-2"></i>
+                Respuesta Consolidada ({{ dataConsolidada?.cotigeneral || 'Cargando...' }})
+            </h4>
+            <small *ngIf="dataConsolidada">
+                <i class="fas fa-building me-1"></i>Consolidando cotizaciones de múltiples proveedores
+            </small>
+        </div>
+
+        <div class="card-body">
+            <!-- Loading -->
+            <div *ngIf="loading" class="text-center p-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-2 text-muted">Procesando...</p>
+            </div>
+
+            <!-- Mensajes -->
+            <div *ngIf="errorMessage" class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <pre style="white-space: pre-wrap; margin-bottom: 0;">{{ errorMessage }}</pre>
+                <button type="button" class="btn-close" (click)="errorMessage = null"></button>
+            </div>
+            <div *ngIf="successMessage" class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle me-2"></i>
+                <pre style="white-space: pre-wrap; margin-bottom: 0;">{{ successMessage }}</pre>
+                <button type="button" class="btn-close" (click)="successMessage = null"></button>
+            </div>
+
+            <!-- Contenido principal -->
+            <div *ngIf="dataConsolidada && !loading">
+
+                <!-- Instrucciones -->
+                <div class="alert alert-info border-start border-4 border-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i><strong>¿Cómo funciona?</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>
+                            Haga clic en <strong class="text-success">✅ Asignar</strong> en el proveedor que quiere confirmar
+                            → se enviará con estado <strong>ASIGNADA</strong>.
+                        </li>
+                        <li>
+                            Haga clic en <strong class="text-danger">❌ Anular</strong> en el proveedor que quiere anular
+                            → se enviará con estado <strong>ANULADA</strong>.
+                        </li>
+                        <li>
+                            Si <strong>no toca</strong> un proveedor, su cotización quedará en
+                            <strong class="text-warning">⏳ EN ESPERA</strong> sin ningún cambio.
+                        </li>
+                        <li>
+                            Cuando termine de marcar, presione <strong>"Confirmar y Enviar"</strong>.
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Banner items nuevos del Excel -->
+                <div *ngIf="hayItemsNuevos"
+                     class="alert alert-warning border-start border-4 border-warning d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                        <i class="fas fa-file-excel me-2 text-success"></i>
+                        <strong>{{ itemsAdicionalesExcel.length }} item(s) nuevos cargados desde Excel</strong>
+                        — marcados con <span class="badge bg-warning text-dark ms-1"><i class="fas fa-plus-circle me-1"></i>NUEVO</span>.
+                        Se guardarán en la base de datos al confirmar.
+                    </div>
+                    <button class="btn btn-sm btn-outline-danger ms-3"
+                            (click)="limpiarItemsNuevos()"
+                            title="Quitar todos los items adicionales del Excel">
+                        <i class="fas fa-trash me-1"></i>Quitar items nuevos
+                    </button>
+                </div>
+
+                <!-- Panel de estado por proveedor -->
+                <div class="card mb-3 border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="text-muted fw-semibold me-2">
+                                <i class="fas fa-tags me-1"></i>Decisiones:
+                            </span>
+                            <ng-container *ngFor="let proveedor of obtenerProveedoresUnicos()">
+                                <!-- Sin decisión -->
+                                <span *ngIf="obtenerAccion(proveedor) === null"
+                                      class="badge bg-warning text-dark fs-6 px-3 py-2">
+                                    <i class="fas fa-clock me-1"></i>{{ proveedor }} — En Espera
+                                </span>
+                                <!-- Asignar -->
+                                <span *ngIf="obtenerAccion(proveedor) === 'asignar'"
+                                      class="badge bg-success fs-6 px-3 py-2">
+                                    <i class="fas fa-check-circle me-1"></i>{{ proveedor }} — Asignar
+                                </span>
+                                <!-- Cancelar -->
+                                <span *ngIf="obtenerAccion(proveedor) === 'cancelar'"
+                                      class="badge bg-danger fs-6 px-3 py-2">
+                                    <i class="fas fa-times-circle me-1"></i>{{ proveedor }} — Anular
+                                </span>
+                            </ng-container>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Excel: DOS SECCIONES SEPARADAS -->
+                <div class="row mb-3 g-3">
+
+                    <!-- Bloque 1: Asignaciones + Plantilla asignaciones + badge orden -->
+                    <div class="col-md-6">
+                        <div class="card border-primary h-100">
+                            <div class="card-header bg-primary text-white py-2 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-tasks me-1"></i>
+                                    <strong>Cargar Asignaciones</strong>
+                                    <small class="d-block mt-1 fw-normal opacity-75">
+                                        Hoja con cantidades asignadas para productos existentes
+                                    </small>
+                                </div>
+                                <div class="d-flex flex-column align-items-end gap-1">
+                                    <button class="btn btn-outline-light btn-sm" type="button"
+                                            (click)="descargarPlantillaExcel()"
+                                            title="Descargar plantilla de asignaciones">
+                                        <i class="fas fa-download me-1"></i>Plantilla
+                                    </button>
+                                    <span class="badge bg-info text-wrap text-center" style="font-size:0.7rem;">
+                                        <i class="fas fa-sort-amount-down me-1"></i>Ordenado por Subtotal (Mayor → Menor)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="card-body py-2">
+                                <div class="input-group input-group-sm">
+                                    <input type="file" class="form-control" id="excelAsignaciones"
+                                           accept=".xlsx,.xls"
+                                           (change)="procesarExcelAsignaciones($event)">
+                                </div>
+                                <small class="text-muted mt-1 d-block" *ngIf="fileNameAsignaciones">
+                                    <i class="fas fa-file-excel me-1 text-success"></i>{{ fileNameAsignaciones }}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bloque 2: Items Adicionales -->
+                    <div class="col-md-6">
+                        <div class="card border-warning h-100">
+                            <div class="card-header bg-warning text-dark py-2 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-plus-circle me-1"></i>
+                                    <strong>Agregar Items Adicionales</strong>
+                                    <small class="d-block mt-1 fw-normal opacity-75">
+                                        Se agrega a todas las cotizaciones en estado Solicitada
+                                    </small>
+                                </div>
+                                <div class="d-flex gap-1">
+                                    <button class="btn btn-sm btn-outline-dark"
+                                            type="button"
+                                            (click)="descargarPlantillaAdicionales()"
+                                            title="Descargar plantilla Excel correcta">
+                                        <i class="fas fa-download me-1"></i>Plantilla
+                                    </button>
+                                    <button class="btn btn-sm btn-dark"
+                                            type="button"
+                                            (click)="toggleFormManual()"
+                                            title="Agregar item manualmente">
+                                        <i class="fas" [ngClass]="mostrarFormManual ? 'fa-times' : 'fa-keyboard'"></i>
+                                        {{ mostrarFormManual ? 'Cerrar' : 'Manual' }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body py-2">
+
+                                <!-- Subir por Excel -->
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-warning border-warning">
+                                        <i class="fas fa-file-excel text-dark"></i>
+                                    </span>
+                                    <input type="file" class="form-control" id="excelAdicionales"
+                                           accept=".xlsx,.xls"
+                                           (change)="procesarExcelAdicionales($event)">
+                                </div>
+                                <small class="text-muted mt-1 d-block" *ngIf="fileNameAdicionales">
+                                    <i class="fas fa-file-excel me-1 text-warning"></i>{{ fileNameAdicionales }}
+                                </small>
+                                <small class="text-muted mt-1 d-block" *ngIf="hayItemsNuevos">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-plus-circle me-1"></i>{{ itemsAdicionalesExcel.length }} items nuevos pendientes
+                                    </span>
+                                </small>
+
+                                <!-- Formulario manual simplificado -->
+                                <div *ngIf="mostrarFormManual" class="mt-3 border-top pt-3">
+                                    <p class="fw-semibold mb-2 text-dark" style="font-size:0.85rem;">
+                                        <i class="fas fa-keyboard me-1"></i>
+                                        Agregar item manualmente
+                                        <small class="text-muted fw-normal ms-1">
+                                            — se guardará en todas las cotizaciones Solicitadas
+                                        </small>
+                                    </p>
+                                    <div class="row g-1">
+                                        <!-- Código -->
+                                        <div class="col-12">
+                                            <input type="text" class="form-control form-control-sm"
+                                                   [(ngModel)]="formManual.codigo"
+                                                   placeholder="Código del producto *"
+                                                   title="Código del producto (obligatorio)">
+                                        </div>
+                                        <!-- Descripción -->
+                                        <div class="col-12">
+                                            <input type="text" class="form-control form-control-sm"
+                                                   [(ngModel)]="formManual.descripcion"
+                                                   placeholder="Descripción">
+                                        </div>
+                                        <!-- Cantidad + Botón -->
+                                        <div class="col-6">
+                                            <input type="number" class="form-control form-control-sm"
+                                                   [(ngModel)]="formManual.cantidad"
+                                                   placeholder="Cantidad *" min="1"
+                                                   title="Cantidad requerida">
+                                        </div>
+                                        <div class="col-6">
+                                            <button class="btn btn-sm btn-success w-100"
+                                                    type="button"
+                                                    (click)="agregarItemManual()"
+                                                    [disabled]="!formManual.codigo.trim() || !formManual.cantidad || guardandoItemManual">
+                                                <span *ngIf="guardandoItemManual">
+                                                    <span class="spinner-border spinner-border-sm me-1"></span>Guardando...
+                                                </span>
+                                                <span *ngIf="!guardandoItemManual">
+                                                    <i class="fas fa-save me-1"></i>Guardar
+                                                </span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Filtros -->
+                <div class="card mb-3 border-0 bg-light">
+                    <div class="card-body py-2">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label form-label-sm mb-1 fw-semibold">
+                                    <i class="fas fa-search me-1"></i>Buscar código / descripción
+                                </label>
+                                <input type="text" class="form-control form-control-sm"
+                                       [(ngModel)]="filtroTexto"
+                                       placeholder="Ej: MOTOR, 1234...">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm mb-1 fw-semibold">
+                                    <i class="fas fa-dollar-sign me-1"></i>Subtotal mín.
+                                </label>
+                                <input type="number" class="form-control form-control-sm"
+                                       [(ngModel)]="filtroMinPrecio" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label form-label-sm mb-1 fw-semibold">
+                                    <i class="fas fa-dollar-sign me-1"></i>Subtotal máx.
+                                </label>
+                                <input type="number" class="form-control form-control-sm"
+                                       [(ngModel)]="filtroMaxPrecio" min="0" placeholder="Sin límite">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label form-label-sm mb-1 fw-semibold">
+                                    <i class="fas fa-building me-1"></i>Mostrar / ocultar proveedores
+                                </label>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <button *ngFor="let p of obtenerProveedoresUnicos()"
+                                            class="btn btn-sm"
+                                            [ngClass]="isProveedorVisible(p) ? 'btn-primary' : 'btn-outline-secondary'"
+                                            (click)="toggleProveedor(p)"
+                                            [title]="isProveedorVisible(p) ? 'Clic para ocultar columna' : 'Clic para mostrar columna'">
+                                        <i class="fas" [ngClass]="isProveedorVisible(p) ? 'fa-eye' : 'fa-eye-slash'"></i>
+                                        {{ p }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-end">
+                                <button class="btn btn-sm btn-outline-danger w-100"
+                                        (click)="limpiarFiltros()"
+                                        [disabled]="!hayFiltrosActivos()"
+                                        title="Quitar todos los filtros">
+                                    <i class="fas fa-times me-1"></i>Limpiar
+                                </button>
+                                <small class="d-block text-muted mt-1" *ngIf="hayFiltrosActivos()">
+                                    {{ productosFiltrados.length }} / {{ dataConsolidada?.productos?.length }} filas
+                                    <span *ngIf="consolidadosCount > 0"
+                                          class="badge ms-2"
+                                          style="background-color:#eaf1fb; color:#2f6abf; border:1px solid #c9dcf5; font-size:0.7rem;"
+                                          title="Productos con cantidades consolidadas (duplicados sumados)">
+                                        <i class="fas fa-compress-arrows-alt me-1"></i>{{ consolidadosCount }} consolidado(s)
+                                    </span>
+                                    <span *ngIf="sinCatalogoCount > 0"
+                                          class="badge bg-danger ms-1"
+                                          style="font-size:0.7rem;"
+                                          title="Productos no encontrados en catálogo Oracle">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>{{ sinCatalogoCount }} sin catálogo
+                                    </span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabla -->
+                <style>
+                  .tabla-sticky-wrap { max-height: 65vh; overflow-y: auto; overflow-x: auto; }
+                  .tabla-sticky-wrap table { border-collapse: separate; border-spacing: 0; }
+                  .th-sticky-r1 { position: sticky; top: 0px;   z-index: 4; }
+                  .th-sticky-r2 { position: sticky; top: 52px;  z-index: 3; }
+                  .th-sticky-r3 { position: sticky; top: 112px; z-index: 2; }
+                  .th-sort { cursor: pointer; user-select: none; white-space: nowrap; }
+                  .th-sort:hover { opacity: 0.85; filter: brightness(1.1); }
+                  .th-sort .sort-icon { opacity: 0.5; font-size: 0.75rem; margin-left: 4px; }
+                  .th-sort .sort-icon.active { opacity: 1; }
+                  /* ── Productos relacionados ── */
+                  .fila-relacionada     { border-left: 4px solid #8a6d1a !important; }
+                  .fila-relacionada td  { background-color: transparent !important; }
+                  .fila-sin-catalogo    { border-left: 4px solid #b3362a !important; }
+                  .fila-sin-catalogo td { background-color: transparent !important; }
+                  .fila-consolidada     { border-left: 4px solid #3a7bd5 !important; }
+                  .fila-consolidada td  { background-color: transparent !important; }
+                  .badge-relacionado { font-size: 0.65rem; background-color: #faf3dd; color: #8a6d1a; border: 1px solid #e8d9a8;
+                                       border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+                  .linea-separadora td { border-top: 2px solid #3a7bd5 !important; }
+                </style>
+                <div class="tabla-sticky-wrap">
+                    <table class="table table-bordered align-middle mb-0">
+                        <thead class="table-dark">
+
+                            <!-- Fila 1: Nombre del proveedor -->
+                            <tr>
+                                <th rowspan="3" class="th-sticky-r1 text-center"
+                                    style="vertical-align: middle; width: 3%;">
+
+                                    <!-- Estado normal: papelera → activa modo selección múltiple -->
+                                    <ng-container *ngIf="!modoSeleccion">
+                                        <button class="btn btn-sm btn-outline-danger border-0 p-1"
+                                                (click)="toggleModoSeleccion()"
+                                                title="Activar selección múltiple para eliminar varios">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </ng-container>
+
+                                    <!-- Modo selección activo: confirmar bulk + cancelar -->
+                                    <ng-container *ngIf="modoSeleccion">
+                                        <div class="d-flex flex-column align-items-center gap-1">
+                                            <!-- Confirmar eliminación (solo visible si hay seleccionados) -->
+                                            <button *ngIf="hayItemsSeleccionados()"
+                                                    class="btn btn-sm btn-danger p-1"
+                                                    (click)="eliminarItemsSeleccionados()"
+                                                    [disabled]="eliminando"
+                                                    title="Eliminar {{ itemsSeleccionados.size }} seleccionado(s)">
+                                                <span *ngIf="eliminando" class="spinner-border spinner-border-sm"></span>
+                                                <ng-container *ngIf="!eliminando">
+                                                    <i class="fas fa-check-double"></i>
+                                                    <span class="badge bg-white text-danger ms-1" style="font-size:0.65rem;">
+                                                        {{ itemsSeleccionados.size }}
+                                                    </span>
+                                                </ng-container>
+                                            </button>
+                                            <!-- Cancelar modo selección -->
+                                            <button class="btn btn-sm btn-outline-light border-0 p-1"
+                                                    (click)="toggleModoSeleccion()"
+                                                    title="Cancelar selección múltiple">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </ng-container>
+                                </th>
+                                <th rowspan="3" class="th-sticky-r1 th-sort"
+                                    style="vertical-align: middle; width: 8%;"
+                                    (click)="sortBy('codigo')">
+                                    Código
+                                    <i class="fas ms-1 sort-icon" [ngClass]="sortIcon('codigo')"
+                                       [class.active]="sortColumna === 'codigo'"></i>
+                                </th>
+                                <th rowspan="3" class="th-sticky-r1 th-sort"
+                                    style="vertical-align: middle; width: 8%;"
+                                    (click)="sortBy('codigo')">
+                                    Código Nuevo
+                                    <i class="fas ms-1 sort-icon" [ngClass]="sortIcon('codigo')"
+                                       [class.active]="sortColumna === 'codigo'"></i>
+                                </th>
+                                <th rowspan="3" class="th-sticky-r1 th-sort"
+                                    style="vertical-align: middle; width: 18%;"
+                                    (click)="sortBy('descripcion')">
+                                    Descripción
+                                    <i class="fas ms-1 sort-icon" [ngClass]="sortIcon('descripcion')"
+                                       [class.active]="sortColumna === 'descripcion'"></i>
+                                </th>
+                                <th rowspan="3" class="text-center th-sticky-r1 th-sort"
+                                    style="vertical-align: middle; width: 6%;"
+                                    (click)="sortBy('cantidadTotal')">
+                                    Cant. Total
+                                    <i class="fas ms-1 sort-icon" [ngClass]="sortIcon('cantidadTotal')"
+                                       [class.active]="sortColumna === 'cantidadTotal'"></i>
+                                </th>
+                                <th rowspan="3" class="text-center th-sticky-r1"
+                                    style="vertical-align: middle; width: 5%;">Unidad</th>
+                                <th rowspan="3" class="text-center bg-success text-white th-sticky-r1 th-sort"
+                                    style="vertical-align: middle; width: 9%;"
+                                    (click)="sortBy('subtotalProducto')">
+                                    Subtotal Producto
+                                    <i class="fas ms-1 sort-icon" [ngClass]="sortIcon('subtotalProducto')"
+                                       [class.active]="sortColumna === 'subtotalProducto'"></i>
+                                </th>
+                                <ng-container *ngFor="let proveedor of proveedoresVisibles">
+                                    <th colspan="5"
+                                        class="text-center text-white th-sticky-r1"
+                                        style="min-width: 300px;"
+                                        [ngClass]="{
+                                            'bg-success': obtenerAccion(proveedor) === 'asignar',
+                                            'bg-danger':  obtenerAccion(proveedor) === 'cancelar',
+                                            'bg-primary': obtenerAccion(proveedor) === null
+                                        }">
+                                        <i class="fas fa-building me-1"></i>{{ proveedor }}
+                                    </th>
+                                </ng-container>
+                            </tr>
+
+                            <!-- Fila 2: Total cotizado + Botones Asignar / Cancelar / Revertir -->
+                            <tr>
+                                <ng-container *ngFor="let proveedor of proveedoresVisibles">
+                                    <th colspan="5" class="text-white py-2 th-sticky-r2"
+                                        [ngClass]="{
+                                            'bg-success': obtenerAccion(proveedor) === 'asignar',
+                                            'bg-danger':  obtenerAccion(proveedor) === 'cancelar',
+                                            'bg-primary': obtenerAccion(proveedor) === null
+                                        }">
+                                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap px-1">
+                                            <span class="fw-bold fs-6">
+                                                Total: {{ calcularTotalPorProveedor(proveedor) | currency: 'USD' }}
+                                            </span>
+                                            <div *ngIf="obtenerAccion(proveedor) === null" class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-success fw-bold px-3"
+                                                        (click)="marcarAsignar(proveedor)" [disabled]="loading"
+                                                        title="Marcar para ASIGNAR esta cotización">
+                                                    <i class="fas fa-check-circle me-1"></i>Asignar
+                                                </button>
+                                                <button class="btn btn-sm btn-danger fw-bold px-3"
+                                                        (click)="marcarCancelar(proveedor)" [disabled]="loading"
+                                                        title="Marcar para Anular esta cotización">
+                                                    <i class="fas fa-times-circle me-1"></i>Anular
+                                                </button>
+                                            </div>
+                                            <div *ngIf="obtenerAccion(proveedor) === 'asignar'"
+                                                 class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-white text-success fw-bold px-2">
+                                                    <i class="fas fa-check-circle me-1"></i>Marcado: ASIGNAR
+                                                </span>
+                                                <button class="btn btn-sm btn-outline-light"
+                                                        (click)="revertirAccion(proveedor)" [disabled]="loading"
+                                                        title="Deshacer esta decisión">
+                                                    <i class="fas fa-undo me-1"></i>Cambiar
+                                                </button>
+                                            </div>
+                                            <div *ngIf="obtenerAccion(proveedor) === 'cancelar'"
+                                                 class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-white text-danger fw-bold px-2">
+                                                    <i class="fas fa-times-circle me-1"></i>Marcado: RECHAZAR
+                                                </span>
+                                                <button class="btn btn-sm btn-outline-light"
+                                                        (click)="revertirAccion(proveedor)" [disabled]="loading"
+                                                        title="Deshacer esta decisión">
+                                                    <i class="fas fa-undo me-1"></i>Cambiar
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </th>
+                                </ng-container>
+                            </tr>
+
+                            <!-- Fila 3: Subcabeceras ordenables -->
+                            <tr>
+                                <ng-container *ngFor="let proveedor of proveedoresVisibles">
+                                    <th class="text-center bg-secondary text-white th-sticky-r3 th-sort"
+                                        style="width: 7%;"
+                                        (click)="sortBy('cantDisp:' + proveedor)">
+                                        Cant. Disp.
+                                        <i class="fas ms-1 sort-icon"
+                                           [ngClass]="sortIcon('cantDisp:' + proveedor)"
+                                           [class.active]="sortColumna === 'cantDisp:' + proveedor"></i>
+                                    </th>
+                                    <th class="text-center bg-secondary text-white th-sticky-r3 th-sort"
+                                        style="width: 7%;"
+                                        (click)="sortBy('precio:' + proveedor)">
+                                        Precio FOB
+                                        <i class="fas ms-1 sort-icon"
+                                           [ngClass]="sortIcon('precio:' + proveedor)"
+                                           [class.active]="sortColumna === 'precio:' + proveedor"></i>
+                                    </th>
+                                    <th class="text-center bg-secondary text-white th-sticky-r3 th-sort"
+                                        style="width: 7%;"
+                                        (click)="sortBy('subtotal:' + proveedor)">
+                                        Subtotal
+                                        <i class="fas ms-1 sort-icon"
+                                           [ngClass]="sortIcon('subtotal:' + proveedor)"
+                                           [class.active]="sortColumna === 'subtotal:' + proveedor"></i>
+                                    </th>
+                                    <th class="text-center bg-warning text-dark th-sticky-r3" style="width: 8%;">
+                                        <button class="btn btn-sm btn-warning w-100 fw-bold"
+                                                (click)="asignarTodoAProveedor(proveedor)"
+                                                [disabled]="obtenerAccion(proveedor) !== 'asignar' || loading"
+                                                title="Llenar cantidades automáticamente">
+                                            <i class="fas fa-hand-pointer me-1"></i>Asignar
+                                        </button>
+                                    </th>
+                                    <th class="text-center bg-secondary text-white th-sticky-r3" style="width: 10%;">
+                                        Observaciones
+                                    </th>
+                                </ng-container>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            <tr *ngFor="let producto of productosFiltrados; let i = index"
+                                [class.table-light]="i % 2 === 0 && !producto.esNuevo && !esProductoRelacionado(producto) && !producto.esConsolidado && producto.existeEnOracle !== false"
+                                [class.table-warning]="producto.esNuevo"
+                                [class.fila-sin-catalogo]="!producto.esNuevo && producto.existeEnOracle === false"
+                                [class.fila-consolidada]="!producto.esNuevo && producto.esConsolidado && producto.existeEnOracle !== false"
+                                [class.fila-relacionada]="!producto.esNuevo && !producto.esConsolidado && producto.existeEnOracle !== false && esProductoRelacionado(producto)"
+                                [class.table-danger]="modoSeleccion && !producto.esNuevo && isItemSeleccionado(producto)"
+                                [class.linea-separadora]="esProductoRelacionado(producto) && getCodigoHermano(producto) !== null && productosFiltrados[i - 1] && !esProductoRelacionado(productosFiltrados[i - 1])"
+                                [style.border-left]="producto.esNuevo ? '4px solid #8a6d1a' : 'none'">
+
+                                <!-- Celda de acción eliminar — UN solo ícono por fila -->
+                                <td class="text-center p-1">
+                                    <ng-container *ngIf="!producto.esNuevo; else sinAccion">
+
+                                        <!-- MODO NORMAL: papelera → elimina en todas las cotizaciones del producto -->
+                                        <button *ngIf="!modoSeleccion"
+                                                class="btn btn-outline-danger btn-sm p-0 px-1"
+                                                style="font-size:0.75rem;"
+                                                (click)="eliminarItem(producto)"
+                                                [disabled]="eliminando || loading"
+                                                title="Eliminar este item de todas sus cotizaciones">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+
+                                        <!-- MODO SELECCIÓN: checkbox → marca todos los IDs del producto -->
+                                        <input *ngIf="modoSeleccion"
+                                               type="checkbox"
+                                               class="form-check-input mt-0"
+                                               style="width:1.2rem; height:1.2rem; cursor:pointer;"
+                                               [checked]="isItemSeleccionado(producto)"
+                                               (change)="toggleSeleccionItem(producto)"
+                                               [disabled]="eliminando"
+                                               title="Seleccionar para eliminar en bulk">
+                                    </ng-container>
+                                    <ng-template #sinAccion>
+                                        <i class="fas fa-clock text-warning" title="Item nuevo, aún no en BD"></i>
+                                    </ng-template>
+                                </td>
+
+                                <td class="fw-semibold">
+                                    {{ producto.codigo }}
+                                    <span *ngIf="producto.esNuevo"
+                                          class="badge bg-warning text-dark ms-1"
+                                          title="Item cargado desde Excel — se guardará en BD al confirmar">
+                                        <i class="fas fa-plus-circle me-1"></i>NUEVO
+                                    </span>
+                                    <!-- Badge: código consolidado (se sumaron duplicados) -->
+                                    <span *ngIf="!producto.esNuevo && producto.esConsolidado"
+                                          class="badge ms-1"
+                                          style="background-color:#eaf1fb; color:#2f6abf; border:1px solid #c9dcf5; font-size:0.65rem;"
+                                          title="Cantidades sumadas: este código apareció duplicado en el Excel y se consolidó automáticamente">
+                                        <i class="fas fa-compress-arrows-alt me-1"></i>CONSOLIDADO
+                                    </span>
+                                    <!-- Badge: código no existe en Oracle -->
+                                    <span *ngIf="!producto.esNuevo && producto.existeEnOracle === false"
+                                          class="badge bg-danger ms-1"
+                                          style="font-size:0.65rem;"
+                                          title="Este código no se encontró en el catálogo Oracle (VW_MAESTRO_PARTES)">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>NO EN ERP
+                                    </span>
+                                    <!-- Badge: Oracle no disponible al momento de importar -->
+                                    <span *ngIf="!producto.esNuevo && producto.existeEnOracle === null && producto.existeEnOracle !== undefined"
+                                          class="badge bg-secondary ms-1"
+                                          style="font-size:0.65rem;"
+                                          title="Oracle no estaba disponible al momento de importar — sin verificación">
+                                        <i class="fas fa-question-circle me-1"></i>SIN VERIFICAR
+                                    </span>
+                                    <!-- Badge de relación con otro código -->
+                                    <ng-container *ngIf="!producto.esNuevo && esProductoRelacionado(producto)">
+                                        <br>
+                                        <span class="badge-relacionado mt-1 d-inline-block"
+                                              [title]="'Relacionado con: ' + getCodigoHermano(producto)">
+                                            <i class="fas fa-link me-1"></i>
+                                            {{ producto.nuevoCodigo ? 'Cód. antiguo' : 'Cód. nuevo' }}
+                                        </span>
+                                    </ng-container>
+                                </td>
+                                <td class="fw-semibold">
+                                    {{ producto.nuevoCodigo }}
+                                    <span *ngIf="producto.esNuevo"
+                                          class="badge bg-warning text-dark ms-1"
+                                          title="Item cargado desde Excel — se guardará en BD al confirmar">
+                                        <i class="fas fa-plus-circle me-1"></i>NUEVO
+                                    </span>
+                                    <!-- Indicador visual si el nuevoCodigo existe como fila separada -->
+                                    <ng-container *ngIf="!producto.esNuevo && producto.nuevoCodigo && esProductoRelacionado(producto)">
+                                        <br>
+                                        <span class="badge-relacionado mt-1 d-inline-block"
+                                              title="Este código nuevo existe como producto en la tabla">
+                                            <i class="fas fa-arrow-down me-1"></i>ver abajo
+                                        </span>
+                                    </ng-container>
+                                </td>
+                                <td>
+                                    {{ producto.descripcion }}
+                                    <small *ngIf="producto.chino" class="d-block text-muted fst-italic">
+                                        {{ producto.chino }}
+                                    </small>
+                                    <small *ngIf="producto.esNuevo" class="d-block text-warning fst-italic">
+                                        <i class="fas fa-database me-1"></i>Pendiente de guardar en BD
+                                    </small>
+                                    <small *ngIf="!producto.esNuevo && producto.existeEnOracle === false"
+                                           class="d-block text-danger fst-italic">
+                                        <i class="fas fa-times-circle me-1"></i>
+                                    </small>
+                                    <small *ngIf="!producto.esNuevo && producto.esConsolidado"
+                                           class="d-block fst-italic" style="color:#2f6abf;">
+                                        <i class="fas fa-compress-arrows-alt me-1"></i>Cantidad consolidada de varias filas
+                                    </small>
+                                </td>
+                                <td class="text-center fw-bold">{{ producto.cantidadTotal | number }}</td>
+                                <td class="text-center">{{ producto.unidad || 'N/A' }}</td>
+                                <td class="text-end fw-bold text-success bg-light fs-6">
+                                    {{ calcularSubtotalProducto(producto) | currency: 'USD' }}
+                                </td>
+
+                                <!-- Celdas por proveedor -->
+                                <ng-container *ngFor="let proveedor of proveedoresVisibles">
+                                    <ng-container *ngIf="obtenerDetallePorProveedor(producto, proveedor) as detalle; else celdaVacia">
+                                        <td class="text-center">{{ detalle.cantidadOfertada | number }}</td>
+                                        <td class="text-end">{{ detalle.precioUnitario | currency: 'USD' }}</td>
+                                        <td class="text-end">
+                                            {{ (detalle.cantidadOfertada || 0) * (detalle.precioUnitario || 0) | currency: 'USD' }}
+                                        </td>
+
+                                        <!-- Campo asignar: editable solo si está marcado para asignar -->
+                                        <td class="p-1"
+                                            [ngClass]="{
+                                                'bg-success bg-opacity-10': obtenerAccion(proveedor) === 'asignar',
+                                                'bg-danger  bg-opacity-10': obtenerAccion(proveedor) === 'cancelar',
+                                                'bg-warning bg-opacity-25': obtenerAccion(proveedor) === null
+                                            }">
+                                            <input type="number"
+                                                   class="form-control form-control-sm text-center fw-bold"
+                                                   [(ngModel)]="detalle.cantidadAsignada"
+                                                   (ngModelChange)="validarAsignacion(producto)"
+                                                   [min]="0"
+                                                   [max]="detalle.cantidadOfertada"
+                                                   placeholder="0"
+                                                   [disabled]="obtenerAccion(proveedor) !== 'asignar'"
+                                                   style="font-size: 0.9rem;">
+                                            <small class="d-block text-center mt-1"
+                                                   *ngIf="obtenerAccion(proveedor) === 'asignar'"
+                                                   [ngClass]="{
+                                                       'text-danger':  obtenerCantidadRestante(producto) > 0,
+                                                       'text-success': obtenerCantidadRestante(producto) === 0,
+                                                       'text-warning': obtenerCantidadRestante(producto) < 0
+                                                   }">
+                                                <i class="fas"
+                                                   [ngClass]="{
+                                                       'fa-exclamation-circle': obtenerCantidadRestante(producto) !== 0,
+                                                       'fa-check-circle':       obtenerCantidadRestante(producto) === 0
+                                                   }"></i>
+                                                Resta: {{ obtenerCantidadRestante(producto) }}
+                                            </small>
+                                            <small *ngIf="obtenerAccion(proveedor) === 'cancelar'"
+                                                   class="d-block text-center text-danger mt-1">
+                                                <i class="fas fa-ban me-1"></i>Rechazado
+                                            </small>
+                                            <small *ngIf="obtenerAccion(proveedor) === null"
+                                                   class="d-block text-center text-muted mt-1">
+                                                <i class="fas fa-clock me-1"></i>En espera
+                                            </small>
+                                        </td>
+
+                                        <td class="p-1">
+                                            <textarea class="form-control form-control-sm"
+                                                      [(ngModel)]="detalle.observaciones"
+                                                      [disabled]="obtenerAccion(proveedor) !== 'asignar'"
+                                                      rows="1"
+                                                      placeholder="Notas..."
+                                                      style="font-size: 0.8rem; min-width: 120px;"></textarea>
+                                        </td>
+                                    </ng-container>
+
+                                    <ng-template #celdaVacia>
+                                        <td class="text-center bg-secondary bg-opacity-10 text-muted" colspan="5">
+                                            <small><i class="fas fa-minus"></i> No cotizado</small>
+                                        </td>
+                                    </ng-template>
+                                </ng-container>
+                            </tr>
+                        </tbody>
+
+                        <!-- Footer totales -->
+                        <tfoot class="table-group-divider fw-bold">
+                            <tr class="table-secondary">
+                                <td colspan="5" class="text-end fs-5">
+                                    <i class="fas fa-calculator me-2"></i>TOTAL POR PROVEEDOR:
+                                </td>
+                                <ng-container *ngFor="let proveedor of proveedoresVisibles">
+                                    <td colspan="2" class="text-end text-primary fs-5">
+                                        {{ calcularTotalPorProveedor(proveedor) | currency: 'USD' }}
+                                    </td>
+                                    <td class="text-center bg-warning">
+                                        <strong class="text-dark fs-5">
+                                            {{ calcularTotalAsignadoPorProveedor(proveedor) }}
+                                        </strong>
+                                    </td>
+                                    <td colspan="2"></td>
+                                </ng-container>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div><!-- /tabla-sticky-wrap -->
+
+                <!-- Resumen -->
+                <div class="card mt-4 border-success shadow-sm">
+                    <div class="card-body bg-success bg-opacity-10">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <h5 class="mb-1"><i class="fas fa-chart-pie me-2"></i>Resumen</h5>
+                                <small class="text-muted">Productos ordenados por subtotal (mayor a menor)</small>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <h3 class="mb-1 text-success fw-bold">
+                                    Total General: {{ calcularTotalGeneral() | currency: 'USD' }}
+                                </h3>
+                                <h4 class="mb-0 text-primary">
+                                    Total a Asignar: {{ calcularTotalGeneralAsignado() | currency: 'USD' }}
+                                </h4>
+                                <small class="text-muted">
+                                    {{ calcularTotalUnidadesAsignadas() }} uds asignadas
+                                    de {{ calcularTotalUnidadesRequeridas() }}
+                                </small>
+                            </div>
+                        </div>
+
+                        <!-- Advertencias de asignación incompleta -->
+                        <div class="mt-3" *ngIf="obtenerProductosConAsignacionIncompleta().length > 0">
+                            <div class="alert alert-warning mb-0">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                <strong>Atención:</strong>
+                                {{ obtenerProductosConAsignacionIncompleta().length }} producto(s)
+                                con asignación incompleta:
+                                <ul class="mb-0 mt-2">
+                                    <li *ngFor="let prod of obtenerProductosConAsignacionIncompleta()">
+                                        <strong>{{ prod.codigo }}</strong>: {{ prod.descripcion }}
+                                        <span class="badge bg-danger ms-2">
+                                            Faltan: {{ obtenerCantidadRestante(prod) }}
+                                        </span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones finales -->
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-secondary btn-lg px-4"
+                                (click)="autoAsignarCompleto()" [disabled]="loading">
+                            <i class="fas fa-magic me-2"></i>Auto-asignar
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-lg px-4"
+                                (click)="limpiarAsignaciones()" [disabled]="loading">
+                            <i class="fas fa-eraser me-2"></i>Limpiar todo
+                        </button>
+                    </div>
+
+                    <button type="button"
+                            class="btn btn-primary btn-lg px-5 fw-bold"
+                            (click)="confirmarYEnviar()"
+                            [disabled]="loading || !hayAlgunaDecision()">
+                        <i class="fas fa-paper-plane me-2"></i>Confirmar y Enviar
+                        <span *ngIf="hayItemsNuevos" class="badge bg-warning text-dark ms-2">
+                            + {{ itemsAdicionalesExcel.length }} nuevos
+                        </span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

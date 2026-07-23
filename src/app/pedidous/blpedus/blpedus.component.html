@@ -1,0 +1,107 @@
+<div class="conteo-container">
+  <h2>Detalles de Pedido para BL: {{ blnombre }}</h2>
+
+  <div class="search-container">
+    <input
+      type="text"
+      [(ngModel)]="searchTerm"
+      (input)="applyFilter()"
+      placeholder="Buscar por código o descripción"
+      class="search-input"
+    />
+    <button (click)="applyFilter()" class="search-button">
+      <i class="fas fa-search"></i> Buscar
+    </button>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-bordered table-striped">
+      <thead>
+        <tr>
+          <th>CÓDIGO</th>
+          <th>DESCRIPCIÓN ESPAÑOL</th>
+          <th>CANTIDAD</th>
+          <th>INVOICE</th>
+          <th>INVOICE BL</th>
+          <th>BL</th>
+          <th>ACCIONES</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngIf="isLoadingDetails">
+          <td colspan="12" class="loading-message">Cargando detalles...</td>
+        </tr>
+        <tr *ngIf="filteredBlDetails.length === 0 && !isLoadingDetails && !errorMessage">
+          <td colspan="12" class="loading-message">No se encontraron detalles para este BL o no hay resultados para la búsqueda.</td>
+        </tr>
+        <tr *ngIf="errorMessage">
+          <td colspan="12" class="error-message">{{ errorMessage }}</td>
+        </tr>
+        <ng-container *ngFor="let detail of filteredBlDetails">
+          <tr>
+            <td data-label="CÓDIGO">{{ detail.codigo }}</td>
+            <td data-label="DESCRIPCIÓN ESPAÑOL">{{ detail.descripcionEspanol }}</td>
+            <td data-label="CANTIDAD">{{ detail.cantidad }} {{ detail.unidad }}</td>
+            <td data-label="INVOICE">{{ detail.invoiceN }}</td>
+            <td data-label="INVOICE BL">{{ detail.invoiceBl }}</td>
+            <td data-label="BL">{{ detail.blNombre }}</td>
+            <td data-label="ACCIONES">
+              <button class="button edit-button" (click)="openRequestModal(detail)">
+                <i class="fas fa-edit"></i> Pedir
+              </button>
+            </td>
+          </tr>
+        </ng-container>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="modal-overlay" *ngIf="requestModalVisible">
+  <div class="modal-content">
+    <span class="close-button" (click)="closeRequestModal()" *ngIf="!selectedDetail?.isSaving">&times;</span>
+    <h3>
+      Registrar Pedido
+      <span *ngIf="selectedDetail?.codigo"> - {{ selectedDetail.codigo }}</span>
+    </h3>
+
+    <div class="modal-loading-overlay" *ngIf="selectedDetail?.isSaving">
+      <div class="spinner"></div>
+      <span>Guardando...</span>
+    </div>
+    
+    <div class="form-grid" *ngIf="selectedDetail">
+      <div class="form-group">
+        <label for="cantidad">Cantidad en BL:</label>
+        <input type="number" id="cantidad" [value]="selectedDetail.cantidad" [disabled]="true" />
+      </div>
+      <div class="form-group">
+        <label for="cantidadAPartar">Cantidad a Pedir:</label>
+        <input
+          type="number"
+          id="cantidadAPartar"
+          [(ngModel)]="selectedDetail.cantidadAPartar"
+          [disabled]="selectedDetail.isSaving"
+          min="1"
+        />
+      </div>
+      <div class="form-group full-width">
+        <label for="comentarios">Comentario:</label>
+        <input
+          type="text"
+          id="comentarios"
+          [(ngModel)]="selectedDetail.comentarios"
+          [disabled]="selectedDetail.isSaving"
+        />
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="button save-button" (click)="saveRequest()" [disabled]="selectedDetail.isSaving || !selectedDetail?.cantidadAPartar || selectedDetail.cantidadAPartar <= 0">
+        <span *ngIf="!selectedDetail.isSaving">Guardar Pedido</span>
+        <span *ngIf="selectedDetail.isSaving">Guardando...</span>
+      </button>
+      <button class="button cancel-button" (click)="closeRequestModal()" [disabled]="selectedDetail.isSaving">Cancelar</button>
+    </div>
+  </div>
+</div>

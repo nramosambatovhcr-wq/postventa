@@ -1,0 +1,127 @@
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">📦 Crear Nuevo BL</h1>
+      <p class="panel-subtitulo">Gestiona y registra nuevos conocimientos de embarque de manera eficiente.</p>
+    </div>
+
+    <div class="panel-contenido">
+      <!-- Formulario de detalles del BL -->
+      <div class="bl-details-form">
+        <div class="form-header">
+          <h2>
+            <span class="header-icon">📋</span>
+            Detalles del BL
+          </h2>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="blName">
+              <span class="label-icon">📝</span>
+              Nombre del BL: <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="blName"
+              class="form-control"
+              [(ngModel)]="blName"
+              placeholder="Ej: BL-EXP-2025-001, Carga Contenedor Asia"
+              maxlength="100"
+              [class.error]="blName.length === 0 && showValidationErrors"
+            />
+            <div class="field-hint">
+              <small>Ingrese un nombre o descripción para el conocimiento de embarque.</small>
+            </div>
+          </div>
+
+        <div class="form-group">
+  <label for="blEstado">
+    <span class="label-icon">🚦</span>
+    Estado del BL: <span class="required">*</span>
+  </label>
+  <select
+    id="blEstado"
+    name="blEstado"
+    class="form-control"
+    [(ngModel)]="blEstado"
+    [class.error]="!blEstado && showValidationErrors"
+    required
+  >
+    <option value="" disabled selected hidden>-- Selecciona un estado --</option>
+    <option value="activo">Activo</option>
+    <option value="pendiente">Pendiente</option>
+    <option value="transito">En Tránsito</option>
+    <option value="aduana">En Aduana</option>
+    <option value="liquidado">Liquidado</option>
+    <option value="inactivo">Inactivo</option>
+  </select>
+    <div *ngIf="blEstado" class="form-group">
+          <div class="info-badge">
+            Estado seleccionado: {{ blEstado }}
+          </div>
+        </div>
+  <div class="field-hint">
+    <small>Define el estado actual del conocimiento de embarque.</small>
+  </div>
+</div>
+        </div>
+
+        <!-- Mostrar valor seleccionado para debugging -->
+      
+
+        <!-- Acciones del formulario -->
+        <div class="form-actions">
+          <button
+            class="boton-primario"
+            (click)="saveBl()"
+            [disabled]="isSavingBl || !isFormValid"
+            [attr.aria-label]="isSavingBl ? 'Guardando BL' : 'Guardar BL'"
+          >
+            <span *ngIf="!isSavingBl" class="button-content">
+              <span class="button-icon">💾</span>
+              Guardar BL
+            </span>
+            <span *ngIf="isSavingBl" class="button-content loading">
+              <span class="button-spinner"></span>
+              Guardando...
+            </span>
+          </button>
+
+          <button
+            class="boton-secundario"
+            (click)="resetForm()"
+            [disabled]="isSavingBl"
+            [attr.aria-label]="'Limpiar formulario'"
+          >
+            <span class="button-content">
+              <span class="button-icon">🗑️</span>
+              Limpiar
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Notificaciones -->
+      <div *ngIf="showSuccessMessage" class="notification success" role="alert">
+        <div class="notification-content">
+          <span class="notification-icon">✅</span>
+          <div>
+            <strong>¡Éxito!</strong>
+            <p>BL guardado exitosamente.</p>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showErrorMessage" class="notification error" role="alert">
+        <div class="notification-content">
+          <span class="notification-icon">❌</span>
+          <div>
+            <strong>Error</strong>
+            <p>{{ errorMessage }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

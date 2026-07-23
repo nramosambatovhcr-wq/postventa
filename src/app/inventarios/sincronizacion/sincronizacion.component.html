@@ -1,0 +1,119 @@
+<div class="sincronizacion-container">
+  
+  <!-- Card Principal -->
+  <div class="card">
+    <div class="card-header">
+      <h2><i class="fas fa-sync-alt"></i> Sincronización con Oracle</h2>
+      <p>Sincroniza el inventario desde Oracle hacia PostgreSQL</p>
+    </div>
+
+    <!-- Selector de Agencia -->
+    <div class="agencia-selector" *ngIf="!resultados">
+      <label class="form-label">
+        <i class="fas fa-building"></i> Seleccionar Agencia
+      </label>
+      <select 
+        class="form-select" 
+        [(ngModel)]="agenciaSeleccionada"
+        [disabled]="sincronizando || cargandoAgencias">
+        <option value="">-- Selecciona una agencia --</option>
+        <option 
+          *ngFor="let agencia of agencias" 
+          [value]="agencia.idAgencia">
+          {{ agencia.nombre }} ({{ agencia.codigo || agencia.idSerial }})
+        </option>
+      </select>
+      
+      <div *ngIf="cargandoAgencias" style="margin-top: 0.5rem; color: #6b7280;">
+        <i class="fas fa-spinner fa-spin"></i> Cargando agencias...
+      </div>
+    </div>
+
+    <!-- Botón de Sincronización -->
+    <button 
+      *ngIf="!resultados"
+      class="btn-sync" 
+      [class.syncing]="sincronizando"
+      (click)="iniciarSincronizacion()"
+      [disabled]="sincronizando || !agenciaSeleccionada || cargandoAgencias">
+      
+      <i class="fas" [class.fa-sync-alt]="!sincronizando" [class.fa-spinner.fa-spin]="sincronizando"></i>
+      {{ sincronizando ? 'Sincronizando...' : 'Iniciar Sincronización' }}
+    </button>
+
+    <!-- Barra de Progreso -->
+    <div class="progress-container" *ngIf="sincronizando || progreso > 0">
+      <div class="progress-header">
+        <span class="progress-title">{{ mensajeEstado }}</span>
+        <span class="progress-percentage">{{ progreso }}%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" [style.width.%]="progreso"></div>
+      </div>
+    </div>
+
+    <!-- Mensaje de Estado -->
+    <div 
+      *ngIf="mensajeEstado && !sincronizando" 
+      class="sync-status"
+      [class.info]="tipoEstado === 'info'"
+      [class.success]="tipoEstado === 'success'"
+      [class.error]="tipoEstado === 'error'">
+      <i class="fas" 
+         [class.fa-info-circle]="tipoEstado === 'info'"
+         [class.fa-check-circle]="tipoEstado === 'success'"
+         [class.fa-exclamation-circle]="tipoEstado === 'error'"></i>
+      {{ mensajeEstado }}
+    </div>
+  </div>
+
+  <!-- Resultados -->
+  <div class="card" *ngIf="resultados">
+    <div class="card-header">
+      <h3><i class="fas fa-poll"></i> Resultados de la Sincronización</h3>
+    </div>
+    
+    <div class="resultados-grid">
+      <div class="resultado-item">
+        <span class="resultado-numero">{{ resultados.totalLeidos }}</span>
+        <span class="resultado-label">Total Leídos</span>
+      </div>
+      
+      <div class="resultado-item success">
+        <span class="resultado-numero">{{ resultados.insertados }}</span>
+        <span class="resultado-label">Insertados</span>
+      </div>
+      
+      <div class="resultado-item warning">
+        <span class="resultado-numero">{{ resultados.actualizados }}</span>
+        <span class="resultado-label">Actualizados</span>
+      </div>
+      
+      <div class="resultado-item" [class.danger]="resultados.errores > 0">
+        <span class="resultado-numero">{{ resultados.errores }}</span>
+        <span class="resultado-label">Errores</span>
+      </div>
+    </div>
+
+    <!-- Detalles de errores si existen -->
+    <div *ngIf="resultados.detallesErrores && resultados.detallesErrores.length > 0" 
+         style="margin-top: 1.5rem; padding: 1rem; background: #fee2e2; border-radius: 0.5rem;">
+      <h4 style="color: #991b1b; margin-bottom: 0.5rem;">
+        <i class="fas fa-exclamation-triangle"></i> Detalles de Errores:
+      </h4>
+      <ul style="margin: 0; padding-left: 1.5rem; color: #7f1d1d;">
+        <li *ngFor="let error of resultados.detallesErrores">{{ error }}</li>
+      </ul>
+    </div>
+
+    <!-- Botón para nueva sincronización -->
+    <button 
+      class="btn-sync" 
+      (click)="resetear()"
+      style="margin-top: 1.5rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+      <i class="fas fa-plus"></i>
+      Nueva Sincronización
+    </button>
+  </div>
+
+</div>

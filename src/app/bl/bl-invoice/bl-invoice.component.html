@@ -1,0 +1,247 @@
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">📦 Crear Nuevo INVOICEBL</h1>
+      <p class="panel-subtitulo">Gestiona y registra nuevos conocimientos de embarque de manera eficiente.</p>
+    </div>
+
+    <div class="panel-contenido">
+      <!-- Formulario de detalles del BL -->
+      <div class="bl-details-form">
+        <div class="form-header">
+          <h2>
+            <span class="header-icon">📋</span>
+            Detalles del INVOICEBL
+          </h2>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ordenid">
+                <span class="label-icon">🔢</span>
+                ID de Orden: <span class="required">*</span>
+            </label>
+            <select
+                id="ordenid"
+                class="form-control"
+                [(ngModel)]="blForm.ordenid"
+                [class.has-placeholder]="!blForm.ordenid || blForm.ordenid === 0"
+                [class.has-value]="blForm.ordenid && blForm.ordenid !== 0"
+                [class.error]="(!blForm.ordenid || blForm.ordenid === 0) && showValidationErrors"
+                (change)="onOrdenChange()"
+                required
+            >
+                <option [value]="0" disabled>Seleccione una orden...</option>
+                <option 
+                  *ngFor="let orden of allData" 
+                  [value]="orden.ordenid"
+                >
+                  {{orden.invoice}} (ID: {{orden.ordenid}})
+                </option>
+            </select>
+            <div class="field-hint">
+                <small>Seleccione el ID de la orden asociada de la lista.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="invoiceblName">
+              <span class="label-icon">📝</span>
+              Nombre del INVOICEBL: <span class="required">*</span>
+            </label>
+            <input
+              type="text"
+              id="invoiceblName"
+              class="form-control"
+              [(ngModel)]="blForm.invoicebl"
+              placeholder="Ej: INV-BL-2025-001"
+              maxlength="100"
+              [class.error]="!blForm.invoicebl && showValidationErrors"
+            />
+            <div class="field-hint">
+              <small>Ingrese un nombre o descripción para el conocimiento de invoicebl.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="bl">
+                <span class="label-icon">📦</span>
+                BL:
+            </label>
+            <select
+                id="bl"
+                class="form-control"
+                [(ngModel)]="blForm.bl"
+                [class.has-placeholder]="!blForm.bl || blForm.bl === ''"
+                [class.has-value]="blForm.bl && blForm.bl !== ''"
+                (change)="onBlChange()"
+            >
+                <option [value]="0" disabled>Seleccione un BL...</option>
+                <option 
+                  *ngFor="let blItem of bls" 
+                  [value]="blItem.id"
+                >
+                  {{blItem.nombre}}
+                </option>
+            </select>
+            <div class="field-hint">
+                <small>Seleccione el BL de la lista disponible.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="contenedor">
+              <span class="label-icon">🚢</span>
+              Contenedor:
+            </label>
+            <input
+              type="text"
+              id="contenedor"
+              class="form-control"
+              [(ngModel)]="blForm.contenedor"
+              placeholder="Ej: CONT-XYZ-123"
+              maxlength="100"
+            />
+            <div class="field-hint">
+              <small>Ingrese el número o identificador del contenedor.</small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="liquidacion">
+                <span class="label-icon">💰</span>
+                Liquidación:
+            </label>
+            <select
+                id="liquidacion"
+                class="form-control"
+                [(ngModel)]="blForm.liquidacion"
+                [class.has-placeholder]="!blForm.liquidacion || blForm.liquidacion === ''"
+                [class.has-value]="blForm.liquidacion && blForm.liquidacion !== ''"
+                (change)="onLiquidacionChange()"
+            >
+                <option value="" disabled>Seleccione estado...</option>
+                <option value="pendiente">Pendiente</option>
+                <option value="preliquidado">Preliquidado</option>
+                <option value="liquidado">Liquidado</option>
+            </select>
+            <div class="field-hint">
+                <small>Seleccione el estado de la liquidación.</small>
+            </div>
+          </div>
+
+        <!--  <div class="form-group">
+            <label for="idbl">
+              <span class="label-icon">🆔</span>
+              ID BL: <span class="required">*</span>
+            </label>
+            <input
+              type="number"
+              id="idbl"
+              class="form-control"
+              [(ngModel)]="blForm.idbl"
+              placeholder="Ej: 54321"
+              min="1"
+              [class.error]="(!blForm.idbl || blForm.idbl <= 0) && showValidationErrors"
+            />
+            <div class="field-hint">
+              <small>Ingrese el ID del BL asociado.</small>
+            </div>
+          </div>-->
+
+          <div class="form-group">
+            <label for="iblEstado">
+              <span class="label-icon">🚦</span>
+              Estado del INVOICEBL: <span class="required">*</span>
+            </label>
+            <select
+              id="iblEstado"
+              class="form-control"
+              [(ngModel)]="blForm.estado"
+              [class.has-placeholder]="!blForm.estado || blForm.estado === ''"
+              [class.has-value]="blForm.estado && blForm.estado !== ''"
+              [class.error]="(!blForm.estado || blForm.estado === '') && showValidationErrors"
+              (change)="onEstadoChange()"
+              required
+            >
+              <option value="" disabled>-- Selecciona un estado --</option>
+              <option value="activo">Activo</option>
+              <option value="pendiente">Pendiente</option>
+              <option value="transito">En Tránsito</option>
+              <option value="aduana">En Aduana</option>
+              <option value="liquidado">Liquidado</option>
+              <option value="inactivo">Inactivo</option>
+            </select>
+            <div class="field-hint">
+              <small>Define el estado actual del conocimiento de embarque de InvoiceBL.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Acciones del formulario -->
+        <div class="form-actions">
+          <button
+            class="boton-primario"
+            (click)="saveIBl()"
+            [disabled]="isSavingBl || !isFormValid"
+            [attr.aria-label]="isSavingBl ? 'Guardando InvoiceBL' : 'Guardar InvoiceBL'"
+          >
+            <span *ngIf="!isSavingBl" class="button-content">
+              <span class="button-icon">💾</span>
+              Guardar INVOICEBL
+            </span>
+            <span *ngIf="isSavingBl" class="button-content loading">
+              <span class="button-spinner"></span>
+              Guardando...
+            </span>
+          </button>
+
+          <button
+            class="boton-secundario"
+            (click)="resetForm()"
+            [disabled]="isSavingBl"
+            [attr.aria-label]="'Limpiar formulario'"
+          >
+            <span class="button-content">
+              <span class="button-icon">🗑️</span>
+              Limpiar
+            </span>
+          </button>
+        </div>
+
+        <!-- Debug info (remover en producción) -->
+        <div *ngIf="showDebugInfo" style="margin-top: 20px; padding: 15px; background: #f0f0f0; border-radius: 8px;">
+          <h4>Debug Info:</h4>
+          <p><strong>Orden ID seleccionado:</strong> {{blForm.ordenid}}</p>
+          <p><strong>Estado seleccionado:</strong> {{blForm.estado}}</p>
+          <p><strong>BL seleccionado:</strong> {{blForm.bl}}</p>
+          <p><strong>Liquidación seleccionada:</strong> {{blForm.liquidacion}}</p>
+          <p><strong>ID BL:</strong> {{blForm.idbl}}</p>
+          <p><strong>Formulario válido:</strong> {{isFormValid}}</p>
+          <p><strong>Datos disponibles:</strong> {{allData?.length}} órdenes, {{bls?.length}} BLs</p>
+        </div>
+      </div>
+
+      <!-- Notificaciones -->
+      <div *ngIf="showSuccessMessage" class="notification success" role="alert">
+        <div class="notification-content">
+          <span class="notification-icon">✅</span>
+          <div>
+            <strong>¡Éxito!</strong>
+            <p>INVOICEBL guardado exitosamente.</p>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="showErrorMessage" class="notification error" role="alert">
+        <div class="notification-content">
+          <span class="notification-icon">❌</span>
+          <div>
+            <strong>Error</strong>
+            <p>{{ errorMessage }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

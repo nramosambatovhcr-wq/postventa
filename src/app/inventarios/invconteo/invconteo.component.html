@@ -1,0 +1,76 @@
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Inventario de Agencias</h1>
+      <p class="panel-subtitulo">Monitoreo y gestión de agencias</p>
+    </div>
+
+    <div class="panel-contenido">
+      <div class="opciones-tabla">
+        <div class="filtros-busqueda">
+          <input
+            type="text"
+            placeholder="Buscar por código, nombre, ciudad o provincia"
+            [(ngModel)]="searchTerm"
+            (input)="applyFilter()"
+          />
+        </div>
+      </div>
+
+      <div class="tabla-contenedor">
+        <table class="tabla-datos">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Nombre</th>
+              <th>Dirección</th>
+              <th>Ciudad</th>
+              <th>Provincia</th>
+              <th>Teléfono</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let agencia of pagedData">
+              <td>{{ agencia.codigoAgencia }}</td>
+              <td>{{ agencia.nombre }}</td>
+              <td>{{ agencia.direccion }}</td>
+              <td>{{ agencia.ciudad }}</td>
+              <td>{{ agencia.provincia }}</td>
+              <td>{{ agencia.telefono }}</td>
+              <td>
+                <span class="estado-circulo" [ngClass]="{'activo': agencia.estado}"></span>
+                {{ agencia.estado ? 'Activo' : 'Inactivo' }}
+              </td>
+              <td>
+                <button class="boton-accion" (click)="goToInvbodage(agencia.idSerial)">
+                  Ir a Bodega
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="pagedData.length === 0">
+              <td colspan="8" class="text-center">No se encontraron agencias.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pie-tabla">
+        <div class="items-count">Mostrando {{ pagedData.length }} de {{ filteredData.length }} agencias</div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button
+            *ngFor="let page of getPaginationArray()"
+            class="boton-pagina"
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="changePage(page)">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

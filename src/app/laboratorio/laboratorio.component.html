@@ -1,0 +1,555 @@
+<header class="cabecera">
+  <div class="contenedor">
+    <div class="contenido-cabecera">
+      <div class="logo">Pedidos Bodega</div>
+      <div class="contenedor-busqueda">
+        <input 
+          type="text" 
+          class="busqueda" 
+          placeholder="Buscar código, descripción u observaciones"
+          [(ngModel)]="searchTerm"
+          (keyup.enter)="searchImports()">
+        <button class="boton-buscar" (click)="searchImports()">
+          <i class="fa fa-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="contenedor">
+  <section class="panel">
+    <div class="panel-cabecera">
+      <h1 class="panel-titulo">Dashboard de Laboratorio Vehículos</h1>
+      <p class="panel-subtitulo">Monitoreo en tiempo real de los repuestos</p>
+    </div>
+   
+    <div class="contenedor-estadisticas" >
+  <!-- Tarjeta de Pendientes -->
+   <div class="tarjeta-estadistica" 
+      
+       (click)="asignar()" *ngIf="rolusuario!='repuestoslv' || rolusuario!='repuestoslk'|| rolusuario!='repuestoslsc' ">
+    <div class="icono-estadistica">⏳</div>
+    <div class="titulo-estadistica">Asignacion de vehiculos</div>
+  </div>
+  <div class="tarjeta-estadistica" 
+       [class.activa]="estadoActivo === 'pendiente'" 
+       (click)="pendiente()">
+    <div class="icono-estadistica">⏳</div>
+    <div class="titulo-estadistica">Partes Pendientes</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_partes_pendientes }}</div>
+  </div>
+  
+  <!-- Tarjeta de Revisados -->
+  <div class="tarjeta-estadistica" 
+       [class.activa]="estadoActivo === 'revisado'" 
+       (click)="revisado()">
+    <div class="icono-estadistica">✓</div>
+    <div class="titulo-estadistica">Partes Revisadas</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_partes_revisadas }}</div>
+  </div>
+  
+  <!-- Tarjeta de Vehículos -->
+  <div class="tarjeta-estadistica" 
+       [class.activa]="estadoActivo === 'vehiculos'" 
+       (click)="vehis()">
+    <div class="icono-estadistica">🚗</div>
+    <div class="titulo-estadistica">Total Vehículos</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_carros }}</div>
+  </div>
+  
+  <!-- Tarjeta de Total de Partes -->
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">📦</div>
+    <div class="titulo-estadistica">Total Partes</div>
+    <div class="valor-estadistica">{{ estadisticasGenerales.total_partes }}</div>
+  </div>
+  
+  <!-- NUEVA: Tarjeta de Modelos -->
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">🚙</div>
+    <div class="titulo-estadistica">Modelos</div>
+    <div class="valor-estadistica">{{ stats.pendientesLiquidacion }}</div>
+  </div>
+  
+  <!-- NUEVA: Tarjeta de Categorías -->
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">📦</div>
+    <div class="titulo-estadistica">Categorías</div>
+    <div class="valor-estadistica">{{ stats.tiempoPromedio }}</div>
+  </div>
+  
+  <!-- Tarjeta de Filtrados -->
+  <div class="tarjeta-estadistica tarjeta-info">
+    <div class="icono-estadistica">🔍</div>
+    <div class="titulo-estadistica">Filtrados</div>
+    <div class="valor-estadistica">{{ totalItems }}</div>
+  </div>
+</div>
+
+<!-- NUEVO: Sistema de pestañas para estadísticas -->
+<div class="stats-tabs-container" >
+  <button 
+    class="btn-stats-tab" 
+    [class.active]="activeStatsTab === 'backend'"
+    (click)="toggleEstadisticasLinea()">
+    📊 Mostrar Estadísticas por Línea (Backend)
+  </button>
+  
+  <button 
+    class="btn-stats-tab btn-chasis" 
+    [class.active]="activeStatsTab === 'linea'"
+    (click)="toggleLineStats()">
+    🚗 Estadísticas por Chasis
+  </button>
+  
+  <button 
+    class="btn-stats-tab btn-category" 
+    [class.active]="activeStatsTab === 'categoria'"
+    (click)="toggleCategoryStats()">
+    📦 Estadísticas por Categoría
+  </button>
+  
+  <button 
+    class="btn-stats-tab btn-model" 
+    [class.active]="activeStatsTab === 'modelo'"
+    (click)="toggleModelStats()">
+    🚙 Estadísticas por Modelo
+  </button>
+</div>
+
+<!-- Estadísticas por Línea (Calculadas del Frontend) -->
+<div class="line-stats-container" *ngIf="activeStatsTab === 'linea'">
+  <h3 class="stats-title">📊 Estadísticas por Chasis/Línea</h3>
+  <div class="stats-grid">
+    <div class="stat-card" *ngFor="let stat of lineStats">
+      <div class="stat-header">
+        <h4>{{ stat.linea }}</h4>
+        <span class="stat-badge">{{ stat.porcentaje }}%</span>
+      </div>
+      <div class="stat-details">
+        <div class="stat-item">
+          <span class="stat-label">Total Códigos:</span>
+          <span class="stat-value">{{ stat.total }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Modelos Únicos:</span>
+          <span class="stat-value">{{ stat.modelos }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Motores Únicos:</span>
+          <span class="stat-value">{{ stat.motores }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Chasis Únicos:</span>
+          <span class="stat-value">{{ stat.chasis }}</span>
+        </div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-fill" [style.width.%]="stat.porcentaje"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estadísticas por Categoría -->
+<div class="line-stats-container category-stats" *ngIf="activeStatsTab === 'categoria'">
+  <h3 class="stats-title">📦 Estadísticas por Categoría</h3>
+  <div class="stats-grid">
+    <div class="stat-card stat-card-category" *ngFor="let stat of categoryStats">
+      <div class="stat-header">
+        <h4>{{ stat.categoria }}</h4>
+        <span class="stat-badge stat-badge-category">{{ stat.porcentaje }}%</span>
+      </div>
+      <div class="stat-details">
+        <div class="stat-item">
+          <span class="stat-label">Total Códigos:</span>
+          <span class="stat-value">{{ stat.total }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Total Cantidad:</span>
+          <span class="stat-value">{{ stat.totalCantidad }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Modelos:</span>
+          <span class="stat-value">{{ stat.modelos }}</span>
+        </div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-fill stat-bar-fill-category" [style.width.%]="stat.porcentaje"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estadísticas por Modelo -->
+<div class="line-stats-container model-stats" *ngIf="activeStatsTab === 'modelo'">
+  <h3 class="stats-title">🚙 Estadísticas por Modelo</h3>
+  <div class="stats-grid">
+    <div class="stat-card stat-card-model" *ngFor="let stat of modelStats">
+      <div class="stat-header">
+        <h4>{{ stat.modelo }}</h4>
+        <span class="stat-badge stat-badge-model">{{ stat.porcentaje }}%</span>
+      </div>
+      <div class="stat-details">
+        <div class="stat-item">
+          <span class="stat-label">Total Códigos:</span>
+          <span class="stat-value">{{ stat.total }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Total Cantidad:</span>
+          <span class="stat-value">{{ stat.totalCantidad }}</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Categorías:</span>
+          <span class="stat-value">{{ stat.categorias }}</span>
+        </div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-bar-fill stat-bar-fill-model" [style.width.%]="stat.porcentaje"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="contenedor-tabla-importaciones">
+      <div class="cabecera-tabla">
+        <div class="titulo-tabla">Codigos Pendientes Recientes</div>
+        <div class="acciones-tabla">
+          <!-- Filtro de fechas -->
+          <div class="filtro-fechas">
+            <div class="fecha-desde">
+              <label for="startDate">Desde:</label>
+              <input type="date" id="startDate" [(ngModel)]="startDate">
+            </div>
+            <div class="fecha-hasta">
+              <label for="endDate">Hasta:</label>
+              <input type="date" id="endDate" [(ngModel)]="endDate">
+            </div>
+            <button class="boton boton-contorno" (click)="applyDateFilter()">Aplicar Fechas</button>
+            <button class="boton boton-contorno" (click)="resetDateFilter()">Resetear</button>
+          </div>
+      <!-- Reemplaza el dropdown de exportación en el HTML -->
+<div class="dropdown">
+  <button class="boton boton-contorno" (click)="toggleExportMenu()">
+    <i class="fa fa-download"></i> Exportar
+  </button>
+  <div class="dropdown-content export-menu-enhanced" *ngIf="showExportMenu">
+    <div class="export-section">
+      <div class="export-section-title">⚡ Exportación Rápida (Recomendado)</div>
+      
+      <a (click)="downloadExcel()" class="export-option-primary">
+        <i class="fa fa-file-excel-o"></i>
+        <div class="export-option-content">
+          <strong>Excel Simple</strong>
+          <span class="export-option-desc">Sin imágenes • Instantáneo</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithImageLinks()" class="export-option-primary">
+        <i class="fa fa-link"></i>
+        <div class="export-option-content">
+          <strong>Excel con Links</strong>
+          <span class="export-option-desc">URLs clickeables • Instantáneo</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithImagesLimited20()" class="export-option-recommended">
+        <i class="fa fa-file-image-o"></i>
+        <div class="export-option-content">
+          <strong>Página Actual con Imágenes REALES</strong>
+          <span class="export-option-desc">{{lista.length}} registros • Imágenes embedidas</span>
+        </div>
+        <span class="badge-recommended">RECOMENDADO</span>
+      </a>
+    </div>
+
+    <hr style="margin: 10px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+    <div class="export-section">
+      <div class="export-section-title">🐌 Exportación Completa </div>
+      
+      <a (click)="downloadExcelWithImagesLimited100()" class="export-option-warning">
+        <i class="fa fa-image"></i>
+        <div class="export-option-content">
+          <strong>Primeras 100 Imágenes</strong>
+          <span class="export-option-desc">~1-2 minutos</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithImagesLimited500()" class="export-option-warning">
+        <i class="fa fa-images"></i>
+        <div class="export-option-content">
+          <strong>Primeras 500 Imágenes</strong>
+          <span class="export-option-desc">~5-10 minutos</span>
+        </div>
+      </a>
+      
+      <a (click)="downloadExcelWithImagesLimited(99999)" class="export-option-danger">
+        <i class="fa fa-warning"></i>
+        <div class="export-option-content">
+          <strong>Todas las Imágenes</strong>
+          <span class="export-option-desc">⚠️ Puede tardar 30+ minutos</span>
+        </div>
+      </a>
+    </div>
+
+    <hr style="margin: 10px 0; border: none; border-top: 1px solid #e0e0e0;">
+
+    <div class="export-section">
+      <a (click)="downloadCSV()" class="export-option-secondary">
+        <i class="fa fa-file-text-o"></i>
+        <div class="export-option-content">
+          <strong>CSV</strong>
+          <span class="export-option-desc">Formato texto simple</span>
+        </div>
+      </a>
+      
+      <a (click)="clearImageCache()" class="export-option-secondary">
+        <i class="fa fa-trash-o"></i>
+        <div class="export-option-content">
+          <strong>Limpiar Cache</strong>
+          <span class="export-option-desc">Liberar memoria</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="export-info">
+      <i class="fa fa-info-circle"></i>
+      Total: {{totalItems}} registros
+    </div>
+  </div>
+</div>
+
+        </div>
+      </div>
+      
+      <div class="tabla-responsive" *ngIf="!loading; else loadingTemplate">
+        <table>
+          <thead>
+            <tr>
+              <th>Codigo</th>
+              <th>Nombre</th>
+              <th>Descripcion</th>
+              <th>Cantidad</th>
+              <th>Observaciones</th>                 
+              <th class="hide-mobile">Fecha</th>
+              <th>Imagen</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of lista" class="fila-datos">
+              <td data-label="Codigo">
+                <textarea
+                  [(ngModel)]="item.codigo"
+                  placeholder="Escribe tu codigo"
+                  rows="3"
+                  style="width: 100%; resize: vertical;">
+                </textarea>
+              </td>
+              
+              <td data-label="Nombre">
+                 <textarea
+                  [(ngModel)]="item.nombre"
+                  placeholder="Escribe tu observación"
+                  rows="3"
+                  style="width: 100%; resize: vertical;">
+                </textarea>
+              </td>
+              <td data-label="Descripcion"> 
+                <textarea
+                  [(ngModel)]="item.descripcion"
+                  placeholder="Escribe tu descripcion"
+                  rows="3"
+                  style="width: 100%; resize: vertical;">
+                </textarea>
+              </td>
+              <td data-label="Cantidad">{{ item.cantidad }}</td>
+              <td data-label="Observaciones">
+                <textarea
+                  [(ngModel)]="item.observacion"
+                  placeholder="Escribe tu observación"
+                  rows="3"
+                  style="width: 100%; resize: vertical;">
+                </textarea>
+              </td>
+              <td data-label="Fecha">{{ item.fecha ? (item.fecha | date:'dd/MM/yyyy') : '-' }}</td>
+              
+              <td data-label="Imagen">
+                <div *ngFor="let imagePath of item.imagenes" class="image-container">
+                  <div *ngIf="imagePath!=null">
+                    <img 
+                      [src]="getImageUrl(imagePath)" 
+                      alt="Imagen del pedido" 
+                      (click)="openImageModal(imagePath)" 
+                      class="pedido-image" 
+                      width="100px" 
+                      height="100px"
+                      loading="lazy"
+                      (error)="onImageError($event, imagePath)"
+                      [style.cursor]="'pointer'">
+                  </div>
+                </div>
+              </td>
+              
+              <td data-label="Estado">
+                <select [(ngModel)]="item.revisado" (change)="actualizarEstado(item)">
+                  <option value="pendiente">PENDIENTE</option>
+                  <option value="revisado">REVISADO</option>
+                </select>
+              </td>
+              <td>
+              <button class="boton-sugerido" (click)="saveAsSugerido(item)">
+                <i class="fa fa-save"></i> Guardar Sugerido
+              </button>
+            </td>
+            </tr>
+            <tr *ngIf="lista.length === 0">
+              <td colspan="9" class="no-results">
+                No se encontraron resultados para los filtros aplicados
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <ng-template #loadingTemplate>
+        <div class="loading-container">
+          <div class="loading-spinner"></div>
+          <p>Cargando datos...</p>
+        </div>
+      </ng-template>
+      
+      <div class="pie-tabla" *ngIf="lista.length > 0">
+        <div class="items-count">Mostrando {{ lista.length }} de {{ totalItems }} Partes</div>
+        <div class="paginacion">
+          <button class="boton-pagina" (click)="changePage(currentPage - 1)" [disabled]="currentPage === 1">&lt;</button>
+          <button 
+            *ngFor="let page of getPaginationArray()" 
+            class="boton-pagina" 
+            [ngClass]="{'activo': page === currentPage}"
+            (click)="page !== -1 ? changePage(page) : null">
+            <ng-container *ngIf="page !== -1">{{ page }}</ng-container>
+            <ng-container *ngIf="page === -1">...</ng-container>
+          </button>
+          <button class="boton-pagina" (click)="changePage(currentPage + 1)" [disabled]="currentPage === totalPages">&gt;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Modal para visualizar imágenes -->
+  <div class="image-modal-overlay" *ngIf="isModalOpen" (click)="closeImageModal()">
+    <div class="image-modal-content" (click)="$event.stopPropagation()">
+      <span class="image-modal-close" (click)="closeImageModal()">&times;</span>
+      <img [src]="selectedImageUrl" alt="Imagen ampliada" class="image-modal-img">
+    </div>
+  </div>
+</main>
+
+<!-- Estilos -->
+<style>
+  .image-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .image-modal-content {
+    position: relative;
+    background-color: white;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 90%;
+    max-height: 90%;
+  }
+
+  .image-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+  }
+
+  .image-modal-img {
+    max-width: 100%;
+    max-height: 80vh;
+    display: block;
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  
+  .loading-spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .no-results {
+    text-align: center;
+    padding: 30px;
+    font-style: italic;
+    color: #666;
+  }
+
+  .pedido-image {
+    object-fit: cover;
+    transition: transform 0.2s;
+  }
+  
+  .pedido-image:hover {
+    transform: scale(1.05);
+  }
+  
+  .image-container {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0f0f0;
+  }
+
+  .tabla-lineas table {
+    background: white;
+  }
+
+  .filtro-linea select {
+    min-width: 250px;
+  }
+</style>

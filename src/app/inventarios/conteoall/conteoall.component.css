@@ -1,0 +1,46 @@
+.table {
+  font-size: 0.875rem;
+}
+
+.sticky-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f8f9fa;
+}
+
+.fecha-header {
+  min-width: 150px;
+  white-space: nowrap;
+}
+
+.conteo-cell {
+  vertical-align: top;
+  min-width: 180px;
+  padding: 8px;
+}
+
+.conteo-item {
+  padding: 8px;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.conteo-item.requiere-reconteo {
+  border-left: 3px solid #ffc107;
+  background-color: #fff3cd;
+}
+
+.table-responsive {
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+th {
+  white-space: nowrap;
+}
+
+.badge {
+  font-size: 0.75rem;
+}

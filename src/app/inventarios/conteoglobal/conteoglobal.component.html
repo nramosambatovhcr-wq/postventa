@@ -1,0 +1,1429 @@
+<!-- conteoglobal.component.html -->
+<div class="conteo-container">
+
+  <!-- ✅ NUEVO: banner de conteos pendientes de sincronizar (solo si hay alguno) -->
+  <div *ngIf="totalPendientes > 0" class="banner-pendientes">
+    <span class="banner-pendientes__icono">⏳</span>
+    <span>
+      {{ totalPendientes }} conteo(s) pendiente(s) de guardar.
+      Se están reintentando automáticamente — no cierres la app.
+    </span>
+    <span *ngIf="procesandoPendientes" class="banner-pendientes__spinner">sincronizando…</span>
+  </div>
+
+  <!-- ✅ Título + estadísticas (acordeón: en móvil arranca cerrado) -->
+  <div class="panel-superior panel-superior-estadisticas">
+    <div class="panel-titulo panel-titulo-estadisticas"
+         [class.panel-titulo-estatico]="repuestos.length === 0"
+         (click)="repuestos.length > 0 && toggleEstadisticas()"
+         role="button" aria-label="Mostrar u ocultar estadísticas">
+      <div class="panel-titulo-izq">
+        <i class="bi bi-clipboard-check panel-icono"></i>
+        <div class="panel-textos">
+          <h2>Conteo Global de Inventario</h2>
+          <span class="panel-subtitulo" *ngIf="agenciaNombre">
+            <i class="bi bi-building"></i> {{ agenciaNombre }} · {{ bodegaSeleccionada }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Toggle (solo cuando hay datos): resumen compacto + chevron -->
+      <span class="btn-toggle-filtros btn-toggle-estadisticas" *ngIf="repuestos.length > 0">
+        <span class="btn-toggle-texto resumen-estadisticas">
+          <span class="resumen-ok">{{ contados }}</span> ok ·
+          <span class="resumen-dif">{{ conDiferencias }}</span> dif
+        </span>
+        <i class="bi chevron-filtros" [ngClass]="estadisticasAbiertas ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </span>
+    </div>
+
+    <!-- Zona colapsable: En vivo + tarjetas + avance de revisión -->
+    <div class="panel-filtros panel-estadisticas-colapsable"
+         [class.abierto]="estadisticasAbiertas"
+         *ngIf="repuestos.length > 0">
+      <div class="panel-filtros-inner">
+        <div class="estadisticas-section-inner">
+
+          <div class="sync-indicator-global" [title]="sincronizandoGlobal ? 'Actualizando...' : 'Estas cifras se sincronizan solas cada 15 segundos'">
+            <span class="sync-dot" [class.sync-dot-activa]="sincronizandoGlobal"></span>
+            En vivo
+            <span *ngIf="ultimaSincronizacionGlobal"> · actualizado {{ ultimaSincronizacionGlobal | date:'HH:mm:ss' }}</span>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-3">
+              <div class="stat-card total">
+                <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+                <div class="stat-content">
+                  <h3>{{ totalRepuestos }}</h3>
+                  <p>Total Repuestos</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-card pendiente">
+                <div class="stat-icon"><i class="bi bi-clock-history"></i></div>
+                <div class="stat-content">
+                  <h3>{{ pendientes }}</h3>
+                  <p>Pendientes</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-card contado">
+                <div class="stat-icon"><i class="bi bi-check-circle"></i></div>
+                <div class="stat-content">
+                  <h3>{{ contados }}</h3>
+                  <p>Contados</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="stat-card diferencia">
+                <div class="stat-icon"><i class="bi bi-exclamation-circle"></i></div>
+                <div class="stat-content">
+                  <h3>{{ conDiferencias }}</h3>
+                  <p>Con Diferencias</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ✅ Barra de Progreso: avance de revisión REAL
+               (artículos con al menos un conteo registrado / total de artículos) -->
+          <div class="progress-section">
+            <div class="progreso-encabezado">
+              <label class="form-label mb-0">
+                Avance de revisión: <strong>{{ getPorcentajeProgreso() }}%</strong>
+              </label>
+              <span class="progreso-detalle">
+                {{ revisados }} de {{ totalRepuestos }} artículos revisados
+              </span>
+            </div>
+            <div class="progress progreso-barra" style="height: 22px;">
+              <div
+                class="progress-bar bg-success"
+                [style.width.%]="porcentajeContadosOk"
+                title="Contados sin diferencia: {{ contados }}">
+                <span *ngIf="porcentajeContadosOk >= 8">{{ contados }}</span>
+              </div>
+              <div
+                class="progress-bar bg-warning text-dark"
+                [style.width.%]="porcentajeConDiferencias"
+                title="Contados con diferencia: {{ conDiferencias }}">
+                <span *ngIf="porcentajeConDiferencias >= 8">{{ conDiferencias }}</span>
+              </div>
+            </div>
+            <div class="progreso-leyenda">
+              <span><span class="leyenda-cuadro leyenda-verde"></span> Sin diferencia</span>
+              <span><span class="leyenda-cuadro leyenda-amarilla"></span> Con diferencia</span>
+              <span><span class="leyenda-cuadro leyenda-gris"></span> Pendiente ({{ pendientes }})</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje de Error -->
+  <div class="alert alert-danger mt-3" *ngIf="errorMensaje">
+    <i class="bi bi-exclamation-triangle"></i> {{ errorMensaje }}
+  </div>
+
+  <!-- Controles Rápidos -->
+ <!-- <div class="controles-rapidos" *ngIf="repuestos.length > 0">
+    <div class="row g-2">
+      <div class="col-md-3">
+        <button class="btn btn-outline-primary w-100" (click)="igualarStockSistema()">
+          <i class="bi bi-arrow-repeat"></i> Igualar Stock Sistema
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100" (click)="contarTodos(0)">
+          <i class="bi bi-x-circle"></i> Marcar Todos en 0
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-outline-warning w-100" (click)="aplicarFiltros()">
+          <i class="bi bi-funnel"></i> Aplicar Filtros
+        </button>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-success w-100" (click)="guardarConteo()" 
+                [disabled]="contados === 0 && conDiferencias === 0">
+          <i class="bi bi-save"></i> Guardar Conteo
+        </button>
+      </div>
+    </div>
+  </div>-->
+
+  <!-- (Las estadísticas se movieron arriba, dentro del acordeón del panel superior) -->
+
+
+  <!-- Loader -->
+  <div class="text-center my-5" *ngIf="cargando">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-2">Cargando inventario...</p>
+  </div>
+
+  <!-- ✅ Filtros pegados a la tabla (acordeón) -->
+  <div class="panel-superior panel-filtros-tabla" *ngIf="!cargando">
+    <div class="panel-titulo panel-titulo-filtros" (click)="toggleFiltros()" role="button" aria-label="Mostrar u ocultar filtros">
+      <div class="panel-titulo-izq">
+        <i class="bi bi-funnel-fill panel-icono panel-icono-filtros"></i>
+        <div class="panel-textos">
+          <h2 class="titulo-filtros">Filtros</h2>
+        </div>
+        <span class="badge-filtros" *ngIf="filtrosActivosCount > 0">{{ filtrosActivosCount }}</span>
+      </div>
+
+      <span class="btn-toggle-filtros">
+        <span class="btn-toggle-texto">{{ repuestosFiltrados.length }} artículos</span>
+        <i class="bi chevron-filtros" [ngClass]="filtrosAbiertos ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </span>
+    </div>
+
+    <!-- Zona colapsable de filtros -->
+    <div class="panel-filtros" [class.abierto]="filtrosAbiertos">
+      <div class="panel-filtros-inner">
+        <div class="filtros-grid">
+
+          <!-- Bodega -->
+          <div class="filtro-item filtro-span-2">
+            <label class="filtro-label">Bodega</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-building"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="bodegaSeleccionada"
+                placeholder="Ej: B008"
+                (keyup.enter)="cargarInventario()">
+              <button class="btn btn-primary" (click)="cargarInventario()" [disabled]="cargando">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Búsqueda -->
+          <div class="filtro-item filtro-span-2">
+            <label class="filtro-label">Buscar Artículo/Nombre</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="busquedaTexto"
+                (ngModelChange)="onBusquedaTextoChange($event)"
+                placeholder="Buscar...">
+            </div>
+          </div>
+
+          <!-- Estado -->
+          <div class="filtro-item">
+            <label class="filtro-label">Estado</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroEstado"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todos">Todos</option>
+              <option value="pendiente">Pendientes</option>
+              <option value="contado">Contados</option>
+              <option value="diferencia">Con Diferencias</option>
+              <option value="nuevos">Fuera de inventario</option>
+            </select>
+          </div>
+
+          <!-- Clase -->
+          <div class="filtro-item">
+            <label class="filtro-label">Clase</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroClaseId"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todas">Todas</option>
+              <option *ngFor="let clase of clasesDisponibles" [value]="clase">
+                {{ clase }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Grupo -->
+          <div class="filtro-item">
+            <label class="filtro-label">Grupo</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroGrupoId"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todos">Todos</option>
+              <option *ngFor="let grupo of gruposDisponibles" [value]="grupo">
+                {{ grupo }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Ordenar por costo -->
+          <div class="filtro-item">
+            <label class="filtro-label">Ordenar por Costo</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="ordenCosto"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="ninguno">Sin orden</option>
+              <option value="mayor">Mayor a Menor ↓</option>
+              <option value="menor">Menor a Mayor ↑</option>
+            </select>
+          </div>
+
+          <!-- Acciones -->
+          <div class="filtro-acciones">
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              type="button"
+              (click)="limpiarFiltros()"
+              title="Quitar todos los filtros">
+              <i class="bi bi-eraser"></i> Limpiar
+            </button>
+            <button
+              class="btn btn-warning btn-sm"
+              type="button"
+              (click)="abrirModalNuevoArticulo()"
+              title="Registrar artículo que no está en el inventario">
+              <i class="bi bi-plus-circle"></i> Artículo Nuevo
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Conteo -->
+  <div class="tabla-conteo" *ngIf="!cargando && repuestosFiltrados.length > 0">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered">
+        <thead class="table-dark">
+          <tr>
+            <th class="col-fija col-fija-1" style="width: 6%; cursor: pointer; user-select: none;" (click)="ordenarPor('articulo')">
+              Artículo <span [ngClass]="getSortClass('articulo')"></span>
+            </th>
+            <th style="width: 13%; cursor: pointer; user-select: none;" (click)="ordenarPor('nombre')">
+              Nombre <span [ngClass]="getSortClass('nombre')"></span>
+            </th>
+         <!--   <th style="width: 6%; cursor: pointer; user-select: none;" (click)="ordenarPor('clase_id')">
+              Clase <span [ngClass]="getSortClass('clase_id')"></span>
+            </th>-->
+            <!-- ✅ NUEVO: Columna Grupo -->
+         <!--   <th style="width: 6%; cursor: pointer; user-select: none;" (click)="ordenarPor('grupo_id')">
+              Grupo <span [ngClass]="getSortClass('grupo_id')"></span>
+            </th>-->
+            <th style="width: 5%; cursor: pointer; user-select: none;" (click)="ordenarPor('ubicacion')">
+              Ubicación <span [ngClass]="getSortClass('ubicacion')"></span>
+            </th>
+            <th style="width: 4%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('stock')">
+              Stock <span [ngClass]="getSortClass('stock')"></span>
+            </th>
+            <th style="width: 4%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('reserva')">
+              Reserva <span [ngClass]="getSortClass('reserva')"></span>
+            </th>
+            <th style="width: 4%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('disponible')">
+              Disp. <span [ngClass]="getSortClass('disponible')"></span>
+            </th>
+            <!-- <th style="width: 8%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('costo')">
+              Costo <span [ngClass]="getSortClass('costo')"></span>
+            </th>-->
+            <th style="width: 8%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('conteo')">
+              Acumulado <span [ngClass]="getSortClass('conteo')"></span>
+            </th>
+            <!-- ✅ NUEVO: columnas de EDICIÓN INLINE -->
+            <th style="width: 9%;" class="text-center th-inline">
+              <i class="bi bi-123"></i> Cantidad
+            </th>
+            <th style="width: 9%;" class="th-inline">
+              <i class="bi bi-pin-map"></i> Ubicación Física
+            </th>
+            <th style="width: 7%;" class="th-inline">
+              <i class="bi bi-shield-check"></i> Estado Art.
+            </th>
+            <th style="width: 9%;" class="th-inline">
+              <i class="bi bi-chat-square-text"></i> Observación
+            </th>
+            <th style="width: 5%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('diferencia')">
+              Dif. <span [ngClass]="getSortClass('diferencia')"></span>
+            </th>
+            <th style="width: 4%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('estado')">
+              Estado <span [ngClass]="getSortClass('estado')"></span>
+            </th>
+            <!-- ✅ NUEVO: Columna Imágenes -->
+            <th style="width: 6%;" class="text-center">Fotos</th>
+            <th style="width: 7%;" class="text-center">Guardar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let repuesto of repuestosPaginados; let i = index; trackBy: trackByArticulo" 
+              [ngClass]="{
+                'fila-contada-backend':  repuesto.guardado_backend,
+                'fila-contada-sesion':   repuesto.estado_conteo !== 'pendiente' && !repuesto.guardado_backend,
+                'fila-articulo-nuevo':   repuesto.es_articulo_nuevo
+              }">
+            <td class="col-fija col-fija-1">
+              <strong>{{ repuesto.articulo }}</strong>
+              <span class="badge-articulo-nuevo" *ngIf="repuesto.es_articulo_nuevo" title="No consta en el inventario del sistema (contado como artículo nuevo)">
+                <i class="bi bi-box-seam"></i> FUERA DE INVENTARIO
+              </span>
+              <!-- ✅ NUEVO: conteos de esta fila aún sin sincronizar -->
+              <span *ngIf="repuesto.conteos_pendientes && repuesto.conteos_pendientes > 0"
+                    class="badge-pendiente"
+                    title="Este conteo aún no se ha guardado en el servidor. Se reintenta automáticamente.">
+                ⏳ {{ repuesto.conteos_pendientes }} sin guardar
+              </span>
+            </td>
+            <td>
+              <div class="nombre-repuesto">
+                {{ repuesto.nombre }}
+                <small class="text-muted d-block" *ngIf="repuesto.ubicacion">
+                  <i class="bi bi-geo-alt"></i> {{ repuesto.ubicacion }}
+                </small>
+              </div>
+            </td>
+          <!--  <td>{{ repuesto.clase_id || '-' }}</td>-->
+            <!-- ✅ NUEVO: Celda Grupo -->
+          <!--  <td>{{ repuesto.grupo_id || '-' }}</td>-->
+            <td>{{ repuesto.ubicacion || '-' }}</td>
+            <td class="text-center">{{ repuesto.stock || 0 }}</td>
+            <td class="text-center">{{ repuesto.stock_reservado || 0 }}</td>
+            <td class="text-center">
+              <span class="badge bg-primary fs-6">{{ repuesto.stock_disponible || 0 }}</span>
+            </td>
+          <!--  <td class="text-center">
+              <span class="fw-semibold text-dark">{{ repuesto.costo_uni | number:'1.2-2' }}</span>
+            </td>-->
+            <td class="td-conteo-fisico">
+
+              <!-- ── TOTAL ACUMULADO (solo lectura) ── -->
+              <ng-container *ngIf="repuesto.guardado_backend; else sinAcumulado">
+                <div class="conteo-backend-bloque">
+
+                  <!-- Cantidad grande y destacada (total ACUMULADO de todos los conteos). ✅ Clickeable: abre el detalle aun con un solo conteo -->
+                  <div class="conteo-backend-cantidad conteo-backend-cantidad-click"
+                       *ngIf="(repuesto.conteos_detalle?.length || 0) > 0; else cantidadSinDetalle"
+                       (click)="abrirModalConteos(repuesto)"
+                       title="Ver detalle del conteo">
+                    <i class="bi bi-check-circle-fill text-success me-1" style="font-size:0.8rem;"></i>
+                    <span class="conteo-backend-num">{{ repuesto.conteo_fisico }}</span>
+                    <span class="conteo-backend-uds">und</span>
+                  </div>
+                  <ng-template #cantidadSinDetalle>
+                    <div class="conteo-backend-cantidad">
+                      <i class="bi bi-check-circle-fill text-success me-1" style="font-size:0.8rem;"></i>
+                      <span class="conteo-backend-num">{{ repuesto.conteo_fisico }}</span>
+                      <span class="conteo-backend-uds">und</span>
+                    </div>
+                  </ng-template>
+
+                  <!-- Detalle: ubicacion + usuario + fecha -->
+                  <div class="conteo-backend-detalle"
+                       *ngIf="repuesto.ubicacion_conteo_detalle"
+                       [title]="repuesto.ubicacion_conteo_detalle">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    {{ repuesto.ubicacion_conteo_detalle }}
+                  </div>
+
+                  <!-- Fallback si no hay detalle completo -->
+                  <ng-container *ngIf="!repuesto.ubicacion_conteo_detalle">
+                    <div class="conteo-backend-detalle" *ngIf="repuesto.ubicacion_conteo">
+                      <i class="bi bi-geo-alt-fill"></i> {{ repuesto.ubicacion_conteo }}
+                    </div>
+                    <div class="conteo-backend-detalle" *ngIf="repuesto.contado_por">
+                      <i class="bi bi-person-fill"></i> {{ repuesto.contado_por }}
+                    </div>
+                  </ng-container>
+
+                  <!-- ✅ Badge clicable: abre detalle por ubicación, desde 1 conteo en adelante -->
+                  <div *ngIf="(repuesto.numero_conteos || 0) >= 1" class="conteo-backend-multi">
+                    <span class="badge bg-info text-dark badge-conteos-click"
+                          (click)="abrirModalConteos(repuesto)"
+                          title="Ver detalle de cada conteo por ubicación">
+                      <i class="bi bi-layers-fill"></i>
+                      {{ repuesto.numero_conteos }} {{ repuesto.numero_conteos === 1 ? 'conteo' : 'conteos' }}
+                    </span>
+                  </div>
+
+                </div>
+              </ng-container>
+
+              <ng-template #sinAcumulado>
+                <span class="text-muted acumulado-vacio" title="Sin conteos registrados">—</span>
+              </ng-template>
+
+            </td>
+
+            <!-- ✅ NUEVO: CELDA INLINE Cantidad de ESTE conteo -->
+            <td class="td-inline-conteo">
+              <div class="inline-cantidad-group">
+                <button class="btn-inline-step btn-inline-menos" type="button"
+                        (click)="decrementarInline(repuesto)"
+                        [disabled]="repuesto.inline_guardando || !(repuesto.inline_cantidad ?? 0)"
+                        title="Restar 1">
+                  <span class="signo-step">−</span>
+                </button>
+                <input
+                  type="number"
+                  class="inline-input-cantidad"
+                  [(ngModel)]="repuesto.inline_cantidad"
+                  (focus)="onInputFocus($event)"
+                  (keyup.enter)="guardarConteoInline(repuesto)"
+                  [disabled]="!!repuesto.inline_guardando"
+                  min="0"
+                  placeholder="0">
+                <button class="btn-inline-step btn-inline-mas" type="button"
+                        (click)="incrementarInline(repuesto)"
+                        [disabled]="!!repuesto.inline_guardando"
+                        title="Sumar 1">
+                  <span class="signo-step">+</span>
+                </button>
+              </div>
+              <!-- Atajo = Sistema (solo primer conteo) + previsualización del acumulado -->
+              <div class="inline-cantidad-extra">
+                <button class="btn-inline-atajo" type="button"
+                        *ngIf="!repuesto.guardado_backend"
+                        (click)="igualarSistemaInline(repuesto)"
+                        [disabled]="!!repuesto.inline_guardando"
+                        title="Copiar el stock disponible del sistema">
+                  = Sistema
+                </button>
+                <small class="inline-total-previsto"
+                       *ngIf="repuesto.guardado_backend && (repuesto.inline_cantidad ?? 0) > 0"
+                       [title]="'Acumulado previo ' + (repuesto.conteo_fisico || 0) + ' + este conteo = nuevo total'">
+                  <i class="bi bi-calculator"></i>
+                  Total: <strong>{{ getTotalPrevisto(repuesto) }}</strong>
+                </small>
+              </div>
+            </td>
+
+            <!-- ✅ NUEVO: CELDA INLINE Ubicación física de este conteo -->
+            <td class="td-inline">
+              <input
+                type="text"
+                class="inline-input"
+                [(ngModel)]="repuesto.inline_ubicacion"
+                [disabled]="!!repuesto.inline_guardando"
+                (keyup.enter)="guardarConteoInline(repuesto)"
+                [placeholder]="repuesto.guardado_backend ? 'Nueva ubicación *' : (repuesto.ubicacion || 'Ej: Estante A3')"
+                [title]="repuesto.guardado_backend ? 'Obligatorio: ubicación donde se realizó este NUEVO conteo' : 'Ubicación donde se encontró el artículo'">
+            </td>
+
+            <!-- ✅ NUEVO: CELDA INLINE Estado del artículo -->
+            <td class="td-inline">
+              <select class="inline-select"
+                      [(ngModel)]="repuesto.inline_estado"
+                      [disabled]="!!repuesto.inline_guardando"
+                      title="Estado del artículo en este conteo">
+                <option *ngFor="let est of estadosProducto" [value]="est.valor">{{ est.label }}</option>
+              </select>
+            </td>
+
+            <!-- ✅ NUEVO: CELDA INLINE Observación -->
+            <td class="td-inline">
+              <input
+                type="text"
+                class="inline-input"
+                [(ngModel)]="repuesto.inline_observaciones"
+                [disabled]="!!repuesto.inline_guardando"
+                (keyup.enter)="guardarConteoInline(repuesto)"
+                maxlength="500"
+                placeholder="Observación..."
+                [title]="repuesto.inline_observaciones || 'Observación de este conteo'">
+            </td>
+            <td class="text-center">
+              <span *ngIf="repuesto.diferencia !== undefined" 
+                    class="badge fs-6"
+                    [class.bg-danger]="repuesto.diferencia < 0"
+                    [class.bg-success]="repuesto.diferencia === 0"
+                    [class.bg-warning]="repuesto.diferencia > 0">
+                {{ repuesto.diferencia > 0 ? '+' : '' }}{{ repuesto.diferencia }}
+              </span>
+              <span *ngIf="repuesto.diferencia === undefined" class="text-muted">-</span>
+            </td>
+            <!-- COLUMNA: Estado -->
+            <td class="text-center">
+              <span class="badge estado-badge"
+                [class.bg-success]="repuesto.estado_conteo === 'contado' && !repuesto.es_articulo_nuevo"
+                [class.bg-warning]="repuesto.estado_conteo === 'diferencia' && !repuesto.es_articulo_nuevo"
+                [class.bg-secondary]="repuesto.estado_conteo === 'pendiente'"
+                [class.bg-estado-fuera]="repuesto.es_articulo_nuevo">
+
+                <ng-container *ngIf="repuesto.es_articulo_nuevo; else estadoNormal">
+                  <i class="bi bi-box-seam"></i> Fuera inv.
+                </ng-container>
+
+                <ng-template #estadoNormal>
+                  <ng-container *ngIf="repuesto.estado_conteo === 'contado'">
+                    <i class="bi bi-check-lg"></i> Contado
+                  </ng-container>
+                  <ng-container *ngIf="repuesto.estado_conteo === 'diferencia'">
+                    <i class="bi bi-exclamation-lg"></i> Diferencia
+                  </ng-container>
+                  <ng-container *ngIf="repuesto.estado_conteo === 'pendiente'">
+                    <i class="bi bi-clock"></i> Pendiente
+                  </ng-container>
+                </ng-template>
+              </span>
+            </td>
+            <!-- ✅ NUEVO: COLUMNA Fotos (ver guardadas + cargar directo en la fila) -->
+            <td class="text-center td-imagenes-col">
+              <div class="fotos-inline-wrap">
+
+                <!-- Miniatura de imágenes ya existentes -->
+                <div class="celda-imagen-thumb-wrap"
+                     *ngIf="getTotalImagenes(repuesto) as totalImgs"
+                     (click)="abrirModalImagenes(repuesto)"
+                     [title]="'Ver ' + totalImgs + ' imagen(es) cargada(s)'">
+                  <img [src]="getPrimeraImagen(repuesto)" alt="Imagen del conteo" class="celda-imagen-thumb">
+                  <span class="celda-imagen-badge" *ngIf="totalImgs > 1">
+                    +{{ totalImgs - 1 }}
+                  </span>
+                </div>
+
+                <!-- ✅ NUEVO: botones para adjuntar fotos a ESTE conteo -->
+                <div class="fotos-inline-botones">
+
+                  <!-- Cámara: en celular abre la cámara directamente (capture) -->
+                  <label class="btn-foto-inline btn-foto-camara"
+                         [class.tiene-fotos]="(repuesto.inline_imagenes?.length || 0) > 0"
+                         [title]="'Tomar foto con la cámara (' + (repuesto.inline_imagenes?.length || 0) + '/5)'">
+                    <input type="file" accept="image/*" capture="environment" style="display:none"
+                           [disabled]="repuesto.inline_guardando || repuesto.inline_procesandoFoto || (repuesto.inline_imagenes?.length || 0) >= 5"
+                           (change)="onImagenesInlineSeleccionadas($event, repuesto)">
+                    <span class="spinner-border spinner-border-sm" *ngIf="repuesto.inline_procesandoFoto"></span>
+                    <i class="bi bi-camera-fill" *ngIf="!repuesto.inline_procesandoFoto"></i>
+                    <span class="btn-foto-count" *ngIf="(repuesto.inline_imagenes?.length || 0) > 0">
+                      {{ repuesto.inline_imagenes?.length }}
+                    </span>
+                  </label>
+
+                  <!-- Galería: seleccionar fotos existentes (permite varias) -->
+                  <label class="btn-foto-inline btn-foto-galeria"
+                         [title]="'Elegir fotos de la galería (' + (repuesto.inline_imagenes?.length || 0) + '/5)'">
+                    <input type="file" accept="image/*" multiple style="display:none"
+                           [disabled]="repuesto.inline_guardando || (repuesto.inline_imagenes?.length || 0) >= 5"
+                           (change)="onImagenesInlineSeleccionadas($event, repuesto)">
+                    <i class="bi bi-images"></i>
+                  </label>
+
+                </div>
+
+                <!-- Mini previews de fotos pendientes de guardar (clic para quitar) -->
+                <div class="fotos-inline-previews" *ngIf="(repuesto.inline_imagenes?.length || 0) > 0">
+                  <img *ngFor="let img of repuesto.inline_imagenes; let fi = index"
+                       [src]="img.preview"
+                       class="foto-inline-mini"
+                       (click)="eliminarImagenInline(repuesto, fi)"
+                       title="Clic para quitar esta foto">
+                </div>
+
+              </div>
+            </td>
+            <!-- COLUMNA: Guardar / Acciones -->
+            <td class="text-center td-acciones-col">
+              <div class="acciones-wrap">
+
+                <!-- ✅ NUEVO: Guardar el conteo ingresado en la fila -->
+                <button class="btn-accion accion-guardar-inline"
+                        (click)="guardarConteoInline(repuesto)"
+                        [disabled]="!puedeGuardarInline(repuesto)"
+                        [title]="repuesto.guardado_backend ? 'Guardar: la cantidad se SUMARÁ al total acumulado' : 'Guardar el conteo de este artículo'">
+                  <ng-container *ngIf="!repuesto.inline_guardando">
+                    <i class="bi" [class.bi-save2]="!repuesto.guardado_backend"
+                                 [class.bi-plus-square]="repuesto.guardado_backend"></i>
+                    <span class="btn-accion-label">{{ repuesto.guardado_backend ? 'Sumar' : 'Guardar' }}</span>
+                  </ng-container>
+                  <ng-container *ngIf="repuesto.inline_guardando">
+                    <span class="spinner-border spinner-border-sm"></span>
+                  </ng-container>
+                </button>
+
+                <!-- Limpiar lo ingresado en la fila (sin guardar) -->
+                <button class="btn-accion accion-reset"
+                        (click)="limpiarInline(repuesto)"
+                        *ngIf="(repuesto.inline_cantidad !== null && repuesto.inline_cantidad !== undefined) || repuesto.inline_ubicacion || repuesto.inline_observaciones || (repuesto.inline_imagenes?.length || 0) > 0"
+                        [disabled]="!!repuesto.inline_guardando"
+                        title="Limpiar los campos ingresados en esta fila">
+                  <i class="bi bi-arrow-counterclockwise"></i>
+                  <span class="btn-accion-label">Limpiar</span>
+                </button>
+
+                <!-- Ver detalle de conteos por ubicación -->
+                <button class="btn-accion accion-detalle"
+                        *ngIf="(repuesto.conteos_detalle?.length || 0) > 0"
+                        (click)="abrirModalConteos(repuesto)"
+                        title="Ver cuánto se contó en cada ubicación (usuario y fecha)">
+                  <i class="bi bi-geo-alt"></i>
+                  <span class="btn-accion-label">Ubicac.</span>
+                  <span class="btn-accion-badge" *ngIf="(repuesto.numero_conteos || 0) > 1">
+                    {{ repuesto.numero_conteos }}
+                  </span>
+                </button>
+
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="paginacion" *ngIf="totalPaginas > 1">
+      <nav>
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" style="cursor: pointer;">Anterior</a>
+          </li>
+          <li class="page-item"
+              *ngFor="let pagina of getPaginasArray()"
+              [class.active]="pagina === paginaActual"
+              [class.disabled]="pagina === -1">
+            <span class="page-link page-ellipsis" *ngIf="pagina === -1">…</span>
+            <a class="page-link" *ngIf="pagina !== -1" (click)="cambiarPagina(pagina)" style="cursor: pointer;">{{ pagina }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+            <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" style="cursor: pointer;">Siguiente</a>
+          </li>
+        </ul>
+      </nav>
+      <p class="text-center text-muted">
+        Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} - 
+        {{ Math.min(paginaActual * itemsPorPagina, repuestosFiltrados.length) }} 
+        de {{ repuestosFiltrados.length }} repuestos
+      </p>
+    </div>
+  </div>
+
+  <!-- Mensaje cuando no hay datos -->
+  <div class="text-center my-5" *ngIf="!cargando && repuestos.length === 0">
+    <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
+    <p class="text-muted mt-3">Seleccione una bodega para comenzar el conteo</p>
+  </div>
+
+  <!-- Mensaje cuando no hay resultados filtrados -->
+  <div class="text-center my-5" *ngIf="!cargando && repuestos.length > 0 && repuestosFiltrados.length === 0">
+    <i class="bi bi-search" style="font-size: 4rem; color: #ccc;"></i>
+    <p class="text-muted mt-3">No se encontraron resultados con los filtros aplicados</p>
+    <button class="btn btn-primary" (click)="limpiarFiltros()">
+      <i class="bi bi-x-circle"></i> Limpiar Filtros
+    </button>
+  </div>
+</div>
+
+<!-- Modal de Observaciones -->
+<div class="modal fade" [class.show]="modalObservacionesAbierto" 
+     [style.display]="modalObservacionesAbierto ? 'block' : 'none'" 
+     tabindex="-1" (click)="cerrarModalObservaciones()">
+  <div class="modal-dialog modal-dialog-centered" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-pencil-square"></i>
+          Agregar Observaciones
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalObservaciones()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3" *ngIf="repuestoSeleccionado">
+          <div class="alert alert-info">
+            <strong>Artículo:</strong> {{ repuestoSeleccionado.articulo }}<br>
+            <strong>Nombre:</strong> {{ repuestoSeleccionado.nombre }}<br>
+            <strong>Stock Sistema:</strong> {{ repuestoSeleccionado.stock_disponible || 0 }}<br>
+            <strong>Conteo Físico:</strong> {{ repuestoSeleccionado.conteo_fisico || 0 }}<br>
+            <strong>Diferencia:</strong> 
+            <span [class.text-danger]="(repuestoSeleccionado.diferencia || 0) !== 0"
+                  [class.text-success]="(repuestoSeleccionado.diferencia || 0) === 0">
+              {{ repuestoSeleccionado.diferencia || 0 }}
+            </span>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-bold">Observaciones:</label>
+          <textarea 
+            class="form-control" 
+            rows="5" 
+            [(ngModel)]="observacionesTemporal"
+            placeholder="Escriba sus observaciones aquí...&#10;Ejemplo: Repuesto dañado, ubicación incorrecta, etc."
+            maxlength="500">
+          </textarea>
+          <small class="text-muted">
+            Máximo 500 caracteres ({{ observacionesTemporal.length }}/500)
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalObservaciones()">
+          <i class="bi bi-x-lg"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" (click)="guardarObservaciones()">
+          <i class="bi bi-save"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="modalObservacionesAbierto" *ngIf="modalObservacionesAbierto"></div>
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- ✅ NUEVO: Modal Detalle de Conteos por Ubicación                 -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="modalConteosAbierto"
+     [style.display]="modalConteosAbierto ? 'block' : 'none'"
+     tabindex="-1" (click)="cerrarModalConteos()">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-dark">
+        <h5 class="modal-title">
+          <i class="bi bi-layers-fill"></i>
+          Detalle de Conteos por Ubicación
+        </h5>
+        <span class="sync-indicator" *ngIf="modalConteosAbierto" [title]="sincronizandoConteos ? 'Actualizando...' : 'Se actualiza automáticamente cada pocos segundos'">
+          <span class="sync-dot" [class.sync-dot-activa]="sincronizandoConteos"></span>
+          En vivo
+        </span>
+        <button type="button" class="btn-close" (click)="cerrarModalConteos()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-secondary" *ngIf="repuestoConteosDetalle">
+          <strong>Artículo:</strong> {{ repuestoConteosDetalle.articulo }} — {{ repuestoConteosDetalle.nombre }}<br>
+          <strong>Total acumulado:</strong>
+          <span class="badge bg-success fs-6 ms-1">{{ repuestoConteosDetalle.conteo_fisico || 0 }} und</span>
+          <span class="ms-2"><strong>Stock sistema:</strong> {{ repuestoConteosDetalle.stock_disponible || 0 }}</span>
+          <span class="ms-2">
+            <strong>Diferencia:</strong>
+            <span [class.text-danger]="(repuestoConteosDetalle.diferencia || 0) < 0"
+                  [class.text-success]="(repuestoConteosDetalle.diferencia || 0) === 0"
+                  [class.text-warning]="(repuestoConteosDetalle.diferencia || 0) > 0">
+              {{ (repuestoConteosDetalle.diferencia || 0) > 0 ? '+' : '' }}{{ repuestoConteosDetalle.diferencia || 0 }}
+            </span>
+          </span>
+        </div>
+
+        <p class="text-muted small mb-2" *ngIf="ultimaSincronizacionConteos">
+          <i class="bi bi-arrow-repeat"></i>
+          Última actualización: {{ ultimaSincronizacionConteos | date:'HH:mm:ss' }}
+        </p>
+
+        <div class="table-responsive" *ngIf="(repuestoConteosDetalle?.conteos_detalle?.length || 0) > 0; else sinDetalle">
+          <table class="table table-sm table-bordered table-striped align-middle">
+            <thead class="table-dark">
+              <tr>
+                <th style="width:4%;">#</th>
+                <th style="width:20%;"><i class="bi bi-geo-alt"></i> Ubicación</th>
+                <th style="width:13%;" class="text-center">Cantidad</th>
+                <th style="width:15%;"><i class="bi bi-person"></i> Usuario</th>
+                <th style="width:15%;"><i class="bi bi-calendar"></i> Fecha</th>
+                <th style="width:21%;">Observaciones</th>
+                <!-- ✅ NUEVO: columna de acciones (editar conteo propio) -->
+                <th style="width:12%;" class="text-center"><i class="bi bi-pencil"></i></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let det of repuestoConteosDetalle?.conteos_detalle; let idx = index; trackBy: trackByConteoDetalle"
+                  [class.fila-editando-conteo]="det.editando"
+                  [class.fila-conteo-nueva]="det.esNuevo">
+                <td>{{ idx + 1 }}</td>
+
+                <!-- Ubicación -->
+                <td>
+                  <ng-container *ngIf="!det.editando">
+                    <strong>{{ det.ubicacion }}</strong>
+                    <span class="badge bg-light text-dark border ms-1" *ngIf="det.origen === 'sesion'">Esta sesión</span>
+                    <span class="badge bg-warning text-dark ms-1" *ngIf="det.esNuevo">
+                      <i class="bi bi-broadcast"></i> Nuevo
+                    </span>
+                    <!-- ✅ NUEVO: conteo aún sin sincronizar -->
+                    <span class="badge-pendiente badge-pendiente--sm" *ngIf="det.pendiente"
+                          title="Pendiente de sincronizar">
+                      ⏳ pendiente
+                    </span>
+                  </ng-container>
+                  <input *ngIf="det.editando"
+                         type="text"
+                         class="inline-input"
+                         [(ngModel)]="det.edit_ubicacion"
+                         [disabled]="!!det.edit_guardando"
+                         placeholder="Ubicación *">
+                </td>
+
+                <!-- Cantidad -->
+                <td class="text-center">
+                  <ng-container *ngIf="!det.editando">
+                    <span class="badge bg-primary fs-6" *ngIf="det.cantidad !== null && det.cantidad !== undefined">
+                      {{ det.cantidad }} und
+                    </span>
+                    <small class="text-muted" *ngIf="det.cantidad === null || det.cantidad === undefined"
+                           [title]="det.textoOriginal || ''">
+                      {{ det.textoOriginal || '-' }}
+                    </small>
+                  </ng-container>
+                  <input *ngIf="det.editando"
+                         type="number"
+                         class="inline-input text-center fw-bold edit-conteo-cantidad"
+                         [(ngModel)]="det.edit_cantidad"
+                         [disabled]="!!det.edit_guardando"
+                         (focus)="onInputFocus($event)"
+                         min="0"
+                         placeholder="0">
+                </td>
+
+                <td>{{ det.usuario || '-' }}</td>
+                <td>{{ det.fecha || '-' }}</td>
+
+                <!-- Observaciones + estado -->
+                <td>
+                  <ng-container *ngIf="!det.editando">
+                    <small>{{ det.observaciones || '-' }}</small>
+                    <span class="badge ms-1"
+                          *ngIf="det.estadoProducto"
+                          [class.bg-success]="det.estadoProducto === 'bueno'"
+                          [class.bg-danger]="det.estadoProducto === 'dañado'"
+                          [class.bg-secondary]="det.estadoProducto === 'obsoleto'"
+                          [class.bg-warning]="det.estadoProducto === 'revisar'">
+                      {{ getLabelEstadoProducto(det.estadoProducto) }}
+                    </span>
+                  </ng-container>
+                  <ng-container *ngIf="det.editando">
+                    <input type="text"
+                           class="inline-input mb-1"
+                           [(ngModel)]="det.edit_observaciones"
+                           [disabled]="!!det.edit_guardando"
+                           maxlength="500"
+                           placeholder="Observación...">
+                    <select class="inline-select"
+                            [(ngModel)]="det.edit_estado"
+                            [disabled]="!!det.edit_guardando">
+                      <option *ngFor="let est of estadosProducto" [value]="est.valor">{{ est.label }}</option>
+                    </select>
+                  </ng-container>
+                </td>
+
+                <!-- ✅ NUEVO: acciones de la fila -->
+                <td class="text-center">
+
+                  <!-- Botón editar: solo visible en conteos del usuario logueado -->
+                  <button *ngIf="!det.editando && esConteoDelUsuario(det)"
+                          type="button"
+                          class="btn btn-sm btn-outline-primary btn-editar-conteo"
+                          [disabled]="!puedeEditarConteo(det)"
+                          [title]="getTituloEditarConteo(det)"
+                          (click)="iniciarEdicionConteo(det)">
+                    <svg class="icono-accion" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                    </svg>
+                    <span>Editar</span>
+                  </button>
+
+                  <!-- Conteo de otro usuario: candado informativo -->
+                  <span *ngIf="!det.editando && !esConteoDelUsuario(det)"
+                        class="text-muted"
+                        title="Solo puede editar los conteos realizados por usted">
+                    <svg class="icono-accion icono-candado" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <path d="M8 1a2 2 0 0 1 2 2v2H6V3a2 2 0 0 1 2-2zm3 4V3a3 3 0 0 0-6 0v2a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/>
+                    </svg>
+                  </span>
+
+                  <!-- Guardar / cancelar edición -->
+                  <div class="edit-conteo-acciones" *ngIf="det.editando">
+                    <button type="button"
+                            class="btn btn-sm btn-success btn-guardar-conteo"
+                            [disabled]="!!det.edit_guardando"
+                            title="Guardar cambios"
+                            (click)="guardarEdicionConteo(det)">
+                      <svg *ngIf="!det.edit_guardando" class="icono-accion" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                        <path d="M13.485 1.929a.75.75 0 0 1 .086 1.058l-7.5 9a.75.75 0 0 1-1.114.056l-3.5-3.5a.75.75 0 1 1 1.06-1.06l2.897 2.897 6.951-8.342a.75.75 0 0 1 1.12-.109z"/>
+                      </svg>
+                      <span *ngIf="det.edit_guardando" class="spinner-border spinner-border-sm"></span>
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary btn-cancelar-conteo"
+                            [disabled]="!!det.edit_guardando"
+                            title="Cancelar"
+                            (click)="cancelarEdicionConteo(det)">
+                      <svg class="icono-accion" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                        <path d="M2.146 2.146a.5.5 0 0 1 .708 0L8 7.293l5.146-5.147a.5.5 0 1 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </button>
+                  </div>
+
+                </td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr class="table-secondary fw-bold">
+                <td colspan="2" class="text-end">Suma de conteos:</td>
+                <td class="text-center">{{ getTotalConteosDetalle() }} und</td>
+                <td colspan="4"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <ng-template #sinDetalle>
+          <p class="text-muted text-center my-3">
+            <i class="bi bi-info-circle"></i>
+            No hay detalle de conteos disponible para este artículo.
+          </p>
+        </ng-template>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalConteos()">
+          <i class="bi bi-x-lg"></i> Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="modalConteosAbierto" *ngIf="modalConteosAbierto"></div>
+
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- ✅ NUEVO: Modal Galería de Imágenes del Conteo                   -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="modalImagenesAbierto"
+     [style.display]="modalImagenesAbierto ? 'block' : 'none'"
+     tabindex="-1" (click)="cerrarModalImagenes()">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" (click)="$event.stopPropagation()">
+    <div class="modal-content">
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-images"></i>
+          Imágenes del Conteo
+          <span class="badge bg-light text-dark ms-2" *ngIf="repuestoImagenes">
+            {{ getTotalImagenes(repuestoImagenes) }} imagen(es)
+          </span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="cerrarModalImagenes()"></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert alert-secondary mb-3" *ngIf="repuestoImagenes">
+          <strong>Artículo:</strong> {{ repuestoImagenes.articulo }} — {{ repuestoImagenes.nombre }}
+          <span class="d-block mt-1" *ngIf="repuestoImagenes.ubicacion_conteo">
+            <i class="bi bi-geo-alt-fill"></i>
+            <strong>Ubicación(es) contada(s):</strong> {{ repuestoImagenes.ubicacion_conteo }}
+          </span>
+          <small class="text-muted d-block mt-1">
+            <i class="bi bi-info-circle"></i>
+            Si el artículo ya fue contado en una ubicación, verifique aquí antes de volver a contar en el mismo lugar.
+          </small>
+        </div>
+
+        <!-- Imágenes guardadas en el servidor -->
+        <ng-container *ngIf="(repuestoImagenes?.imagenes_conteo?.length || 0) > 0">
+          <h6 class="text-muted"><i class="bi bi-cloud-check"></i> Guardadas en el servidor</h6>
+          <div class="galeria-imagenes-grid mb-3">
+            <div class="galeria-imagen-item" *ngFor="let url of repuestoImagenes?.imagenes_conteo">
+              <img [src]="url" alt="Imagen de conteo" class="galeria-imagen-thumb"
+                   (click)="ampliarImagen(url)" title="Clic para ampliar">
+            </div>
+          </div>
+        </ng-container>
+
+        <!-- Imágenes cargadas en esta sesión -->
+        <ng-container *ngIf="(repuestoImagenes?.imagenes_locales?.length || 0) > 0">
+          <h6 class="text-muted"><i class="bi bi-laptop"></i> Cargadas en esta sesión</h6>
+          <div class="galeria-imagenes-grid">
+            <div class="galeria-imagen-item" *ngFor="let img of repuestoImagenes?.imagenes_locales">
+              <img [src]="img.preview" [alt]="img.descripcion || 'Imagen de conteo'" class="galeria-imagen-thumb"
+                   (click)="ampliarImagen(img.preview)" title="Clic para ampliar">
+              <div class="galeria-imagen-desc" *ngIf="img.descripcion">{{ img.descripcion }}</div>
+              <span class="badge bg-warning text-dark galeria-badge-principal" *ngIf="img.esPrincipal">Principal</span>
+            </div>
+          </div>
+        </ng-container>
+
+        <p class="text-muted text-center my-3"
+           *ngIf="!repuestoImagenes || getTotalImagenes(repuestoImagenes) === 0">
+          <i class="bi bi-camera"></i> Este artículo no tiene imágenes cargadas.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="cerrarModalImagenes()">
+          <i class="bi bi-x-lg"></i> Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade" [class.show]="modalImagenesAbierto" *ngIf="modalImagenesAbierto"></div>
+
+<!-- ✅ NUEVO: Lightbox de imagen ampliada -->
+<div class="imagen-lightbox" *ngIf="imagenAmpliada" (click)="cerrarImagenAmpliada()">
+  <img [src]="imagenAmpliada" alt="Imagen ampliada" class="imagen-lightbox-img">
+  <button class="imagen-lightbox-cerrar" (click)="cerrarImagenAmpliada()">
+    <i class="bi bi-x-lg"></i>
+  </button>
+</div>
+
+
+<div class="modal-detalle-overlay"
+     [class.activo]="modalDetalleAbierto"
+     (click)="cerrarModalDetalle()">
+</div>
+
+<div class="modal-detalle-panel"
+     [class.activo]="modalDetalleAbierto"
+     role="dialog"
+     aria-modal="true">
+
+  <!-- ── HEADER ── -->
+  <div class="mdp-header">
+    <div class="mdp-header-info">
+      <span class="mdp-header-badge" *ngIf="!esArticuloNuevo && !esConteoAdicional">
+        <i class="bi bi-clipboard-check"></i> Conteo Detallado
+      </span>
+      <!-- ✅ NUEVO: badge de conteo adicional -->
+      <span class="mdp-header-badge" style="background:#0dcaf0; color:#000;" *ngIf="!esArticuloNuevo && esConteoAdicional">
+        <i class="bi bi-plus-slash-minus"></i> Conteo Adicional (se sumará al acumulado)
+      </span>
+      <span class="mdp-header-badge" style="background:#f59e0b; color:#000;" *ngIf="esArticuloNuevo">
+        <i class="bi bi-plus-circle"></i> Artículo No en Inventario
+      </span>
+      <h3 class="mdp-titulo" *ngIf="!esArticuloNuevo">
+        <span class="mdp-articulo-code">{{ repuestoDetalle?.articulo }}</span>
+        <span class="mdp-articulo-nombre">{{ repuestoDetalle?.nombre }}</span>
+      </h3>
+      <!-- Campos editables para artículo nuevo -->
+      <div *ngIf="esArticuloNuevo" class="mdp-nuevo-articulo-header">
+        <div class="mdp-nuevo-field">
+          <label class="mdp-field-label">Código del Artículo <span class="text-danger">*</span></label>
+          <input type="text" class="mdp-input" [(ngModel)]="nuevoArticuloCodigo"
+                 placeholder="Ej: ART-001" style="font-weight:700; font-size:1.1rem;">
+        </div>
+        <div class="mdp-nuevo-field">
+          <label class="mdp-field-label">Nombre / Descripción <span class="text-danger">*</span></label>
+          <input type="text" class="mdp-input" [(ngModel)]="nuevoArticuloNombre"
+                 placeholder="Descripción del artículo encontrado">
+        </div>
+      </div>
+      <div class="mdp-header-meta">
+        <span *ngIf="repuestoDetalle?.ubicacion">
+          <i class="bi bi-geo-alt-fill"></i> {{ repuestoDetalle?.ubicacion }}
+        </span>
+        <span *ngIf="repuestoDetalle?.clase">
+          <i class="bi bi-tag"></i> {{ repuestoDetalle?.clase }}
+        </span>
+        <span *ngIf="repuestoDetalle?.grupo">
+          <i class="bi bi-collection"></i> {{ repuestoDetalle?.grupo }}
+        </span>
+      </div>
+    </div>
+    <button class="mdp-btn-cerrar" (click)="cerrarModalDetalle()" aria-label="Cerrar">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <!-- ── CUERPO SCROLLABLE ── -->
+  <div class="mdp-body">
+
+    <!-- ✅ NUEVO: BANNER DE CONTEO ADICIONAL con resumen de conteos previos -->
+    <div class="mdp-seccion mdp-banner-adicional" *ngIf="esConteoAdicional && repuestoDetalle">
+      <div class="mdp-banner-adicional-contenido">
+        <i class="bi bi-info-circle-fill"></i>
+        <div>
+          <strong>Este artículo ya tiene {{ repuestoDetalle.numero_conteos || 1 }} conteo(s) registrado(s)
+            con un total acumulado de {{ repuestoDetalle.conteo_fisico || 0 }} und.</strong>
+          <div class="mdp-banner-detalle" *ngIf="repuestoDetalle.ubicacion_conteo">
+            <i class="bi bi-geo-alt-fill"></i>
+            Ubicaciones ya contadas: <strong>{{ repuestoDetalle.ubicacion_conteo }}</strong>
+            — no vuelva a contar en el mismo lugar.
+          </div>
+          <div class="mdp-banner-detalle">
+            La cantidad que ingrese aquí se <strong>SUMARÁ automáticamente</strong> al total acumulado.
+          </div>
+        </div>
+        <button class="btn btn-sm btn-outline-dark ms-auto" type="button"
+                (click)="abrirModalConteos(repuestoDetalle)"
+                *ngIf="(repuestoDetalle.conteos_detalle?.length || 0) > 0">
+          <i class="bi bi-list-ul"></i> Ver detalle
+        </button>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 1: RESUMEN DE STOCK DEL SISTEMA === -->
+    <div class="mdp-seccion">
+      <h5 class="mdp-seccion-titulo">
+        <i class="bi bi-database"></i> Stock en Sistema
+      </h5>
+      <div class="mdp-stock-grid">
+        <div class="mdp-stock-card mdp-stock-total">
+          <div class="mdp-stock-valor">{{ repuestoDetalle?.stock || 0 }}</div>
+          <div class="mdp-stock-label">Stock Sistema</div>
+        </div>
+        <div class="mdp-stock-card mdp-stock-reserva">
+          <div class="mdp-stock-valor">{{ repuestoDetalle?.stock_reservado || 0 }}</div>
+          <div class="mdp-stock-label">En Reserva</div>
+        </div>
+        <div class="mdp-stock-card mdp-stock-disponible">
+          <div class="mdp-stock-valor">{{ repuestoDetalle?.stock_disponible || 0 }}</div>
+          <div class="mdp-stock-label">Disponible</div>
+        </div>
+        <div class="mdp-stock-card mdp-stock-diferencia"
+             [class.positivo]="((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) > 0"
+             [class.negativo]="((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) < 0"
+             [class.neutro]="((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) === 0">
+          <div class="mdp-stock-valor">
+            {{ ((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) > 0 ? '+' : '' }}{{ (esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0) }}
+          </div>
+          <div class="mdp-stock-label">Diferencia</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 2: CONTEO FÍSICO === -->
+    <div class="mdp-seccion">
+      <h5 class="mdp-seccion-titulo">
+        <i class="bi bi-123"></i>
+        {{ esConteoAdicional ? 'Cantidad de este NUEVO conteo' : 'Conteo Físico' }}
+      </h5>
+      <div class="mdp-conteo-fisico">
+        <button class="mdp-btn-cantidad mdp-btn-menos"
+                (click)="detalleConteoFisico = detalleConteoFisico > 0 ? detalleConteoFisico - 1 : 0">
+          <i class="bi bi-dash-lg"></i>
+        </button>
+        <div class="mdp-input-cantidad-wrap">
+          <input
+            type="number"
+            class="mdp-input-cantidad"
+            [(ngModel)]="detalleConteoFisico"
+            min="0"
+            (focus)="onInputFocus($event)">
+          <span class="mdp-input-unidad">unidades</span>
+        </div>
+        <button class="mdp-btn-cantidad mdp-btn-mas"
+                (click)="detalleConteoFisico = detalleConteoFisico + 1">
+          <i class="bi bi-plus-lg"></i>
+        </button>
+      </div>
+
+      <!-- ✅ NUEVO: previsualización del total acumulado -->
+      <div class="mdp-total-acumulado" *ngIf="esConteoAdicional">
+        <i class="bi bi-calculator"></i>
+        Acumulado previo <strong>{{ repuestoDetalle?.conteo_fisico || 0 }}</strong>
+        + este conteo <strong>{{ detalleConteoFisico }}</strong>
+        = nuevo total <strong class="mdp-total-num">{{ (repuestoDetalle?.conteo_fisico || 0) + detalleConteoFisico }} und</strong>
+      </div>
+
+      <!-- Atajos rápidos -->
+      <div class="mdp-atajos">
+        <span class="mdp-atajo-label">Atajos:</span>
+        <button class="mdp-btn-atajo" (click)="detalleConteoFisico = 0">0</button>
+        <button class="mdp-btn-atajo" *ngIf="!esConteoAdicional"
+                (click)="detalleConteoFisico = repuestoDetalle?.stock_disponible || 0">
+          = Sistema
+        </button>
+        <button class="mdp-btn-atajo" *ngFor="let v of [1,2,5,10,20,50]"
+                (click)="detalleConteoFisico = v">{{ v }}</button>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 3: UBICACIÓN FÍSICA === -->
+    <div class="mdp-seccion">
+      <h5 class="mdp-seccion-titulo">
+        <i class="bi bi-pin-map"></i>
+        {{ esConteoAdicional ? 'Nueva Ubicación de este Conteo' : 'Ubicación Física Encontrada' }}
+        <span class="text-danger" *ngIf="esConteoAdicional">*</span>
+      </h5>
+      <div class="mdp-ubicacion-row">
+        <div class="mdp-field-group flex-grow-1">
+          <label class="mdp-field-label">
+            {{ esConteoAdicional ? 'Ubicación donde se realizó este nuevo conteo (obligatorio)' : 'Ubicación donde se encontró el artículo' }}
+          </label>
+          <input
+            type="text"
+            class="mdp-input"
+            [(ngModel)]="detalleUbicacionFisica"
+            placeholder="Ej: Estante A3, Fila 2, Cajón 5...">
+        </div>
+        <div class="mdp-ubicacion-sistema" *ngIf="repuestoDetalle?.ubicacion">
+          <span class="mdp-ub-sistema-label">Sistema:</span>
+          <span class="mdp-ub-sistema-valor">{{ repuestoDetalle?.ubicacion }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 4: ESTADO DEL PRODUCTO === -->
+    <div class="mdp-seccion">
+      <h5 class="mdp-seccion-titulo">
+        <i class="bi bi-shield-check"></i> Estado del Artículo
+      </h5>
+      <div class="mdp-estados-grid">
+        <button
+          *ngFor="let est of estadosProducto"
+          class="mdp-btn-estado"
+          [class.activo]="detalleEstadoProducto === est.valor"
+          [attr.data-color]="est.color"
+          (click)="detalleEstadoProducto = est.valor">
+          <i class="bi" [class]="est.icono"></i>
+          <span>{{ est.label }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 5: IMÁGENES === -->
+    <div class="mdp-seccion">
+      <h5 class="mdp-seccion-titulo">
+        <i class="bi bi-images"></i> Imágenes del Artículo
+        <span class="mdp-img-count">{{ imagenesLocales.length }}/5</span>
+      </h5>
+
+      <!-- Drop zone + cámara -->
+      <div class="mdp-captura-row" *ngIf="imagenesLocales.length < 5">
+        <label class="mdp-dropzone">
+          <input
+            type="file"
+            accept="image/*"
+            multiple
+            (change)="onImagenesSeleccionadas($event)"
+            style="display:none">
+          <div class="mdp-dropzone-content">
+            <i class="bi bi-cloud-upload"></i>
+            <span>Toca para seleccionar fotos</span>
+            <small>JPG, PNG, WebP · Máx. 5 fotos</small>
+          </div>
+        </label>
+        <!-- ✅ NUEVO: en celular abre la cámara directamente -->
+        <label class="mdp-dropzone mdp-dropzone-camara" title="Tomar foto con la cámara">
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            [disabled]="procesandoFotoModal"
+            (change)="onImagenesSeleccionadas($event)"
+            style="display:none">
+          <div class="mdp-dropzone-content">
+            <span class="spinner-border spinner-border-sm" *ngIf="procesandoFotoModal"></span>
+            <i class="bi bi-camera-fill" *ngIf="!procesandoFotoModal"></i>
+            <span>{{ procesandoFotoModal ? 'Procesando...' : 'Tomar foto' }}</span>
+            <small>Abre la cámara</small>
+          </div>
+        </label>
+      </div>
+
+      <!-- Galería de imágenes seleccionadas -->
+      <div class="mdp-galeria" *ngIf="imagenesLocales.length > 0">
+        <div class="mdp-galeria-item" *ngFor="let img of imagenesLocales; let i = index">
+          <img [src]="img.preview" [alt]="'Imagen ' + (i+1)" class="mdp-galeria-img">
+          <div class="mdp-galeria-overlay">
+            <button class="mdp-galeria-btn mdp-galeria-principal"
+                    [class.activo]="img.esPrincipal"
+                    (click)="marcarComoPrincipal(i)"
+                    title="Marcar como principal">
+              <i class="bi" [class.bi-star-fill]="img.esPrincipal" [class.bi-star]="!img.esPrincipal"></i>
+            </button>
+            <button class="mdp-galeria-btn mdp-galeria-eliminar"
+                    (click)="eliminarImagenLocal(i)"
+                    title="Eliminar">
+              <i class="bi bi-trash"></i>
+            </button>
+          </div>
+          <div class="mdp-galeria-footer">
+            <input
+              type="text"
+              class="mdp-galeria-desc"
+              [(ngModel)]="img.descripcion"
+              placeholder="Descripción...">
+            <span *ngIf="img.esPrincipal" class="mdp-badge-principal">Principal</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 6: OBSERVACIONES === -->
+    <div class="mdp-seccion">
+      <h5 class="mdp-seccion-titulo">
+        <i class="bi bi-chat-square-text"></i> Observaciones
+      </h5>
+      <textarea
+        class="mdp-textarea"
+        [(ngModel)]="detalleObservaciones"
+        rows="3"
+        placeholder="Ej: Artículo dañado en el empaque, ubicación incorrecta en sistema, producto de diferente marca..."
+        maxlength="500">
+      </textarea>
+      <div class="mdp-char-count">
+        <span [class.text-danger]="detalleObservaciones.length > 450">
+          {{ detalleObservaciones.length }}/500
+        </span>
+      </div>
+    </div>
+
+    <!-- === BLOQUE 7: RECONTEO === -->
+    <div class="mdp-seccion mdp-seccion-reconteo">
+      <div class="mdp-reconteo-toggle">
+        <div class="mdp-toggle-info">
+          <h5 class="mdp-seccion-titulo mb-0">
+            <i class="bi bi-arrow-repeat"></i> Requiere Reconteo
+          </h5>
+          <small class="text-muted">Marcar si este artículo necesita verificación adicional</small>
+        </div>
+        <div class="form-check form-switch mdp-switch">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            [(ngModel)]="detalleRequiereReconteo"
+            id="switchReconteo">
+          <label class="form-check-label" for="switchReconteo">
+            {{ detalleRequiereReconteo ? 'Sí' : 'No' }}
+          </label>
+        </div>
+      </div>
+      <div class="mdp-motivo-reconteo" *ngIf="detalleRequiereReconteo">
+        <label class="mdp-field-label">Motivo del reconteo</label>
+        <input
+          type="text"
+          class="mdp-input"
+          [(ngModel)]="detalleMotivoReconteo"
+          placeholder="Explique por qué requiere reconteo...">
+      </div>
+    </div>
+
+  </div><!-- /mdp-body -->
+
+  <!-- ── FOOTER DE ACCIONES ── -->
+  <div class="mdp-footer">
+    <div class="mdp-footer-resumen">
+      <span class="mdp-resumen-item" *ngIf="esConteoAdicional">
+        <strong>Acumulado:</strong> {{ repuestoDetalle?.conteo_fisico || 0 }}
+      </span>
+      <span class="mdp-resumen-sep" *ngIf="esConteoAdicional">+</span>
+      <span class="mdp-resumen-item">
+        <strong>{{ esConteoAdicional ? 'Este conteo' : 'Físico' }}:</strong> {{ detalleConteoFisico }}
+      </span>
+      <span class="mdp-resumen-sep">|</span>
+      <span class="mdp-resumen-item">
+        <strong>Sistema:</strong> {{ repuestoDetalle?.stock_disponible || 0 }}
+      </span>
+      <span class="mdp-resumen-sep">|</span>
+      <span class="mdp-resumen-dif"
+            [class.text-success]="((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) === 0"
+            [class.text-warning]="((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) > 0"
+            [class.text-danger]="((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) < 0">
+        <strong>Dif:</strong>
+        {{ ((esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0)) > 0 ? '+' : '' }}{{ (esConteoAdicional ? (repuestoDetalle?.conteo_fisico || 0) : 0) + detalleConteoFisico - (repuestoDetalle?.stock_disponible || 0) }}
+      </span>
+    </div>
+    <div class="mdp-footer-botones">
+      <button class="mdp-btn-cancelar" (click)="cerrarModalDetalle()" [disabled]="guardandoDetalle">
+        <i class="bi bi-x-lg"></i> Cancelar
+      </button>
+      <button class="mdp-btn-guardar" (click)="guardarDetalleConteo()" [disabled]="guardandoDetalle">
+        <span *ngIf="!guardandoDetalle">
+          <i class="bi bi-save2"></i> {{ esConteoAdicional ? 'Sumar Conteo' : 'Guardar Conteo' }}
+        </span>
+        <span *ngIf="guardandoDetalle">
+          <span class="spinner-border spinner-border-sm me-1"></span> Guardando...
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
