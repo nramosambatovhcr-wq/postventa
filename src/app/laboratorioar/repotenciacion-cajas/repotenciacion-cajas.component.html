@@ -287,10 +287,9 @@
                 *ngIf="!yaFueRecepcionado(rep)">
           <i class="fas fa-clipboard-check me-2"></i>Recepcionar en Lab.
         </button>
-        <!-- Asignar mecánico — solo si no tiene uno asignado -->
-        <button class="btn btn-secondary" (click)="abrirModalMecanico(rep)"
-                *ngIf="!rep.mecanicoId">
-          <i class="fas fa-user-cog me-2"></i>Asignar Mecánico
+        <!-- Asignar / Cambiar mecánico -->
+        <button class="btn btn-secondary" (click)="abrirModalMecanico(rep)">
+          <i class="fas fa-user-cog me-2"></i>{{ rep.mecanicoId ? 'Cambiar Mecánico' : 'Asignar Mecánico' }}
         </button>
         <!-- Badge mecánico ya asignado -->
         <span *ngIf="rep.mecanicoId"
@@ -306,6 +305,12 @@
         </button>
         <button class="btn btn-info text-white" (click)="abrirModalImagenes(rep)">
           <i class="fas fa-images me-2"></i>Gestionar Imágenes
+        </button>
+        <!-- Descargar imágenes (selección o todas) -->
+        <button class="btn btn-outline-primary" (click)="abrirModalDescarga()"
+                [disabled]="!imagenesDescargables.length">
+          <i class="fas fa-download me-2"></i>Descargar Imágenes
+          <span *ngIf="imagenesDescargables.length" class="badge bg-primary ms-1">{{ imagenesDescargables.length }}</span>
         </button>
       <!--  <button class="btn btn-primary" (click)="abrirModalEditar(rep)">
           <i class="fas fa-edit me-2"></i>Editar
@@ -730,9 +735,15 @@
           <div class="card shadow-sm border-0">
             <div class="card-header bg-transparent border-0 pb-0 d-flex justify-content-between align-items-center">
               <h6 class="mb-0"><i class="fas fa-camera me-2 text-secondary"></i>Imágenes adjuntas</h6>
-              <button class="btn btn-sm btn-outline-info" (click)="abrirModalImagenes(rep)">
-                <i class="fas fa-upload me-1"></i>Gestionar
-              </button>
+              <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary" (click)="abrirModalDescarga()"
+                        [disabled]="!imagenesDescargables.length">
+                  <i class="fas fa-download me-1"></i>Descargar
+                </button>
+                <button class="btn btn-sm btn-outline-info" (click)="abrirModalImagenes(rep)">
+                  <i class="fas fa-upload me-1"></i>Gestionar
+                </button>
+              </div>
             </div>
             <div class="card-body">
 
@@ -1148,7 +1159,7 @@
 </div>
 
 <!-- Overlay backdrop -->
-<div *ngIf="mostrarModal || mostrarModalImagenes || mostrarModalEstado || mostrarModalRecepcion || mostrarModalMecanico || mostrarModalRepuestos"
+<div *ngIf="mostrarModal || mostrarModalImagenes || mostrarModalEstado || mostrarModalRecepcion || mostrarModalMecanico || mostrarModalRepuestos || mostrarModalDescarga"
      class="modal-backdrop fade show"></div>
 
 <!-- ══════════════════════════════════════════════════════════════
@@ -1180,10 +1191,15 @@
           Mecánico actual: <strong>{{ repotenciacionSeleccionada?.mecanicoNombre }}</strong>
         </div>
 
-        <!-- Aviso estado -->
-        <div class="alert alert-warning small mb-3">
+        <!-- Aviso estado (solo en la primera asignación) -->
+        <div *ngIf="!repotenciacionSeleccionada?.mecanicoId" class="alert alert-warning small mb-3">
           <i class="fas fa-info-circle me-2"></i>
           Al asignar un mecánico el estado cambiará automáticamente a <strong>EN PROCESO</strong>.
+        </div>
+        <!-- Aviso reasignación -->
+        <div *ngIf="repotenciacionSeleccionada?.mecanicoId" class="alert alert-info small mb-3">
+          <i class="fas fa-exchange-alt me-2"></i>
+          Está <strong>reasignando</strong> esta orden a otro mecánico. Seleccione el nuevo responsable.
         </div>
 
         <!-- Lista de mecánicos -->
@@ -1218,7 +1234,7 @@
                 [disabled]="!mecanicoSeleccionadoId || cargandoEstado">
           <span *ngIf="cargandoEstado" class="spinner-border spinner-border-sm me-2"></span>
           <i *ngIf="!cargandoEstado" class="fas fa-user-check me-2"></i>
-          Asignar y poner En Proceso
+          {{ repotenciacionSeleccionada?.mecanicoId ? 'Reasignar Mecánico' : 'Asignar y poner En Proceso' }}
         </button>
       </div>
     </div>
@@ -1351,6 +1367,86 @@
 </div>
 
 <!-- ══════════════════════════════════════════════════════════════
+     MODAL ⑥ DESCARGA DE IMÁGENES (selección o todas)
+══════════════════════════════════════════════════════════════ -->
+<div class="modal fade" [class.show]="mostrarModalDescarga"
+     [style.display]="mostrarModalDescarga ? 'block' : 'none'" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="fas fa-download me-2"></i>Descargar Imágenes — OT: {{ repotenciacionSeleccionada?.ordenTrabajo }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white"
+                (click)="cerrarModalDescarga()" [disabled]="descargandoZip"></button>
+      </div>
+      <div class="modal-body">
+
+        <!-- Barra de acciones de selección -->
+        <div class="descarga-toolbar mb-3">
+          <div class="descarga-info">
+            <i class="fas fa-images me-1 text-primary"></i>
+            <strong>{{ totalSeleccionadas }}</strong> de {{ imagenesDescargables.length }} seleccionadas
+          </div>
+          <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-sm btn-outline-secondary" (click)="seleccionarTodasImagenes()"
+                    [disabled]="descargandoZip">
+              <i class="fas fa-check-double me-1"></i>Seleccionar todas
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="limpiarSeleccionImagenes()"
+                    [disabled]="descargandoZip || !totalSeleccionadas">
+              <i class="fas fa-eraser me-1"></i>Limpiar
+            </button>
+          </div>
+        </div>
+
+        <!-- Progreso de descarga -->
+        <div *ngIf="descargandoZip" class="alert alert-info d-flex align-items-center gap-2 py-2">
+          <span class="spinner-border spinner-border-sm"></span>
+          <span>{{ progresoDescarga || 'Preparando descarga...' }}</span>
+        </div>
+
+        <!-- Grilla de imágenes seleccionables -->
+        <div class="descarga-grid">
+          <div *ngFor="let img of imagenesDescargables; let i = index"
+               class="descarga-item"
+               [class.selected]="estaSeleccionada(img.url)"
+               (click)="!descargandoZip && toggleSeleccionImagen(img.url)">
+            <div class="descarga-check">
+              <i class="fas" [ngClass]="estaSeleccionada(img.url) ? 'fa-check-circle' : 'fa-circle'"></i>
+            </div>
+            <img [src]="img.url" [alt]="img.tag" class="descarga-thumb"
+                 loading="lazy" decoding="async">
+            <div class="descarga-item-footer">
+              <span class="descarga-tag">{{ img.tag }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="!imagenesDescargables.length" class="text-center py-4 text-muted">
+          <i class="fas fa-image fa-2x mb-2 d-block"></i>
+          No hay imágenes para descargar.
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="cerrarModalDescarga()" [disabled]="descargandoZip">Cerrar</button>
+        <button class="btn btn-outline-primary" (click)="descargarSeleccionadas()"
+                [disabled]="descargandoZip || !totalSeleccionadas">
+          <i class="fas fa-download me-2"></i>Descargar selección ({{ totalSeleccionadas }})
+        </button>
+        <button class="btn btn-primary" (click)="descargarTodasImagenes()"
+                [disabled]="descargandoZip || !imagenesDescargables.length">
+          <span *ngIf="descargandoZip" class="spinner-border spinner-border-sm me-2"></span>
+          <i *ngIf="!descargandoZip" class="fas fa-file-archive me-2"></i>
+          Descargar todas ({{ imagenesDescargables.length }})
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
      VISOR DE IMÁGENES (LIGHTBOX)
 ══════════════════════════════════════════════════════════════ -->
 <div class="visor-overlay" *ngIf="visorAbierto" (click)="cerrarVisor()">
@@ -1361,9 +1457,14 @@
       <span class="visor-contador">{{ visorIndice + 1 }} / {{ visorImagenes.length }}</span>
       <span class="visor-tag" *ngIf="visorImagenActual?.tag">{{ visorImagenActual?.tag }}</span>
     </div>
-    <button type="button" class="visor-btn-cerrar" (click)="cerrarVisor()" title="Cerrar (Esc)">
-      <i class="fas fa-times"></i>
-    </button>
+    <div class="d-flex align-items-center gap-2">
+      <button type="button" class="visor-btn-cerrar" (click)="descargarImagenActual()" title="Descargar esta imagen">
+        <i class="fas fa-download"></i>
+      </button>
+      <button type="button" class="visor-btn-cerrar" (click)="cerrarVisor()" title="Cerrar (Esc)">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
   </div>
 
   <!-- Imagen principal (clic en el fondo cierra, en la imagen no) -->

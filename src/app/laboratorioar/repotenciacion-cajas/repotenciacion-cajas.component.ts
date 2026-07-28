@@ -18,6 +18,7 @@ import {
   EntregaDto,
 } from 'src/app/services/repotenciacion-cajas.service';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
 
 // ============================================================
 // TIPOS
@@ -25,7 +26,7 @@ import * as XLSX from 'xlsx';
 
 type EstadoRepotenciacion =
   | 'PENDIENTE' | 'ASIGNADO' | 'EN_PROCESO' | 'DESARMANDO'
-  | 'ESPERA_REPUESTOS' | 'REPARANDO' | 'COMPLETADO' | 'ENTREGADO';
+  | 'ESPERA_REPUESTOS' | 'REPARANDO' | 'COMPLETADO' | 'ENTREGADO' | 'DADA_BAJA';
 type VistaActual = 'listado' | 'detalle';
 
 interface FormularioRepotenciacion {
@@ -97,6 +98,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
   mostrarModalRecepcion = false;
   mostrarModalMecanico  = false;
   mostrarModalRepuestos = false;
+  mostrarModalDescarga  = false;
   modoEdicion           = false;
 
   // ── Filtros ───────────────────────────────────────────────
@@ -155,6 +157,11 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
   imgsReparacion:  VisorImagen[] = [];
   imgsEntrega:     VisorImagen[] = [];
 
+  // ── Descarga de imágenes (selección / todas → ZIP) ────────
+  imagenesSeleccionadas = new Set<string>();   // se guarda por URL
+  descargandoZip = false;
+  progresoDescarga = '';
+
   // ── Opciones ──────────────────────────────────────────────
   readonly estados = [
     { value: '',                 label: 'Todos los Estados' },
@@ -166,6 +173,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     { value: 'REPARANDO',        label: 'En Reparación' },
     { value: 'COMPLETADO',       label: 'Completado' },
     { value: 'ENTREGADO',        label: 'Entregado' },
+    { value: 'DADA_BAJA',        label: 'Dada de Baja' },
   ];
 
   readonly estadosCambio: { value: EstadoRepotenciacion; label: string; clase: string; icono: string }[] = [
@@ -177,6 +185,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     { value: 'REPARANDO',        label: 'En Reparación',    clase: 'btn-info',    icono: 'fa-hammer' },
     { value: 'COMPLETADO',       label: 'Completado',       clase: 'btn-success', icono: 'fa-check-circle' },
     { value: 'ENTREGADO',        label: 'Entregado',        clase: 'btn-primary', icono: 'fa-box-open' },
+    { value: 'DADA_BAJA',        label: 'Dar de Baja',      clase: 'btn-dark',    icono: 'fa-ban' },
   ];
 
   readonly tipos = [
@@ -323,6 +332,12 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
   confirmarCambioEstado(): void {
     if (!this.repotenciacionSeleccionada) return;
     if (this.nuevoEstado === this.repotenciacionSeleccionada.estado) { this.cerrarModalEstado(); return; }
+
+    // Al dar de baja se exige un motivo para dejar trazabilidad
+    if (this.nuevoEstado === 'DADA_BAJA' && !this.observacionEstado.trim()) {
+      this.error = 'Debe indicar el motivo para dar de baja el componente.';
+      return;
+    }
 
     this.cargandoEstado = true; this.error = '';
     const rep = this.repotenciacionSeleccionada;
@@ -820,7 +835,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     return ({
       PENDIENTE: 'badge-warning', ASIGNADO: 'badge-info', EN_PROCESO: 'badge-info',
       DESARMANDO: 'badge-info', ESPERA_REPUESTOS: 'badge-danger', REPARANDO: 'badge-info',
-      COMPLETADO: 'badge-success', ENTREGADO: 'badge-primary',
+      COMPLETADO: 'badge-success', ENTREGADO: 'badge-primary', DADA_BAJA: 'badge-dark',
     } as any)[estado] ?? 'badge-secondary';
   }
 
@@ -828,7 +843,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     return ({
       PENDIENTE: 'fa-clock', ASIGNADO: 'fa-user-check', EN_PROCESO: 'fa-cog fa-spin',
       DESARMANDO: 'fa-tools', ESPERA_REPUESTOS: 'fa-pause-circle', REPARANDO: 'fa-hammer',
-      COMPLETADO: 'fa-check-circle', ENTREGADO: 'fa-box-open',
+      COMPLETADO: 'fa-check-circle', ENTREGADO: 'fa-box-open', DADA_BAJA: 'fa-ban',
     } as any)[estado] ?? 'fa-question';
   }
 
@@ -836,6 +851,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     return ({
       PENDIENTE: 10, ASIGNADO: 25, EN_PROCESO: 35, DESARMANDO: 50,
       ESPERA_REPUESTOS: 60, REPARANDO: 75, COMPLETADO: 90, ENTREGADO: 100,
+      DADA_BAJA: 100,
     } as any)[estado] ?? 0;
   }
 
@@ -843,7 +859,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     return ({
       PENDIENTE: 'bg-warning', ASIGNADO: 'bg-info', EN_PROCESO: 'bg-info',
       DESARMANDO: 'bg-info', ESPERA_REPUESTOS: 'bg-danger', REPARANDO: 'bg-info',
-      COMPLETADO: 'bg-success', ENTREGADO: 'bg-primary',
+      COMPLETADO: 'bg-success', ENTREGADO: 'bg-primary', DADA_BAJA: 'bg-dark',
     } as any)[estado] ?? 'bg-secondary';
   }
 
@@ -894,6 +910,193 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
       a.click();
       this.mostrarMensaje('CSV exportado exitosamente');
     } catch { this.error = 'Error al exportar CSV'; }
+  }
+
+  // ============================================================
+  // DESCARGA DE IMÁGENES (selección o todas → ZIP)
+  // ============================================================
+
+  /**
+   * Lista consolidada y sin duplicados de todas las imágenes del detalle,
+   * abarcando todas las etapas (adjuntas, desarme, reparación y entrega).
+   * `galeriaAdjuntas` ya incluye placa + fotografías + imágenes de recepción.
+   */
+  get imagenesDescargables(): VisorImagen[] {
+    const vistos = new Set<string>();
+    const out: VisorImagen[] = [];
+    for (const img of [
+      ...this.galeriaAdjuntas,
+      ...this.imgsDesarme,
+      ...this.imgsReparacion,
+      ...this.imgsEntrega,
+    ]) {
+      if (!img?.url || vistos.has(img.url)) continue;
+      vistos.add(img.url);
+      out.push(img);
+    }
+    return out;
+  }
+
+  abrirModalDescarga(): void {
+    if (!this.imagenesDescargables.length) {
+      this.error = 'No hay imágenes adjuntas para descargar.';
+      return;
+    }
+    this.imagenesSeleccionadas.clear();
+    this.progresoDescarga = '';
+    this.mostrarModalDescarga = true;
+    this.error = '';
+  }
+
+  cerrarModalDescarga(): void {
+    if (this.descargandoZip) return;   // no cerrar a mitad de una descarga
+    this.mostrarModalDescarga = false;
+    this.imagenesSeleccionadas.clear();
+  }
+
+  toggleSeleccionImagen(url: string): void {
+    if (this.imagenesSeleccionadas.has(url)) this.imagenesSeleccionadas.delete(url);
+    else this.imagenesSeleccionadas.add(url);
+  }
+
+  estaSeleccionada(url: string): boolean { return this.imagenesSeleccionadas.has(url); }
+
+  seleccionarTodasImagenes(): void {
+    this.imagenesDescargables.forEach(i => this.imagenesSeleccionadas.add(i.url));
+  }
+
+  limpiarSeleccionImagenes(): void { this.imagenesSeleccionadas.clear(); }
+
+  get totalSeleccionadas(): number { return this.imagenesSeleccionadas.size; }
+
+  descargarSeleccionadas(): void {
+    const sel = this.imagenesDescargables.filter(i => this.imagenesSeleccionadas.has(i.url));
+    if (!sel.length) { this.error = 'Seleccione al menos una imagen.'; return; }
+    this.descargarComoZip(sel, 'Imagenes_seleccion');
+  }
+
+  descargarTodasImagenes(): void {
+    this.descargarComoZip(this.imagenesDescargables, 'Imagenes_completas');
+  }
+
+  /** Descarga la imagen que se está viendo en el visor (lightbox). */
+  async descargarImagenActual(): Promise<void> {
+    const img = this.visorImagenActual;
+    if (!img) return;
+    try {
+      const blob = await this.fetchImagenBlob(img.url);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = this.nombreArchivoImagen(img, this.visorIndice);
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      // Si falla la descarga directa (p. ej. CORS sin proxy) se abre en otra pestaña
+      window.open(img.url, '_blank');
+    }
+  }
+
+  /**
+   * Obtiene el blob de una imagen con tolerancia a entornos:
+   *  1º intenta la URL tal cual (funciona en producción same-origin o si el
+   *     backend envía cabeceras CORS);
+   *  2º si falla, reintenta con la ruta relativa al origen actual, lo que en
+   *     desarrollo permite pasar por el proxy de Angular y evitar el CORS.
+   *
+   *  Se envía la cabecera `ngrok-skip-browser-warning` para que, cuando el
+   *  servidor se expone vía ngrok, no se intercepte la petición con la página
+   *  de advertencia (que rompe el fetch al no traer cabeceras CORS).
+   *
+   *  Se usa `cache: 'reload'` para evitar reutilizar la copia "opaca" que el
+   *  navegador ya guardó al mostrar la imagen en un <img> (esa copia no tiene
+   *  cabeceras CORS y bloquearía el fetch); así se pide una copia fresca con CORS.
+   */
+  private async fetchImagenBlob(url: string): Promise<Blob> {
+    const opts: RequestInit = {
+      mode: 'cors',
+      cache: 'reload',
+      headers: { 'ngrok-skip-browser-warning': 'true' },
+    };
+
+    try {
+      const r = await fetch(url, opts);
+      if (r.ok) return await r.blob();
+    } catch { /* se intenta el fallback relativo */ }
+
+    try {
+      const u = new URL(url, window.location.origin);
+      const r = await fetch(u.pathname + u.search, opts);
+      if (r.ok) return await r.blob();
+    } catch { /* sin más opciones */ }
+
+    throw new Error('No se pudo obtener la imagen');
+  }
+
+  /** Descarga un conjunto de imágenes empaquetadas en un único archivo ZIP. */
+  private async descargarComoZip(imgs: VisorImagen[], nombreBase: string): Promise<void> {
+    if (!imgs.length) { this.error = 'No hay imágenes para descargar.'; return; }
+
+    this.descargandoZip = true; this.error = '';
+    const zip = new JSZip();
+    const usados = new Set<string>();
+    let ok = 0, fallidas = 0;
+
+    for (let i = 0; i < imgs.length; i++) {
+      const img = imgs[i];
+      this.progresoDescarga = `Descargando ${i + 1} / ${imgs.length}...`;
+      try {
+        const blob = await this.fetchImagenBlob(img.url);
+
+        // Nombre único dentro del ZIP
+        let nombre = this.nombreArchivoImagen(img, i);
+        while (usados.has(nombre)) {
+          const punto = nombre.lastIndexOf('.');
+          nombre = punto > 0 ? `${nombre.slice(0, punto)}_${i}${nombre.slice(punto)}` : `${nombre}_${i}`;
+        }
+        usados.add(nombre);
+        zip.file(nombre, blob);
+        ok++;
+      } catch {
+        fallidas++;
+      }
+    }
+
+    if (ok === 0) {
+      this.descargandoZip = false; this.progresoDescarga = '';
+      this.error = 'No se pudo descargar ninguna imagen. Verifique la conexión o los permisos (CORS) del servidor de imágenes.';
+      return;
+    }
+
+    this.progresoDescarga = 'Generando archivo ZIP...';
+    const contenido = await zip.generateAsync({ type: 'blob' });
+    const ot = (this.repotenciacionSeleccionada?.ordenTrabajo ?? 'orden').toString().replace(/[^a-zA-Z0-9]+/g, '-');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(contenido);
+    a.download = `${nombreBase}_OT-${ot}_${new Date().toISOString().split('T')[0]}.zip`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+
+    this.descargandoZip = false; this.progresoDescarga = '';
+    this.mostrarMensaje(fallidas
+      ? `ZIP generado: ${ok} imágenes (${fallidas} no se pudieron descargar).`
+      : `ZIP generado con ${ok} imágenes.`);
+  }
+
+  /** Deriva la extensión de archivo desde la URL (por defecto .jpg). */
+  private extensionImagen(url: string): string {
+    const limpio = (url || '').split('?')[0].split('#')[0];
+    const m = limpio.match(/\.(jpe?g|png|webp|gif|bmp)$/i);
+    return m ? m[0].toLowerCase() : '.jpg';
+  }
+
+  /** Genera un nombre de archivo legible: <Etapa>_<NN>.<ext> */
+  private nombreArchivoImagen(img: VisorImagen, i: number): string {
+    const tag = (img.tag || 'imagen')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // quita acentos
+      .replace(/[^a-zA-Z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'imagen';
+    const num = String(i + 1).padStart(2, '0');
+    return `${tag}_${num}${this.extensionImagen(img.url)}`;
   }
 
   private mostrarMensaje(msg: string): void { this.mensaje = msg; setTimeout(() => this.mensaje = '', 5000); }
