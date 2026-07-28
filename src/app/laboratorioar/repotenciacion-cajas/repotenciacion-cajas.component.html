@@ -206,19 +206,20 @@
                         title="Recepcionado: {{ rep.recepcion?.recibidoPorNombre }} — {{ rep.recepcion?.condicionFisica }}">
                     <i class="fas fa-clipboard-check"></i>
                   </span>
-                  <!-- ④ Asignar mecánico — oculto si ya tiene mecánico asignado -->
+                  <!-- ④ Asignar mecánico — cuando aún no tiene uno -->
                   <button class="btn btn-sm btn-outline-secondary" (click)="abrirModalMecanico(rep)"
                           title="Asignar mecánico"
                           *ngIf="!rep.mecanicoId">
                     <i class="fas fa-user-cog"></i>
                   </button>
-                  <!-- Badge: ya tiene mecánico asignado -->
-                  <span *ngIf="rep.mecanicoId"
-                        class="badge bg-secondary px-2 py-1"
-                        style="cursor:default; font-size:0.75rem;"
-                        title="Mecánico: {{ rep.mecanicoNombre }} | Asignado: {{ rep.fechaAsignacion | date:'dd/MM/yyyy HH:mm' }}">
+                  <!-- Botón con el mecánico asignado — clic para cambiarlo -->
+                  <button *ngIf="rep.mecanicoId"
+                          class="btn btn-sm btn-secondary px-2 py-1"
+                          style="font-size:0.75rem;"
+                          (click)="abrirModalMecanico(rep)"
+                          title="Cambiar mecánico | Actual: {{ rep.mecanicoNombre }} — Asignado: {{ rep.fechaAsignacion | date:'dd/MM/yyyy HH:mm' }}">
                     <i class="fas fa-user-cog me-1"></i>{{ rep.mecanicoNombre }}
-                  </span>
+                  </button>
                   <!-- ⑤ Aprobar repuestos — visible cuando la caja está en espera -->
                   <button class="btn btn-sm btn-danger"
                           (click)="abrirModalRepuestos(rep)"
