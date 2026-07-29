@@ -452,18 +452,40 @@ updateVidrioRequestStatus(id: number, estado: string): Observable<any> {
     return this.http.get<PedidoOilDetail[]>(this.pedidosOilAllUrlE);
   }
 
-  getAllFilterPedidos(): Observable<PedidoFilterDetail[]> {
-    return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrl);
+  getAllFilterPedidos(marca?: string): Observable<PedidoFilterDetail[]> {
+  let params = new HttpParams();
+
+  if (marca && marca.trim() !== '') {
+    params = params.set('marca', marca.trim());
   }
-  getAllFilterPedidosA(): Observable<PedidoFilterDetail[]> {
-    return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrlA);
+
+  return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrl, { params });
+}
+
+
+ getAllFilterPedidosA(marca?: string): Observable<PedidoFilterDetail[]> {
+  let params = new HttpParams();
+  if (marca && marca.trim() !== '') {
+    params = params.set('marca', marca.trim());
   }
-  getAllFilterPedidosP(): Observable<PedidoFilterDetail[]> {
-    return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrlP);
+  return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrlA, { params });
+}
+
+getAllFilterPedidosP(marca?: string): Observable<PedidoFilterDetail[]> {
+  let params = new HttpParams();
+  if (marca && marca.trim() !== '') {
+    params = params.set('marca', marca.trim());
   }
-  getAllFilterPedidosEn(): Observable<PedidoFilterDetail[]> {
-    return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrlE);
+  return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrlP, { params });
+}
+
+getAllFilterPedidosEn(marca?: string): Observable<PedidoFilterDetail[]> {
+  let params = new HttpParams();
+  if (marca && marca.trim() !== '') {
+    params = params.set('marca', marca.trim());
   }
+  return this.http.get<PedidoFilterDetail[]>(this.pedidosFilterAllUrlE, { params });
+}
   getAllInsumoPedidos(): Observable<PedidoInsumoDetail[]> {
     return this.http.get<PedidoInsumoDetail[]>(this.pedidosInsumosAllUrl);
   }

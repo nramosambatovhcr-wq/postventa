@@ -69,6 +69,7 @@ export class FilterListComponent implements OnInit, OnDestroy {
   id: number = 0;
   usuario: Usuario | null = null;
   usrol = '';
+  linea = '';
     
   selectedPedido: PedidoOilDetail | null = null;
       
@@ -92,7 +93,11 @@ export class FilterListComponent implements OnInit, OnDestroy {
         this.id = this.usuario.id;
         this.usrol = this.usuario.rol;
         console.log(this.id);
-        this.loadFilters(); // Changed to loadFilters for clarity
+        if(this.usrol=='repuestos'){ this.linea='pesados' }
+        if(this.usrol=='repuestoslv'){ this.linea='livianos' }
+        if(this.usrol=='repuestoslk'){ this.linea='linco' }
+        if(this.usrol=='repuestoslsc'){ this.linea='maquinaria' }
+        this.loadFilters(this.linea); // Changed to loadFilters for clarity
       }
     });
 
@@ -118,30 +123,30 @@ export class FilterListComponent implements OnInit, OnDestroy {
   /**
    * Loads all filter records (pedidos) from the API
    */
-  loadFilters(): void { // Renamed from loadOils
-    this.loading = true;
-    this.errorMessage = '';
+  loadFilters(marca?: string): void { // Renamed from loadOils
+  this.loading = true;
+  this.errorMessage = '';
 
-    this.oilService.getAllFilterPedidos().subscribe({ // Use appropriate service method
-      next: (data: PedidoFilterDetail[]) => {
-        console.log('Datos recibidos (filtros):', data);
-        this.allData = data || [];
-        // Usar el método mejorado de agrupación
-        this.groupedData = this.groupPedidosByDateSupplierUserAgency(this.allData);
-        this.applyFiltersAndSearch();
-        this.loading = false;
-      },
-      error: (error) => {
-        console.error('Error al cargar pedidos de filtros:', error);
-        this.errorMessage = 'Error al cargar la lista de pedidos de filtros. Por favor, intente nuevamente.';
-        this.allData = [];
-        this.groupedData = [];
-        this.filteredData = [];
-        this.lista = [];
-        this.loading = false;
-      }
-    });
-  }
+  this.oilService.getAllFilterPedidos(marca).subscribe({ // Pasa la marca al servicio
+    next: (data: PedidoFilterDetail[]) => {
+      console.log('Datos recibidos (filtros):', data);
+      this.allData = data || [];
+      // Usar el método mejorado de agrupación
+      this.groupedData = this.groupPedidosByDateSupplierUserAgency(this.allData);
+      this.applyFiltersAndSearch();
+      this.loading = false;
+    },
+    error: (error) => {
+      console.error('Error al cargar pedidos de filtros:', error);
+      this.errorMessage = 'Error al cargar la lista de pedidos de filtros. Por favor, intente nuevamente.';
+      this.allData = [];
+      this.groupedData = [];
+      this.filteredData = [];
+      this.lista = [];
+      this.loading = false;
+    }
+  });
+}
 
   // Método para cambiar criterios de agrupación dinámicamente
   changeGroupingCriteria(criteria: string[]): void {
@@ -150,70 +155,69 @@ export class FilterListComponent implements OnInit, OnDestroy {
   }
 
   // Assuming these methods exist in OilService for filters or can be simulated
-  loadFiltersA(): void { // For 'Aprobado' or similar status
-    this.loading = true;
-    this.errorMessage = '';
+  loadFiltersA(marca?: string): void { // For 'Aprobado' or similar status
+  this.loading = true;
+  this.errorMessage = '';
 
-    // Replace with actual API call if available, otherwise filter this.allData
-    this.oilService.getAllFilterPedidosA().subscribe({ // Placeholder for specific API call
-      next: (data: PedidoFilterDetail[]) => {
-        this.allData = data || [];
-        const filteredByStatus = this.allData.filter(item => item.estadoPedido?.toUpperCase() === 'ASIGNADO'); // Example filtering
-        this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
-        this.applyFiltersAndSearch();
-        this.loading = false;
-      },
-      error: (error) => this.handleLoadError(error)
-    });
-  }
+  this.oilService.getAllFilterPedidosA(marca).subscribe({
+    next: (data: PedidoFilterDetail[]) => {
+      this.allData = data || [];
+      const filteredByStatus = this.allData.filter(item => item.estadoPedido?.toUpperCase() === 'ASIGNADO');
+      this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
+      this.applyFiltersAndSearch();
+      this.loading = false;
+    },
+    error: (error) => this.handleLoadError(error)
+  });
+}
 
-  loadFiltersP(): void { // For 'Pendiente' or similar status
-    this.loading = true;
-    this.errorMessage = '';
+loadFiltersP(marca?: string): void { // For 'Pendiente' or similar status
+  this.loading = true;
+  this.errorMessage = '';
 
-    this.oilService.getAllFilterPedidosP().subscribe({ // Placeholder for specific API call
-      next: (data: PedidoFilterDetail[]) => {
-        this.allData = data || [];
-        const filteredByStatus = this.allData.filter(item => item.estadoPedido?.toUpperCase() === 'PROCESO'); // Example filtering
-        this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
-        this.applyFiltersAndSearch();
-        this.loading = false;
-      },
-      error: (error) => this.handleLoadError(error)
-    });
-  }
+  this.oilService.getAllFilterPedidosP(marca).subscribe({
+    next: (data: PedidoFilterDetail[]) => {
+      this.allData = data || [];
+      const filteredByStatus = this.allData.filter(item => item.estadoPedido?.toUpperCase() === 'PROCESO');
+      this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
+      this.applyFiltersAndSearch();
+      this.loading = false;
+    },
+    error: (error) => this.handleLoadError(error)
+  });
+}
 
-  loadFiltersEn(): void { // For 'En Proceso' or similar status
-    this.loading = true;
-    this.errorMessage = '';
+loadFiltersEn(marca?: string): void { // For 'En Proceso' or similar status
+  this.loading = true;
+  this.errorMessage = '';
 
-    this.oilService.getAllFilterPedidosEn().subscribe({ // Placeholder for specific API call
-      next: (data: PedidoFilterDetail[]) => {
-        this.allData = data || [];
-       const filteredByStatus = this.allData.filter(item => item.estadoPedido?.toUpperCase() === 'ENVIADO'); // Example filtering
-        this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
-        this.applyFiltersAndSearch();
-        this.loading = false;
-      },
-      error: (error) => this.handleLoadError(error)
-    });
-  }
+  this.oilService.getAllFilterPedidosEn(marca).subscribe({
+    next: (data: PedidoFilterDetail[]) => {
+      this.allData = data || [];
+      const filteredByStatus = this.allData.filter(item => item.estadoPedido?.toUpperCase() === 'ENVIADO');
+      this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
+      this.applyFiltersAndSearch();
+      this.loading = false;
+    },
+    error: (error) => this.handleLoadError(error)
+  });
+}
 
-  loadFiltersError(): void { // For 'Error' or similar status
-    this.loading = true;
-    this.errorMessage = '';
+loadFiltersError(marca?: string): void { // For 'Error' or similar status
+  this.loading = true;
+  this.errorMessage = '';
 
-    this.oilService.getAllFilterPedidos().subscribe({ // Placeholder for specific API call
-      next: (data: PedidoFilterDetail[]) => {
-        this.allData = data || [];
-        const filteredByStatus = this.allData.filter(item => ['ERROR', 'INFORMACION ERRONEA', 'RECHAZADO'].includes(item.estadoPedido?.toUpperCase() || '')); // Example filtering
-        this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
-        this.applyFiltersAndSearch();
-        this.loading = false;
-      },
-      error: (error) => this.handleLoadError(error)
-    });
-  }
+  this.oilService.getAllFilterPedidos(marca).subscribe({
+    next: (data: PedidoFilterDetail[]) => {
+      this.allData = data || [];
+      const filteredByStatus = this.allData.filter(item => ['ERROR', 'INFORMACION ERRONEA', 'RECHAZADO'].includes(item.estadoPedido?.toUpperCase() || ''));
+      this.groupedData = this.groupPedidosByDateSupplierUserAgency(filteredByStatus);
+      this.applyFiltersAndSearch();
+      this.loading = false;
+    },
+    error: (error) => this.handleLoadError(error)
+  });
+}
 
   private handleLoadError(error: any): void {
     console.error('Error al cargar pedidos de filtros:', error);
@@ -625,32 +629,32 @@ export class FilterListComponent implements OnInit, OnDestroy {
   // Navigation and data loading for specific statuses
   revisado(): void {
     this.paginaActual = 'revisados';
-    this.loadFiltersEn(); // Load approved/reviewed filters
+    this.loadFiltersEn(this.linea); // Load approved/reviewed filters
   }
 
   pendiente(): void {
     this.paginaActual = 'pendiente';
-    this.loadFilters(); // Load pending filters
+    this.loadFilters(this.linea); // Load pending filters
   }
 
   proceso(): void {
     this.paginaActual = 'proceso';
-    this.loadFiltersP(); // Load in-process filters
+    this.loadFiltersP(this.linea); // Load in-process filters
   }
 
   asignado(): void {
     this.paginaActual = 'asignado';
-    this.loadFiltersA(); // Assuming 'asignado' is also 'en proceso' or similar
+    this.loadFiltersA(this.linea); // Assuming 'asignado' is also 'en proceso' or similar
   }
 
   error(): void {
     this.paginaActual = 'error';
-    this.loadFiltersError(); // Load error/rejected filters
+    this.loadFiltersError(this.linea); // Load error/rejected filters
   }
 
   resetearEstado(): void {
     this.paginaActual = '';
-    this.loadFilters(); // Load all filters
+    this.loadFilters(this.linea); // Load all filters
   }
 
   /**
