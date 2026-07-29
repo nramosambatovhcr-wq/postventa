@@ -16,6 +16,7 @@ export interface Filter {
   descripcion: string;
   idProveedor: number;
   estado?: string;
+  linea?:string;
   presentacion?: string; // This will now be a single presentation per API call
 }
 
@@ -33,6 +34,9 @@ export interface ProveedorFilter {
 export class FilterCreateComponent implements OnInit {
   oilForm: FormGroup;
   usuario: Usuario | null = null;
+  id: number = 0;
+   usrol = '';
+  linea = '';
   loading = false;
   submitted = false;
   submitSuccess = false;
@@ -62,6 +66,16 @@ export class FilterCreateComponent implements OnInit {
   ngOnInit(): void {
     this.authService.usuarioActual$.subscribe(usuario => {
       this.usuario = usuario;
+      console.log(this.usuario);
+      if (this.usuario != null) {
+        this.id = this.usuario.id;
+        this.usrol = this.usuario.rol;
+        console.log(this.id);
+        if(this.usrol=='repuestos'){ this.linea='pesados' }
+        if(this.usrol=='repuestoslv'){ this.linea='livianos' }
+        if(this.usrol=='repuestoslk'){ this.linea='linco' }
+        if(this.usrol=='repuestoslsc'){ this.linea='maquinaria' }
+      }
     });
 
     this.loadProveedores();
@@ -138,6 +152,7 @@ export class FilterCreateComponent implements OnInit {
         descripcion: this.oilForm.value.descripcion,
         idProveedor: this.oilForm.value.idProveedor,
         estado: this.oilForm.value.estado,
+        linea:this.linea,
         presentacion: presentation // Send one presentation per call
       };
       apiCalls.push(this.oilService.createFilter(oilData));
