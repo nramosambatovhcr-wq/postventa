@@ -301,7 +301,7 @@ const routes: Routes = [
   { path: 'insumolist', component: InsumoListComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos'] } },
   { path: 'filterlistenv', component: FilterListenvComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos'] } },
   { path: 'insumolistenv', component: InsumoListenvComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos'] } },
-  { path: 'permisopedido', component: AdminsolicitudespermisoComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos'] } },
+  { path: 'permisopedido', component: AdminsolicitudespermisoComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos', 'repuestoslv', 'repuestoslk', 'repuestoslsc'] } },
  
   
   { path: 'businv', component: PedidobodSearchModalComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'bodega','bodegaped','bodegapdi1', 'bodegaimpor','bodegapdi2','paqtana'] } },

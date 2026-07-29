@@ -264,10 +264,12 @@ getSolicitudesPermisoUsuario(idUsuario: number): Observable<any[]> {
 /**
  * Obtiene todas las solicitudes de permiso (para administradores)
  */
-getAllSolicitudesPermiso(): Observable<any[]> {
-  return this.http.get<any[]>(
-    `${this.apiUrlPed}`
-  );
+getAllSolicitudesPermiso(linea?: string): Observable<any[]> {
+  let params = new HttpParams();
+  if (linea && linea.trim() !== '') {
+    params = params.set('linea', linea.trim());
+  }
+  return this.http.get<any[]>(`${this.apiUrlPed}`, { params });
 }
 
 /**

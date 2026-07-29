@@ -25,6 +25,9 @@ export interface SolicitudPermiso {
 })
 export class AdminsolicitudespermisoComponent implements OnInit, OnDestroy {
   usuario: Usuario | null = null;
+  id: number = 0;
+   usrol = '';
+  linea = '';
   solicitudes: SolicitudPermiso[] = [];
   solicitudesFiltradas: SolicitudPermiso[] = [];
   loading = false;
@@ -48,38 +51,46 @@ export class AdminsolicitudespermisoComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.subscriptions.add(
-      this.authService.usuarioActual$.subscribe(usuario => {
-        this.usuario = usuario;
-        if (this.usuario) {
-          this.cargarSolicitudes();
-        }
-      })
-    );
+    
+    this.authService.usuarioActual$.subscribe(usuario => {
+          this.usuario = usuario;
+          console.log(this.usuario);
+          if (this.usuario != null) {
+            this.id = this.usuario.id;
+            this.usrol = this.usuario.rol;
+            console.log(this.id);
+            if(this.usrol=='repuestos'){ this.linea='pesados' }
+            if(this.usrol=='repuestoslv'){ this.linea='livianos' }
+            if(this.usrol=='repuestoslk'){ this.linea='linco' }
+            if(this.usrol=='repuestoslsc'){ this.linea='maquinaria' }
+            this.cargarSolicitudes(this.linea);
+          }
+        });
+
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
 
-  cargarSolicitudes(): void {
-    this.loading = true;
-    this.error = null;
+  cargarSolicitudes(linea?: string): void {
+  this.loading = true;
+  this.error = null;
 
-    // Cargar todas las solicitudes (para administradores)
-    this.oilService.getAllSolicitudesPermiso().subscribe({
-      next: (data) => {
-        this.solicitudes = data;
-        this.aplicarFiltros();
-        this.loading = false;
-      },
-      error: (err) => {
-        this.error = 'Error al cargar las solicitudes de permiso';
-        this.loading = false;
-        console.error('Error:', err);
-      }
-    });
-  }
+  // Cargar todas las solicitudes (para administradores)
+  this.oilService.getAllSolicitudesPermiso(linea).subscribe({
+    next: (data) => {
+      this.solicitudes = data;
+      this.aplicarFiltros();
+      this.loading = false;
+    },
+    error: (err) => {
+      this.error = 'Error al cargar las solicitudes de permiso';
+      this.loading = false;
+      console.error('Error:', err);
+    }
+  });
+}
 
   aplicarFiltros(): void {
     let resultado = [...this.solicitudes];
