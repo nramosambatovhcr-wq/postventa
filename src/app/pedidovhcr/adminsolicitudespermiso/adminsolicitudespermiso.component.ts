@@ -63,7 +63,7 @@ export class AdminsolicitudespermisoComponent implements OnInit, OnDestroy {
             if(this.usrol=='repuestoslv'){ this.linea='livianos' }
             if(this.usrol=='repuestoslk'){ this.linea='linco' }
             if(this.usrol=='repuestoslsc'){ this.linea='maquinaria' }
-            this.cargarSolicitudes(this.linea);
+            this.cargarSolicitudes();
           }
         });
 
@@ -73,12 +73,12 @@ export class AdminsolicitudespermisoComponent implements OnInit, OnDestroy {
     this.subscriptions.unsubscribe();
   }
 
-  cargarSolicitudes(linea?: string): void {
+  cargarSolicitudes(): void {
   this.loading = true;
   this.error = null;
 
   // Cargar todas las solicitudes (para administradores)
-  this.oilService.getAllSolicitudesPermiso(linea).subscribe({
+  this.oilService.getAllSolicitudesPermiso(this.linea).subscribe({
     next: (data) => {
       this.solicitudes = data;
       this.aplicarFiltros();
