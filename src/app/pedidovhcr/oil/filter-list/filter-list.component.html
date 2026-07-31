@@ -132,7 +132,7 @@
         </td>
         <td data-label="Agencia">{{ group.nombreAgencia || '-' }}</td>
         <td data-label="Estado General">
-        <div *ngIf="usuario?.rol === 'admin' || usuario?.rol === 'repuestos' else contentPedido">
+        <div *ngIf="usuario?.rol === 'admin' || usuario?.rol === 'repuestos'|| usuario?.rol === 'repuestoslv'|| usuario?.rol === 'repuestoslk' || usuario?.rol === 'repuestoslsc' else contentPedido">
             <select [(ngModel)]="group.estadoPedido" (change)="actualizarEstadoPedido(group)">
             <option value="PENDIENTE">PENDIENTE</option>
             <option value="ASIGNADO">ASIGNADO</option>

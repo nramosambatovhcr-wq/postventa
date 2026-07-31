@@ -179,8 +179,23 @@ submitProveedorForm(): void {
     loadPedidosCompraLocal(): void {
         this.pedidobodegaService.clocal().subscribe(
             (data: Pedido[]) => {
-                this.pedidos = data.filter(item => item.compra_local);
-                this.allData1 = [...this.pedidos]; 
+                // 1) Solo compra local
+                let pedidosCL = data.filter(item => item.compra_local);
+
+                // 2) Filtro por rol (igual que en pedidobod) — cada usuario ve lo que le pertenece
+                if (this.usrol === 'repuestoslv') {
+                    pedidosCL = pedidosCL.filter(item => item && item.modelo === 'sl');
+                } else if (this.usrol === 'repuestoslk') {
+                    pedidosCL = pedidosCL.filter(item => item && item.modelo === 'lc');
+                } else if (this.usrol === 'repuestoslsc') {
+                    pedidosCL = pedidosCL.filter(item => item && item.modelo === 'sc');
+                } else if (this.usrol === 'repuestos') {
+                    pedidosCL = pedidosCL.filter(item => item && item.modelo === 'sp');
+                }
+                // else (admin u otros roles): ven todo
+
+                this.pedidos = pedidosCL;
+                this.allData1 = [...this.pedidos];
                 this.applyFilter();
             },
             (error) => {

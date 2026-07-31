@@ -103,7 +103,7 @@ export class FilterListComponent implements OnInit, OnDestroy {
 
     this.subscription.add(
       this.reloadService.reload$.subscribe(() => {
-        this.loadFilters(); // Changed to loadFilters
+        this.loadFilters(this.linea); // Changed to loadFilters
       })
     );
 
@@ -258,7 +258,7 @@ loadFiltersError(marca?: string): void { // For 'Error' or similar status
     });
 
     // Recargar la lista completa después de procesar todos los items
-    this.loadFilters(); // Reload all data to reflect changes
+    this.loadFilters(this.linea); // Reload all data to reflect changes
   }
 
   /**
