@@ -1984,3 +1984,28 @@ td .badge-stock {
 .contenedor-tabla-aceites-disponibles table tr.fila-bloqueada td:last-child {
   background: #fff3cd !important;
 }
+/* ────────────────────────────────────────────────────────────────
+   FIX: mostrar completos Código y Descripción en "Filtros Disponibles".
+   El <td> global usa nowrap + ellipsis y estas celdas no tienen
+   data-label, por eso se cortaban. Se permite salto de línea y se
+   les da ancho propio (debe ir después del width:auto de arriba).
+   ──────────────────────────────────────────────────────────────── */
+.contenedor-tabla-aceites-disponibles table th:nth-child(1),
+.contenedor-tabla-aceites-disponibles table td:nth-child(1) {
+  width: 160px;
+  min-width: 150px;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.contenedor-tabla-aceites-disponibles table th:nth-child(2),
+.contenedor-tabla-aceites-disponibles table td:nth-child(2) {
+  width: 280px;
+  min-width: 240px;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: clip;
+}

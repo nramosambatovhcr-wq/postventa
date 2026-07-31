@@ -1,4 +1,4 @@
- /* dashboard.component.css */
+/* dashboard.component.css */
 
 /* ==================== VARIABLES CSS ==================== */
 :root {
@@ -2064,4 +2064,29 @@ main {
     width: 100%;
     justify-content: center;
   }
+}
+/* ────────────────────────────────────────────────────────────────
+   FIX: mostrar completos Código y Descripción en "Vidrios Disponibles".
+   El <td> global usa nowrap + ellipsis y estas celdas no tienen
+   data-label, por eso se cortaban. Se permite salto de línea y se
+   les da ancho propio (debe ir después de los anchos 15%/30% de arriba).
+   ──────────────────────────────────────────────────────────────── */
+.contenedor-tabla-aceites-disponibles table th:nth-child(1),
+.contenedor-tabla-aceites-disponibles table td:nth-child(1) {
+  width: 160px;
+  min-width: 150px;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.contenedor-tabla-aceites-disponibles table th:nth-child(2),
+.contenedor-tabla-aceites-disponibles table td:nth-child(2) {
+  width: 280px;
+  min-width: 240px;
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: clip;
 }
