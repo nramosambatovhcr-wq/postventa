@@ -32,8 +32,6 @@ type VistaActual = 'listado' | 'detalle';
 interface FormularioRepotenciacion {
   agencia: string; modelo: string; serie: string; cliente: string;
   ordenTrabajo: string; guiaRemision: string;
-  agenciaDif: string; modeloDif: string; serieDif: string; clienteDif: string;
-  ordenTrabajoDif: string; guiaRemisionDif: string;
   estado: EstadoRepotenciacion;
   fechaIngreso: string; fechaEntrega: string;
   observaciones: string; tutorialUrl: string;
@@ -59,8 +57,6 @@ interface VisorImagen {
 const FORMULARIO_VACIO: FormularioRepotenciacion = {
   agencia: '', modelo: '', serie: '', cliente: '',
   ordenTrabajo: '', guiaRemision: '',
-  agenciaDif: '', modeloDif: '', serieDif: '', clienteDif: '',
-  ordenTrabajoDif: '', guiaRemisionDif: '',
   estado: 'PENDIENTE', fechaIngreso: '', fechaEntrega: '',
   observaciones: '', tutorialUrl: '', usuarioCrea: 1,
 };
@@ -261,13 +257,13 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
   aplicarFiltrosLocales(): void {
     this.repotenciacionesFiltradas = this.repotenciaciones.filter(rep => {
       if (this.filtroEstado && rep.estado !== this.filtroEstado) return false;
-      if (this.filtroTipo === 'CAJA' && rep.agenciaDif) return false;
-      if (this.filtroTipo === 'DIFERENCIAL' && !rep.agenciaDif) return false;
+      if (this.filtroTipo === 'CAJA' && rep.tipoComponente !== 'CAJA') return false;
+      if (this.filtroTipo === 'DIFERENCIAL' && rep.tipoComponente !== 'DIFERENCIAL') return false;
       if (this.terminoBusqueda) {
         const t = this.terminoBusqueda.toLowerCase();
         if (!rep.agencia.toLowerCase().includes(t) && !rep.modelo.toLowerCase().includes(t) &&
             !rep.serie.toLowerCase().includes(t) && !rep.cliente.toLowerCase().includes(t) &&
-            !rep.ordenTrabajo.toLowerCase().includes(t) && !rep.agenciaDif?.toLowerCase().includes(t))
+            !rep.ordenTrabajo.toLowerCase().includes(t))
           return false;
       }
       if (this.fechaDesde && rep.fechaIngreso && new Date(rep.fechaIngreso) < new Date(this.fechaDesde)) return false;
@@ -346,9 +342,6 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
       agencia: rep.agencia, modelo: rep.modelo, serie: rep.serie, cliente: rep.cliente,
       ordenTrabajo: rep.ordenTrabajo, guiaRemision: rep.guiaRemision,
       estado: this.nuevoEstado, usuarioCrea: rep.usuarioCrea,
-      agenciaDif: rep.agenciaDif || undefined, modeloDif: rep.modeloDif || undefined,
-      serieDif: rep.serieDif || undefined, clienteDif: rep.clienteDif || undefined,
-      ordenTrabajoDif: rep.ordenTrabajoDif || undefined, guiaRemisionDif: rep.guiaRemisionDif || undefined,
       observaciones: this.observacionEstado
         ? `[${this.nuevoEstado} - ${this.formatearFechaHora(new Date())}] ${this.observacionEstado}`
         : (rep.observaciones || undefined),
@@ -582,9 +575,6 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     this.formulario = {
       agencia: rep.agencia, modelo: rep.modelo, serie: rep.serie, cliente: rep.cliente,
       ordenTrabajo: rep.ordenTrabajo, guiaRemision: rep.guiaRemision,
-      agenciaDif: rep.agenciaDif ?? '', modeloDif: rep.modeloDif ?? '',
-      serieDif: rep.serieDif ?? '', clienteDif: rep.clienteDif ?? '',
-      ordenTrabajoDif: rep.ordenTrabajoDif ?? '', guiaRemisionDif: rep.guiaRemisionDif ?? '',
       estado: rep.estado as EstadoRepotenciacion,
       fechaIngreso: rep.fechaIngreso ? new Date(rep.fechaIngreso).toISOString().slice(0, 16) : '',
       fechaEntrega: rep.fechaEntrega ? new Date(rep.fechaEntrega).toISOString().slice(0, 16) : '',
@@ -602,9 +592,6 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
 
     const request: RepotenciacionCajaRequest = {
       ...this.formulario,
-      agenciaDif: this.formulario.agenciaDif || undefined, modeloDif: this.formulario.modeloDif || undefined,
-      serieDif: this.formulario.serieDif || undefined, clienteDif: this.formulario.clienteDif || undefined,
-      ordenTrabajoDif: this.formulario.ordenTrabajoDif || undefined, guiaRemisionDif: this.formulario.guiaRemisionDif || undefined,
       fechaIngreso: this.formulario.fechaIngreso || undefined, fechaEntrega: this.formulario.fechaEntrega || undefined,
       observaciones: this.formulario.observaciones || undefined, tutorialUrl: this.formulario.tutorialUrl || undefined,
     };
@@ -816,7 +803,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
     return true;
   }
 
-  esDiferencial(rep: RepotenciacionCajaDto): boolean { return !!rep.agenciaDif; }
+  esDiferencial(rep: RepotenciacionCajaDto): boolean { return rep.tipoComponente === 'DIFERENCIAL'; }
 
   // Verdadero si ya existe un registro de recepción en BD (no solo por estado)
   yaFueRecepcionado(rep: RepotenciacionCajaDto): boolean { return !!rep.recepcion; }
@@ -876,7 +863,6 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
         'Tipo': this.esDiferencial(rep) ? 'DIFERENCIAL' : 'CAJA DE CAMBIO',
         'Agencia': rep.agencia, 'Modelo': rep.modelo, 'Serie': rep.serie, 'Cliente': rep.cliente,
         'Orden Trabajo': rep.ordenTrabajo, 'Guía Remisión': rep.guiaRemision,
-        'Agencia Dif.': rep.agenciaDif ?? '—', 'Modelo Dif.': rep.modeloDif ?? '—',
         'Estado': rep.estado,
         'Fecha Registro': this.formatearFecha(rep.fechaCreacion),
         'Fecha Envío': this.formatearFecha(rep.fechaIngreso),

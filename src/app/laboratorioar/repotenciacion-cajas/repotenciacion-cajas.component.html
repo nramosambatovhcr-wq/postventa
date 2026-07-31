@@ -135,7 +135,8 @@
         </thead>
         <tbody>
           <ng-container *ngFor="let rep of repotenciacionesFiltradas; let i = index">
-            <!-- Fila principal -->
+            <!-- Cada registro es un componente independiente (CAJA o DIFERENCIAL):
+                 una sola fila, con el badge según su tipo_componente -->
             <tr [class.table-row-even]="i % 2 === 0">
               <td>
                 <span class="badge" [ngClass]="esDiferencial(rep) ? 'badge-info' : 'badge-primary'">
@@ -150,98 +151,10 @@
               </td>
               <td>{{ rep.cliente }}</td>
               <td class="fw-semibold text-primary">{{ rep.ordenTrabajo }}</td>
-              <td>
-                <span class="badge" [ngClass]="claseEstado(rep.estado)">
-                  <i class="fas me-1" [ngClass]="iconoEstado(rep.estado)"></i>{{ rep.estado }}
-                </span>
-              </td>
-              <td>
-                <small title="Registrado por: {{ rep.usuariocreaNombre || 'N/A' }}">
-                  <i class="fas fa-plus-circle me-1 text-primary"></i>{{ formatearFecha(rep.fechaCreacion) }}
-                </small>
-              </td>
-              <td><small>{{ formatearFecha(rep.fechaIngreso) }}</small></td>
-              <td>
-                <small *ngIf="rep.recepcion"
-                       class="text-success fw-semibold"
-                       title="Recibido por: {{ rep.recepcion.recibidoPorNombre }} — Condición: {{ rep.recepcion.condicionFisica }}">
-                  <i class="fas fa-clipboard-check me-1"></i>{{ formatearFecha(rep.recepcion.fechaRecepcion) }}
-                </small>
-                <small *ngIf="!rep.recepcion" class="text-muted" title="Aún no recepcionado en laboratorio">—</small>
-              </td>
-              <td>
-                <span class="badge badge-secondary">{{ rep.usuariocreaNombre || 'N/A' }}</span>
-              </td>
-          <!--    <td>
-                
-                <div class="imgs-indicators">
-                  <span class="img-dot" [class.active]="rep.imagenPlaca" title="Placa">
-                    <i class="fas fa-id-card"></i>
-                  </span>
-                  <span class="img-dot" [class.active]="rep.fotografias?.length === 4" title="4 Fotos">
-                    <i class="fas fa-camera"></i>
-                    <small>{{ rep.fotografias?.length || 0 }}</small>
-                  </span>
-                </div>
-              </td>-->
-              <td>
-                <div class="action-buttons">
-                  <!-- Ver detalle -->
-                  <button class="btn btn-sm btn-outline-secondary" (click)="verDetalle(rep)" title="Ver detalle completo">
-                    <i class="fas fa-eye"></i>
-                  </button>
-                  <!-- ② Cambiar estado -->
-                  <button class="btn btn-sm btn-outline-warning" (click)="abrirModalEstado(rep)" title="Cambiar estado">
-                    <i class="fas fa-exchange-alt"></i>
-                  </button>
-                  <!-- ③ Recepción laboratorio — oculto si ya fue recepcionado -->
-                  <button class="btn btn-sm btn-outline-success" (click)="abrirModalRecepcion(rep)"
-                          title="Recepcionar en laboratorio"
-                          *ngIf="!yaFueRecepcionado(rep)">
-                    <i class="fas fa-clipboard-check"></i>
-                  </button>
-                  <!-- Indicador visual cuando ya fue recepcionado -->
-                  <span *ngIf="yaFueRecepcionado(rep)"
-                        class="badge bg-success"
-                        title="Recepcionado: {{ rep.recepcion?.recibidoPorNombre }} — {{ rep.recepcion?.condicionFisica }}">
-                    <i class="fas fa-clipboard-check"></i>
-                  </span>
-                  <!-- ④ Asignar mecánico — cuando aún no tiene uno -->
-                  <button class="btn btn-sm btn-outline-secondary" (click)="abrirModalMecanico(rep)"
-                          title="Asignar mecánico"
-                          *ngIf="!rep.mecanicoId">
-                    <i class="fas fa-user-cog"></i>
-                  </button>
-                  <!-- Botón con el mecánico asignado — clic para cambiarlo -->
-                  <button *ngIf="rep.mecanicoId"
-                          class="btn btn-sm btn-secondary px-2 py-1"
-                          style="font-size:0.75rem;"
-                          (click)="abrirModalMecanico(rep)"
-                          title="Cambiar mecánico | Actual: {{ rep.mecanicoNombre }} — Asignado: {{ rep.fechaAsignacion | date:'dd/MM/yyyy HH:mm' }}">
-                    <i class="fas fa-user-cog me-1"></i>{{ rep.mecanicoNombre }}
-                  </button>
-                  <!-- ⑤ Aprobar repuestos — visible cuando la caja está en espera -->
-                  <button class="btn btn-sm btn-danger"
-                          (click)="abrirModalRepuestos(rep)"
-                          title="Revisar / aprobar repuestos"
-                          *ngIf="tieneRepuestosPendientes(rep)">
-                    <i class="fas fa-dolly-flatbed"></i>
-                  </button>
-                  <!-- Imágenes -->
-                  <button class="btn btn-sm btn-outline-info" (click)="abrirModalImagenes(rep)" title="Gestionar imágenes">
-                    <i class="fas fa-images"></i>
-                  </button>
-                  <!-- Editar -->
-                <!--<button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditar(rep)" title="Editar">
-                    <i class="fas fa-edit"></i>
-                  </button>-->  
-                  <!-- Eliminar -->
-                <!--   <button class="btn btn-sm btn-outline-danger" (click)="eliminarRepotenciacion(rep)" title="Eliminar">
-                    <i class="fas fa-trash"></i>
-                  </button>-->  
-                </div>
-              </td>
+              <ng-container [ngTemplateOutlet]="celdasComunes" [ngTemplateOutletContext]="{ rep: rep, span: 1 }"></ng-container>
+              <ng-container [ngTemplateOutlet]="celdaAcciones" [ngTemplateOutletContext]="{ rep: rep, span: 1 }"></ng-container>
             </tr>
+
 
            
           </ng-container>
@@ -252,6 +165,93 @@
         <i class="fas fa-search fa-3x text-muted mb-3"></i>
         <p>No se encontraron repotenciaciones</p>
       </div>
+
+      <!-- ══ Plantillas reutilizables: columnas comunes y acciones ══
+           span=1 → fila única (solo caja) | span=2 → abarca caja + diferencial -->
+      <ng-template #celdasComunes let-rep="rep" let-span="span">
+        <td [attr.rowspan]="span">
+          <span class="badge" [ngClass]="claseEstado(rep.estado)">
+            <i class="fas me-1" [ngClass]="iconoEstado(rep.estado)"></i>{{ rep.estado }}
+          </span>
+        </td>
+        <td [attr.rowspan]="span">
+          <small title="Registrado por: {{ rep.usuariocreaNombre || 'N/A' }}">
+            <i class="fas fa-plus-circle me-1 text-primary"></i>{{ formatearFecha(rep.fechaCreacion) }}
+          </small>
+        </td>
+        <td [attr.rowspan]="span"><small>{{ formatearFecha(rep.fechaIngreso) }}</small></td>
+        <td [attr.rowspan]="span">
+          <small *ngIf="rep.recepcion"
+                 class="text-success fw-semibold"
+                 title="Recibido por: {{ rep.recepcion.recibidoPorNombre }} — Condición: {{ rep.recepcion.condicionFisica }}">
+            <i class="fas fa-clipboard-check me-1"></i>{{ formatearFecha(rep.recepcion.fechaRecepcion) }}
+          </small>
+          <small *ngIf="!rep.recepcion" class="text-muted" title="Aún no recepcionado en laboratorio">—</small>
+        </td>
+        <td [attr.rowspan]="span">
+          <span class="badge badge-secondary">{{ rep.usuariocreaNombre || 'N/A' }}</span>
+        </td>
+      </ng-template>
+
+      <ng-template #celdaAcciones let-rep="rep" let-span="span">
+        <td [attr.rowspan]="span">
+          <div class="action-buttons">
+            <!-- Ver detalle -->
+            <button class="btn btn-sm btn-outline-secondary" (click)="verDetalle(rep)" title="Ver detalle completo">
+              <i class="fas fa-eye"></i>
+            </button>
+            <!-- ② Cambiar estado -->
+            <button class="btn btn-sm btn-outline-warning" (click)="abrirModalEstado(rep)" title="Cambiar estado">
+              <i class="fas fa-exchange-alt"></i>
+            </button>
+            <!-- ③ Recepción laboratorio — oculto si ya fue recepcionado -->
+            <button class="btn btn-sm btn-outline-success" (click)="abrirModalRecepcion(rep)"
+                    title="Recepcionar en laboratorio"
+                    *ngIf="!yaFueRecepcionado(rep)">
+              <i class="fas fa-clipboard-check"></i>
+            </button>
+            <!-- Indicador visual cuando ya fue recepcionado -->
+            <span *ngIf="yaFueRecepcionado(rep)"
+                  class="badge bg-success"
+                  title="Recepcionado: {{ rep.recepcion?.recibidoPorNombre }} — {{ rep.recepcion?.condicionFisica }}">
+              <i class="fas fa-clipboard-check"></i>
+            </span>
+            <!-- ④ Asignar mecánico — cuando aún no tiene uno -->
+            <button class="btn btn-sm btn-outline-secondary" (click)="abrirModalMecanico(rep)"
+                    title="Asignar mecánico"
+                    *ngIf="!rep.mecanicoId">
+              <i class="fas fa-user-cog"></i>
+            </button>
+            <!-- Botón con el mecánico asignado — clic para cambiarlo -->
+            <button *ngIf="rep.mecanicoId"
+                    class="btn btn-sm btn-secondary px-2 py-1"
+                    style="font-size:0.75rem;"
+                    (click)="abrirModalMecanico(rep)"
+                    title="Cambiar mecánico | Actual: {{ rep.mecanicoNombre }} — Asignado: {{ rep.fechaAsignacion | date:'dd/MM/yyyy HH:mm' }}">
+              <i class="fas fa-user-cog me-1"></i>{{ rep.mecanicoNombre }}
+            </button>
+            <!-- ⑤ Aprobar repuestos — visible cuando la caja está en espera -->
+            <button class="btn btn-sm btn-danger"
+                    (click)="abrirModalRepuestos(rep)"
+                    title="Revisar / aprobar repuestos"
+                    *ngIf="tieneRepuestosPendientes(rep)">
+              <i class="fas fa-dolly-flatbed"></i>
+            </button>
+            <!-- Imágenes -->
+            <button class="btn btn-sm btn-outline-info" (click)="abrirModalImagenes(rep)" title="Gestionar imágenes">
+              <i class="fas fa-images"></i>
+            </button>
+            <!-- Editar -->
+          <!--<button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditar(rep)" title="Editar">
+              <i class="fas fa-edit"></i>
+            </button>-->
+            <!-- Eliminar -->
+          <!--   <button class="btn btn-sm btn-outline-danger" (click)="eliminarRepotenciacion(rep)" title="Eliminar">
+              <i class="fas fa-trash"></i>
+            </button>-->
+          </div>
+        </td>
+      </ng-template>
     </div>
 
   </ng-container><!-- /listado -->
@@ -395,13 +395,16 @@
         <div class="col-md-6">
           <div class="card shadow-sm border-0 h-100">
             <div class="card-header bg-transparent border-0 pb-0">
-              <h6 class="mb-0"><i class="fas fa-cog me-2 text-primary"></i>Caja de Cambio</h6>
+              <h6 class="mb-0">
+                <i class="fas me-2" [ngClass]="esDiferencial(rep) ? 'fa-wrench text-info' : 'fa-cog text-primary'"></i>
+                {{ esDiferencial(rep) ? 'Diferencial / Transferencia' : 'Caja de Cambio' }}
+              </h6>
             </div>
             <div class="card-body">
               <dl class="row small mb-0">
                 <dt class="col-5 text-muted">Agencia</dt>     <dd class="col-7">{{ rep.agencia }}</dd>
                 <dt class="col-5 text-muted">Modelo</dt>      <dd class="col-7 fw-semibold">{{ rep.modelo }}</dd>
-                <dt class="col-5 text-muted">Serie Caja</dt> <dd class="col-7">{{ rep.serie }}</dd>
+                <dt class="col-5 text-muted">Serie</dt> <dd class="col-7">{{ rep.serie }}</dd>
                 <dt class="col-5 text-muted">Cliente</dt>     <dd class="col-7">{{ rep.cliente }}</dd>
                 <dt class="col-5 text-muted">Orden Trabajo</dt>
                 <dd class="col-7 fw-semibold text-primary">{{ rep.ordenTrabajo }}</dd>
@@ -412,26 +415,6 @@
                   <dt class="col-5 text-muted">Fecha Entrega</dt>
                   <dd class="col-7">{{ formatearFechaHora(rep.fechaEntrega) }}</dd>
                 </ng-container>
-              </dl>
-            </div>
-          </div>
-        </div>
-
-        <!-- ── Tarjeta: Diferencial (condicional) ───────────────────── -->
-        <div class="col-md-6" *ngIf="esDiferencial(rep)">
-          <div class="card shadow-sm border-0 h-100 border-info" style="border-left: 4px solid #0dcaf0 !important;">
-            <div class="card-header bg-transparent border-0 pb-0">
-              <h6 class="mb-0"><i class="fas fa-wrench me-2 text-info"></i>Diferencial / Transferencia</h6>
-            </div>
-            <div class="card-body">
-              <dl class="row small mb-0">
-                <dt class="col-5 text-muted">Agencia</dt>      <dd class="col-7">{{ rep.agenciaDif }}</dd>
-                <dt class="col-5 text-muted">Modelo</dt>       <dd class="col-7 fw-semibold">{{ rep.modeloDif }}</dd>
-                <dt class="col-5 text-muted">Serie</dt>        <dd class="col-7">{{ rep.serieDif }}</dd>
-                <dt class="col-5 text-muted">Cliente</dt>      <dd class="col-7">{{ rep.clienteDif }}</dd>
-                <dt class="col-5 text-muted">Orden Trabajo</dt>
-                <dd class="col-7 fw-semibold text-info">{{ rep.ordenTrabajoDif }}</dd>
-                <dt class="col-5 text-muted">Guía Remisión</dt><dd class="col-7">{{ rep.guiaRemisionDif }}</dd>
               </dl>
             </div>
           </div>
@@ -494,9 +477,6 @@
                   </div>
                   <div class="seg-step-body small">
                     <span class="text-muted">Guía de remisión:</span> {{ rep.guiaRemision }}
-                    <ng-container *ngIf="rep.guiaRemisionDif">
-                      &nbsp;·&nbsp;<span class="text-muted">Guía dif.:</span> {{ rep.guiaRemisionDif }}
-                    </ng-container>
                   </div>
                 </div>
 
@@ -839,37 +819,6 @@
             <div class="col-md-6">
               <label class="form-label">Guía de Remisión *</label>
               <input type="text" class="form-control" [(ngModel)]="formulario.guiaRemision" name="guiaRemision" required>
-            </div>
-          </div>
-
-          <!-- DIFERENCIAL -->
-          <div class="section-header mt-2">
-            <h5><i class="fas fa-wrench me-2"></i>DIFERENCIAL / TRANSFERENCIA <small class="text-muted fw-normal">(opcional)</small></h5>
-          </div>
-          <div class="row g-3 mb-3">
-            <div class="col-md-6">
-              <label class="form-label">Agencia</label>
-              <input type="text" class="form-control" [(ngModel)]="formulario.agenciaDif" name="agenciaDif">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Modelo</label>
-              <input type="text" class="form-control" [(ngModel)]="formulario.modeloDif" name="modeloDif">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Serie</label>
-              <input type="text" class="form-control" [(ngModel)]="formulario.serieDif" name="serieDif">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Cliente</label>
-              <input type="text" class="form-control" [(ngModel)]="formulario.clienteDif" name="clienteDif">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Orden de Trabajo</label>
-              <input type="text" class="form-control" [(ngModel)]="formulario.ordenTrabajoDif" name="ordenTrabajoDif">
-            </div>
-            <div class="col-md-6">
-              <label class="form-label">Guía de Remisión</label>
-              <input type="text" class="form-control" [(ngModel)]="formulario.guiaRemisionDif" name="guiaRemisionDif">
             </div>
           </div>
 

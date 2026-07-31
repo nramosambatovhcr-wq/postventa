@@ -42,6 +42,7 @@ export interface RepotenciacionCajaDto {
   fechaActualizacion?: Date;
   mecanicoId?:       number;
   mecanicoNombre?:   string;
+  tipoComponente?:   string;
   fechaAsignacion?:  Date;
   recepcion?:        RecepcionRepotenciacionDto;
   imagenPlaca?: ImagenRepotenciacionDto;
