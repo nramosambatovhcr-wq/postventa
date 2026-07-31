@@ -153,10 +153,14 @@
     <table class="table table-modern">
       <thead>
         <tr>
+           <th>ID</th>
           <th>CÓDIGO</th>
           <th>DESCRIPCIÓN</th>
           <th>SERIE</th>
           <th>ESTADO</th>
+          <th>ORIGEN</th>
+          <th>USUARIO</th>
+          <th>MECÁNICO</th>
           <th>FECHA INGRESO</th>
           <th>FECHA ENTREGA</th>
           <th>MODELO</th>
@@ -166,6 +170,8 @@
       <tbody>
         <tr *ngFor="let soporte of soportesFiltrados; let i = index" 
             [class.table-row-even]="i % 2 === 0">
+       
+          <td class="font-weight-bold">{{ soporte.id }}</td>
           <td class="font-weight-bold">{{ soporte.codigo }}</td>
           <td>
             <div class="descripcion-cell">
@@ -180,6 +186,19 @@
             <span class="badge" [ngClass]="obtenerClaseEstado(soporte.estado || '')">
               {{ soporte.estado || 'N/A' }}
             </span>
+          </td>
+          <td>
+            <span class="badge"  >
+              {{ soporte.origen || 'N/A' }}
+            </span>
+          </td>
+          <td>
+            <span class="badge"  >
+              {{ soporte.usuariocrea_nombre || 'N/A' }}
+            </span>
+          </td>
+          <td>
+            <span>{{ soporte.usuariorepara_nombre || 'Sin asignar' }}</span>
           </td>
           <td>{{ formatearFecha(soporte.fechaingreso) }}</td>
           <td>{{ formatearFecha(soporte.fechaentrega) }}</td>

@@ -13,12 +13,12 @@
    ======================== */
 
 .dashboard-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
   color: white;
   padding: 30px;
   border-radius: 12px;
   margin-bottom: 30px;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
 }
 
 .header-content h1.dashboard-title {
@@ -76,23 +76,23 @@
 }
 
 .stat-icon.total {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
 }
 
 .stat-icon.pending {
-  background: linear-gradient(135deg, #f093fb, #f5576c);
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
 }
 
 .stat-icon.process {
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
 }
 
 .stat-icon.completed {
-  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  background: linear-gradient(135deg, #64748b, #475569);
 }
 
 .stat-icon.delivered {
-  background: linear-gradient(135deg, #fa709a, #fee140);
+  background: linear-gradient(135deg, #94a3b8, #64748b);
 }
 
 .stat-content h3 {
@@ -128,7 +128,7 @@
 }
 
 .btn-nuevo {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
   border: none;
   padding: 12px 24px;
   font-weight: 600;
@@ -138,7 +138,7 @@
 
 .btn-nuevo:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.3);
 }
 
 .filters-section {
@@ -169,8 +169,8 @@
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
 }
 
 .export-section {
@@ -193,8 +193,17 @@
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  overflow: auto;               /* scroll propio de la tabla */
+  max-height: 60vh;             /* altura visible; ajústala a gusto */
   position: relative;
+}
+
+/* Cabecera de la tabla fija: todo lo de arriba queda estático
+   y solo se desplazan las filas debajo de estos títulos */
+.table-modern thead th {
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 
 .table-modern {
@@ -202,7 +211,12 @@
 }
 
 .table-modern thead {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+/* El sticky th necesita fondo propio para tapar las filas al desplazar */
+.table-modern thead th {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
 }
 
 .table-modern thead th {
@@ -365,7 +379,7 @@
 }
 
 .modal-header {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
   color: white;
   border-bottom: none;
   border-radius: 12px 12px 0 0;
@@ -407,8 +421,8 @@
 
 .modal .form-control:focus,
 .modal .form-select:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 0.2rem rgba(37, 99, 235, 0.25);
 }
 
 /* ========================
@@ -672,4 +686,31 @@
 
 .btn-remove-image:hover {
   background: #b02a37;
+}
+/* ======================================================
+   Botones de exportación en azul/gris (zona señalada).
+   Reemplazan el verde (btn-success) y cian (btn-info) por
+   la paleta azul/blanco/gris del dashboard.
+   ====================================================== */
+.export-section .btn-success {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.export-section .btn-success:hover {
+  background-color: #1e40af;
+  border-color: #1e40af;
+}
+
+.export-section .btn-info {
+  background-color: #6b7280;
+  border-color: #6b7280;
+  color: #fff;
+}
+
+.export-section .btn-info:hover {
+  background-color: #4b5563;
+  border-color: #4b5563;
+  color: #fff;
 }

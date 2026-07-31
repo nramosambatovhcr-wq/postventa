@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { AuthService } from 'src/app/services/auth.service';
 import { Soporte, SoporteRequest, LaboratorioService } from 'src/app/services/laboratorio.service';
 import { AbastecimientoService } from 'src/app/services/abastecimiento.service';
+import * as XLSX from 'xlsx-js-style';
 
 
 @Component({
@@ -110,7 +111,7 @@ export class SlaboratorioComponent implements OnInit {
     this.cargando = true;
     this.error = '';
 
-    this.laboratorioService.getSoportesByUsuarioCrea(this.id).subscribe({
+    this.laboratorioService.getAllSoportes().subscribe({
       next: (soportes) => {
         this.soportes = soportes;
         this.aplicarFiltros();
@@ -173,6 +174,8 @@ export class SlaboratorioComponent implements OnInit {
 
       return true;
     });
+
+    this.soportesFiltrados.sort((a: any, b: any) => (b.id ?? 0) - (a.id ?? 0));
   }
 
   onFiltroChange(): void {
@@ -521,13 +524,97 @@ export class SlaboratorioComponent implements OnInit {
   // EXPORTACIÓN
   // ========================
 
+  // Arma la lista de TODOS los soportes lista para exportar
+  private construirDatosExportacion(): any[] {
+    return this.soportes.map((s: any) => ({
+      'ID': s.id,
+      'Código': s.codigo,
+      'Descripción': s.descripcion,
+      'Serie': s.vim || 'N/A',
+      'Estado': s.estado || 'N/A',
+      'Origen': s.origen || 'N/A',
+      'Usuario': s.usuariocrea_nombre || 'N/A',
+      'Mecánico': s.usuariorepara_nombre || 'Sin asignar',
+      'Fecha Ingreso': this.formatearFecha(s.fechaingreso),
+      'Fecha Entrega': this.formatearFecha(s.fechaentrega),
+      'Modelo': s.modelo || 'N/A',
+      'N° Imágenes': s.imagenes ? s.imagenes.length : 0
+    }));
+  }
+
   exportarExcel(): void {
-    // Implementar exportación a Excel
-    console.log('Exportando a Excel...');
+    if (!this.soportes || this.soportes.length === 0) {
+      this.error = 'No hay soportes para exportar';
+      return;
+    }
+
+    // Se exportan TODOS los soportes (no solo los filtrados en pantalla)
+    const datos = this.construirDatosExportacion();
+    const worksheet = XLSX.utils.json_to_sheet(datos);
+
+    // Ancho de columnas
+    worksheet['!cols'] = [
+      { wch: 6 },   // ID
+      { wch: 20 },  // Código
+      { wch: 42 },  // Descripción
+      { wch: 18 },  // Serie
+      { wch: 14 },  // Estado
+      { wch: 12 },  // Origen
+      { wch: 14 },  // Usuario
+      { wch: 14 },  // Mecánico
+      { wch: 14 },  // Fecha Ingreso
+      { wch: 14 },  // Fecha Entrega
+      { wch: 22 },  // Modelo
+      { wch: 12 }   // N° Imágenes
+    ];
+
+    // Cabecera azul con texto blanco (acorde al tema)
+    const rango = XLSX.utils.decode_range(worksheet['!ref'] as string);
+    for (let c = rango.s.c; c <= rango.e.c; c++) {
+      const ref = XLSX.utils.encode_cell({ r: 0, c });
+      if (worksheet[ref]) {
+        worksheet[ref].s = {
+          fill: { fgColor: { rgb: '2563EB' } },
+          font: { color: { rgb: 'FFFFFF' }, bold: true },
+          alignment: { horizontal: 'center', vertical: 'center' }
+        };
+      }
+    }
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Soportes');
+
+    const fecha = new Date().toISOString().split('T')[0];
+    XLSX.writeFile(workbook, `soportes_laboratorio_${fecha}.xlsx`);
   }
 
   exportarCSV(): void {
-    // Implementar exportación a CSV
-    console.log('Exportando a CSV...');
+    if (!this.soportes || this.soportes.length === 0) {
+      this.error = 'No hay soportes para exportar';
+      return;
+    }
+
+    const datos = this.construirDatosExportacion();
+    const encabezados = Object.keys(datos[0]);
+
+    const escapar = (valor: any) => {
+      const texto = (valor ?? '').toString().replace(/"/g, '""');
+      return `"${texto}"`;
+    };
+
+    const contenido =
+      '\ufeff' + // BOM para que Excel respete los acentos
+      [encabezados, ...datos.map(fila => encabezados.map(k => fila[k]))]
+        .map(fila => fila.map(escapar).join(';'))
+        .join('\r\n');
+
+    const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const fecha = new Date().toISOString().split('T')[0];
+    link.href = url;
+    link.download = `soportes_laboratorio_${fecha}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   }
 }
