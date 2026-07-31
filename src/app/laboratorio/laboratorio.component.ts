@@ -59,7 +59,7 @@ export class LaboratorioComponent implements OnInit, OnDestroy {
   mostrarEstadisticasLinea: boolean = false; // Controla si se muestran las estadísticas por línea
   showLineStats: boolean = false;
 lineStats: any[] = [];
-rolusuario:any;
+rolusuario='';
 activeStatsTab: string = ''; // Controla qué pestaña de estadísticas está activa
 categoryStats: any[] = [];
 modelStats: any[] = [];

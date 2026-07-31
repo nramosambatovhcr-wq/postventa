@@ -28,7 +28,7 @@
   <!-- Tarjeta de Pendientes -->
    <div class="tarjeta-estadistica" 
       
-       (click)="asignar()" *ngIf="rolusuario!='repuestoslv' || rolusuario!='repuestoslk'|| rolusuario!='repuestoslsc' ">
+       (click)="asignar()" *ngIf="rolusuario!='repuestoslv' && rolusuario != 'repuestoslk' &&  rolusuario!='repuestoslsc' ">
     <div class="icono-estadistica">⏳</div>
     <div class="titulo-estadistica">Asignacion de vehiculos</div>
   </div>

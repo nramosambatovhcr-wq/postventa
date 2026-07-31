@@ -285,10 +285,10 @@
           <li><a class="submenu-link" routerLink="/laboratorio"    routerLinkActive="active">Dashboard</a></li>
           <li><a class="submenu-link" routerLink="/laboratoriorev" routerLinkActive="active">Revisado</a></li>
           <li><a class="submenu-link" routerLink="/laboratoriovehi" routerLinkActive="active">Vehículo</a></li>
-          <li *ngIf="usuario?.rol !== 'repuestoslv'"><a class="submenu-link" routerLink="/soporteslab"   routerLinkActive="active">Soporte</a></li>
+          <li  *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','garantias'].includes(usuario?.rol ?? '')"><a class="submenu-link" routerLink="/soporteslab"   routerLinkActive="active">Soporte</a></li>
           <li *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','garantias'].includes(usuario?.rol ?? '')"><a class="submenu-link" routerLink="/repotenciacion" routerLinkActive="active">Repotenciación</a></li>
-          <li *ngIf="usuario?.rol !== 'repuestoslv'"><a class="submenu-link" routerLink="/extraccionvehi" routerLinkActive="active">Extraccion Partes Vehiculos</a></li>
-          <li *ngIf="usuario?.rol !== 'repuestoslv'"><a class="submenu-link" routerLink="/extraccionbod"  routerLinkActive="active">Extraccion Partes Bodega</a></li>
+          <li  *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','garantias'].includes(usuario?.rol ?? '')"><a class="submenu-link" routerLink="/extraccionvehi" routerLinkActive="active">Extraccion Partes Vehiculos</a></li>
+          <li  *ngIf="['repuestos','laboratorio1','laboratorio2','laboratorio3','garantias'].includes(usuario?.rol ?? '')"><a class="submenu-link" routerLink="/extraccionbod"  routerLinkActive="active">Extraccion Partes Bodega</a></li>
           
         </ul>
       </li>

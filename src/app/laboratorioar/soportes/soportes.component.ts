@@ -203,6 +203,9 @@ export class SoportesComponent implements OnInit {
 
       return true;
     });
+
+    // Ordenar por id descendente (del último al inicio)
+    this.soportesFiltrados.sort((a: any, b: any) => (b.id ?? 0) - (a.id ?? 0));
   }
 
   onFiltroChange(): void {

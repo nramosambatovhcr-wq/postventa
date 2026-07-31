@@ -153,6 +153,7 @@
     <table class="table table-modern">
       <thead>
         <tr>
+          <th>ID</th>
           <th>CÓDIGO</th>
           <th>DESCRIPCIÓN</th>
           <th>VIM</th>
@@ -169,6 +170,7 @@
       <tbody>
         <tr *ngFor="let soporte of soportesFiltrados; let i = index" 
             [class.table-row-even]="i % 2 === 0">
+          <td class="font-weight-bold">{{ soporte.id }}</td>
           <td class="font-weight-bold">{{ soporte.codigo }}</td>
           <td>
             <div class="descripcion-cell">

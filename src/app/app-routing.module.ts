@@ -281,11 +281,11 @@ const routes: Routes = [
   { path: 'pedidobodpro', component: PedidobodproComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio1','laboratorio2']} },
   { path: 'pedidobodasig', component: PedidobodasigComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio1','laboratorio2'] } },
    { path: 'pedidoboderror', component: PedidoboderrorComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio1','laboratorio2'] } },
-  { path: 'laboratoriorev', component: LaboratoriorevComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3', 'bodegaimpor'] } },
-  { path: 'laboratorio', component: LaboratorioComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor'] } },
-  { path: 'laboratoriovehi', component: LaboratoriovehisComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor'] } },
-  { path: 'laboratoriovehidetail', component: LaboratoriovehidetailComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor'] } },
-  { path: 'laboratoriovehidetail/:id', component: LaboratoriovehidetailComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor'] } },
+  { path: 'laboratoriorev', component: LaboratoriorevComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3', 'bodegaimpor','repuestoslk','repuestoslsc'] } },
+  { path: 'laboratorio', component: LaboratorioComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor','repuestoslk','repuestoslsc'] } },
+  { path: 'laboratoriovehi', component: LaboratoriovehisComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor','repuestoslk','repuestoslsc'] } },
+  { path: 'laboratoriovehidetail', component: LaboratoriovehidetailComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor','repuestoslk','repuestoslsc'] } },
+  { path: 'laboratoriovehidetail/:id', component: LaboratoriovehidetailComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3','repuestoslv', 'bodegaimpor','repuestoslk','repuestoslsc'] } },
   { path: 'labots', component: OtgarantiaComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', 'laboratorio','laboratorio1','laboratorio2','laboratorio3'] } },
  
 
@@ -329,7 +329,7 @@ const routes: Routes = [
  
 
 
-  { path: 'soporteslab', component: SoportesComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio2','laboratorio3'] } },
+  { path: 'soporteslab', component: SoportesComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','laboratorio2','laboratorio3'] } },
    { path: 'soporteslabo', component: SlaboratorioComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'bodega','bodegaped', 'bodegaimpor','bodegaimpor1'] } },
   { path: 'repotenciacion', component: RepotenciacionCajasComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio1','laboratorio2','laboratorio3','garantias']  } },
  { path: 'repotenciacionag', component: RepotenciacionagComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'bodega','bodegaped','bodegapdi1', 'bodegaimpor','bodegapdi2'] } },

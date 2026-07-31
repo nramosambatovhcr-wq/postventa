@@ -15,7 +15,7 @@
 
     <!-- Tarjetas de estadísticas -->
     <div class="contenedor-estadisticas">
-      <div class="tarjeta-estadistica" (click)="asignado()" *ngIf="rolusuario!='repuestoslv' || rolusuario!='repuestoslk'|| rolusuario!='repuestoslsc' ">
+      <div class="tarjeta-estadistica" (click)="asignado()"  *ngIf="rolusuario!='repuestoslv' && rolusuario !=  'repuestoslk' &&  rolusuario!='repuestoslsc' ">
         <div class="valor-estadistica">ASIGNADOS</div>
       </div>
       <div class="tarjeta-estadistica" (click)="pendiente()">
