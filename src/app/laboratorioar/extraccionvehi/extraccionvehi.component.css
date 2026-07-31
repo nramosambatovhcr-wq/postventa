@@ -2,8 +2,10 @@
    VARIABLES DE COLOR
    ============================================================ */
 :root {
-  --primary: #0d6efd;
-  --primary-dark: #0b5ed7;
+  /* ── CAMBIO: azul de marca (mismo que repotenciacionag) ────────────────── */
+  --primary: #2563EA;
+  --primary-dark: #1F42B2;
+  --primary-mid: #3274F1;
   --secondary: #6c757d;
   --success: #198754;
   --warning: #ffc107;
@@ -125,7 +127,7 @@
 .form-select:focus {
   border-color: var(--primary);
   background: #ffffff;           /* al enfocar, se aclara */
-  box-shadow: 0 0 0 0.18rem rgba(13, 110, 253, 0.15);
+  box-shadow: 0 0 0 0.18rem rgba(37, 99, 234, 0.15);
   outline: none;
 }
 
@@ -191,7 +193,7 @@ textarea.form-control {
 
 .modal-footer .btn-primary:hover {
   background: var(--primary-dark);
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+  box-shadow: 0 4px 12px rgba(37, 99, 234, 0.3);
 }
 
 .modal-footer .btn-secondary {
@@ -274,6 +276,11 @@ textarea.form-control {
   padding: 0.35em 0.7em;
   border-radius: 50rem;
 }
+
+/* ── NUEVO: badges de estado de la tabla (paleta azul/gris) ──────────────── */
+.badge-pendiente { background: #e9ecef; color: #495057; }
+.badge-entregado { background: var(--primary-dark); color: #ffffff; }
+.badge-devuelto  { background: var(--secondary); color: #ffffff; }
 
 .btn-group .btn {
   width: 34px;
@@ -393,8 +400,8 @@ textarea.form-control {
   font-weight: 500;
 }
 
-.estado-badge.pendiente { background: #fff3cd; color: #856404; }
-.estado-badge.entregado { background: #d1e7dd; color: #0f5132; }
+.estado-badge.pendiente { background: #e9ecef; color: #495057; }
+.estado-badge.entregado { background: var(--primary-dark); color: #ffffff; }
 
 @media (max-width: 600px) {
   .view-grid {
@@ -461,17 +468,17 @@ textarea.form-control {
   color: var(--text-muted);
 }
 
-/* Colores por estado */
+/* Colores por estado — paleta azul/gris */
 .stat-card.total    { border-left-color: var(--primary); }
 .stat-card.total    .stat-number { color: var(--primary); }
 
-.stat-card.pendiente { border-left-color: var(--warning); }
-.stat-card.pendiente .stat-number { color: #b8860b; }
+.stat-card.pendiente { border-left-color: var(--secondary); }
+.stat-card.pendiente .stat-number { color: #495057; }
 
-.stat-card.entregado { border-left-color: var(--success); }
-.stat-card.entregado .stat-number { color: var(--success); }
+.stat-card.entregado { border-left-color: var(--primary-dark); }
+.stat-card.entregado .stat-number { color: var(--primary-dark); }
 
-.stat-card.devuelto  { border-left-color: var(--secondary); }
+.stat-card.devuelto  { border-left-color: #adb5bd; }
 .stat-card.devuelto  .stat-number { color: var(--secondary); }
 
 /* Responsive dashboard */
@@ -490,14 +497,14 @@ textarea.form-control {
   grid-template-columns: repeat(3, 1fr);
 }
 
-.stat-card.vehiculos    { border-left-color: #6f42c1; }
-.stat-card.vehiculos    .stat-number { color: #6f42c1; }
+.stat-card.vehiculos    { border-left-color: var(--primary-mid); }
+.stat-card.vehiculos    .stat-number { color: var(--primary-mid); }
 
-.stat-card.veh-pendiente { border-left-color: #fd7e14; }
-.stat-card.veh-pendiente .stat-number { color: #d9660b; }
+.stat-card.veh-pendiente { border-left-color: var(--secondary); }
+.stat-card.veh-pendiente .stat-number { color: #495057; }
 
-.stat-card.veh-completo  { border-left-color: #20c997; }
-.stat-card.veh-completo  .stat-number { color: #17a882; }
+.stat-card.veh-completo  { border-left-color: var(--primary-dark); }
+.stat-card.veh-completo  .stat-number { color: var(--primary-dark); }
 
 @media (max-width: 992px) {
   .stats-vehiculos { grid-template-columns: repeat(2, 1fr); }
@@ -597,8 +604,8 @@ textarea.form-control {
   border-radius: 50rem;
   transition: width 0.4s ease;
 }
-.rank-fill.agencia  { background: linear-gradient(90deg, #0d6efd, #6f42c1); }
-.rank-fill.articulo { background: linear-gradient(90deg, #20c997, #0d6efd); }
+.rank-fill.agencia  { background: linear-gradient(90deg, var(--primary), var(--primary-dark)); }
+.rank-fill.articulo { background: linear-gradient(90deg, var(--primary-mid), var(--primary)); }
 
 .rank-sub { font-size: 0.72rem; color: var(--text-muted); }
 .rank-empty {

@@ -1,4 +1,4 @@
-<div class="container mt-4">
+<div class="container-fluid px-4 mt-4">
   <h2>Extracción de Repuestos</h2>
 
   <!-- ====== DASHBOARD ESTADÍSTICO ====== -->
@@ -211,15 +211,15 @@
         <td>{{ r.agencia }}</td>
         <td>
           <span class="badge" [ngClass]="{
-            'bg-warning': r.estado === 'PENDIENTE',
-            'bg-success': r.estado === 'ENTREGADO',
-            'bg-secondary': r.estado === 'DEVUELTO'
+            'badge-pendiente': r.estado === 'PENDIENTE',
+            'badge-entregado': r.estado === 'ENTREGADO',
+            'badge-devuelto': r.estado === 'DEVUELTO'
           }">{{ r.estado }}</span>
         </td>
         <td>{{ r.fechaExtraccion | date:'dd/MM/yyyy' }}</td>
        <td>
         <div class="btn-group" role="group">
-            <button class="btn btn-sm btn-outline-info" (click)="abrirModalVer(r)" title="Ver detalles">👁️</button>
+            <button class="btn btn-sm btn-outline-secondary" (click)="abrirModalVer(r)" title="Ver detalles">👁️</button>
             <button class="btn btn-sm btn-outline-primary" (click)="abrirModalEditar(r)" title="Editar">✏️</button>
             <button class="btn btn-sm btn-outline-secondary" (click)="abrirImagenes(r)" title="Imágenes">📷</button>
             <button class="btn btn-sm btn-outline-danger" (click)="eliminar(r.id!)" title="Eliminar">🗑️</button>
