@@ -5,9 +5,10 @@
 
 /* ── CONTENEDOR PRINCIPAL ─────────────────────────────────── */
 .solicitud-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1.5rem 1rem 3rem;
+  /* ── CAMBIO: ancho completo (edge-to-edge), ya no limitado a 1200px ──── */
+  max-width: 100%;
+  margin: 0;
+  padding: 1.5rem 1.75rem 3rem;
 }
 
 /* ── HEADER ──────────────────────────────────────────────── */
@@ -15,12 +16,12 @@
   display: flex;
   align-items: center;
   gap: 1rem;
-  background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 100%);
+  background: linear-gradient(135deg, #2563EA 0%, #1F42B2 100%);
   color: #fff;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 15px rgba(45, 106, 159, 0.3);
+  box-shadow: 0 4px 15px rgba(37, 99, 234, 0.3);
 }
 
 .header-icon {
@@ -90,11 +91,12 @@
   font-size: 1.25rem;
 }
 
-.stat-icon.total      { background: #e3f2fd; color: #1976d2; }
-.stat-icon.pendiente  { background: #fff3e0; color: #f57c00; }
-.stat-icon.proceso    { background: #e8f5e9; color: #388e3c; }
-.stat-icon.completado { background: #f3e5f5; color: #7b1fa2; }
-.stat-icon.entregado  { background: #ede7f6; color: #4527a0; }
+/* ── CAMBIO: paleta reducida a azul / blanco / gris ─────────────────────── */
+.stat-icon.total      { background: #eef1f4; color: #495057; }
+.stat-icon.pendiente  { background: #e9ecef; color: #6c757d; }
+.stat-icon.proceso    { background: #dce9fd; color: #2563EA; }
+.stat-icon.completado { background: #c3d7fb; color: #1F44B6; }
+.stat-icon.entregado  { background: #1F42B2; color: #ffffff; }
 
 .stat-value {
   font-size: 1.75rem;
@@ -160,13 +162,13 @@
   grid-template-columns: 80px 2fr 1.5fr 1fr 1fr 120px;
   gap: 1rem;
   padding: 1rem 1.25rem;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e9ecef;
+  background: #2563EA;
+  border-bottom: 1px solid #1F42B2;
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  color: #6c757d;
+  color: #ffffff;
 }
 
 .tabla-row {
@@ -200,23 +202,23 @@
 }
 
 .estado-badge.pendiente {
-  background: #fff3e0;
-  color: #e65100;
+  background: #e9ecef;
+  color: #495057;
 }
 
 .estado-badge.en-proceso {
-  background: #e3f2fd;
-  color: #1565c0;
+  background: #dce9fd;
+  color: #2563EA;
 }
 
 .estado-badge.completado {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #c3d7fb;
+  color: #1F44B6;
 }
 
 .estado-badge.entregado {
-  background: #f3e5f5;
-  color: #6a1b9a;
+  background: #1F42B2;
+  color: #ffffff;
 }
 
 /* Indicador de tipo (caja sola o con diferencial) */
@@ -228,11 +230,30 @@
 }
 
 .tipo-indicador.simple {
-  color: #1976d2;
+  color: #1F42B2;
 }
 
 .tipo-indicador.doble {
-  color: #00796b;
+  color: #6c757d;
+}
+
+/* ── NUEVO: badges de tipo de solicitud (Caja / Diferencial / Mixta) ─────── */
+.badge-tipo-caja  { background: #2563EA; color: #fff; }
+.badge-tipo-dif   { background: #6c757d; color: #fff; }
+.badge-tipo-mixta { background: #1F42B2; color: #fff; }
+
+/* ── NUEVO: barra de progreso del estado (paleta azul/gris) ──────────────── */
+.progreso-pendiente  { background: #adb5bd; }
+.progreso-proceso    { background: #3274F1; }
+.progreso-completado { background: #1F44B6; }
+.progreso-entregado  { background: #1F42B2; }
+
+/* ── NUEVO: campo bloqueado (Fecha de Ingreso) ───────────────────────────── */
+.campo-bloqueado {
+  background-color: #f1f3f5 !important;
+  color: #495057 !important;
+  cursor: not-allowed;
+  opacity: 1 !important;
 }
 
 /* Empty State */
@@ -293,10 +314,10 @@
 }
 
 .step.active .step-circle {
-  border-color: #0d6efd;
-  color: #0d6efd;
+  border-color: #2563EA;
+  color: #2563EA;
   background: #e8f0fe;
-  box-shadow: 0 0 0 4px rgba(13, 110, 253, 0.15);
+  box-shadow: 0 0 0 4px rgba(37, 99, 234, 0.15);
 }
 
 .step.done .step-circle {
@@ -335,7 +356,7 @@
 }
 
 .paso-numero {
-  color: #0d6efd;
+  color: #2563EA;
 }
 
 /* ── SECCIONES DEL FORMULARIO ───────────────────────────── */
@@ -358,12 +379,12 @@
 }
 
 .diferencial-block {
-  background: #f0fbff;
-  border-color: #bee3f8;
+  background: #f1f3f5;
+  border-color: #dee2e6;
 }
 
 .diferencial-block .section-title {
-  border-bottom-color: #bee3f8;
+  border-bottom-color: #ced4da;
 }
 
 /* ── TOGGLE TIPO ─────────────────────────────────────────── */
@@ -407,14 +428,14 @@
 }
 
 .drop-zone:hover {
-  border-color: #0d6efd;
+  border-color: #2563EA;
   background: #f0f5ff;
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.08);
+  box-shadow: 0 0 0 3px rgba(37, 99, 234, 0.08);
 }
 
 .drop-zone:hover i,
 .drop-zone:hover p {
-  color: #0d6efd !important;
+  color: #2563EA !important;
 }
 
 /* ── PREVISUALIZACIÓN DE PLACA ───────────────────────────── */
@@ -477,7 +498,7 @@
 }
 
 .foto-item:hover .foto-thumb {
-  border-color: #0d6efd;
+  border-color: #2563EA;
 }
 
 .foto-overlay {
@@ -520,7 +541,7 @@
 }
 
 .foto-add:hover {
-  border-color: #0d6efd;
+  border-color: #2563EA;
   background: #f0f5ff;
 }
 
@@ -554,7 +575,7 @@
 }
 
 .resumen-thumb:hover {
-  border-color: #0d6efd;
+  border-color: #2563EA;
   transform: scale(1.05);
   transition: all 0.2s;
 }
@@ -592,8 +613,8 @@
 /* ── FORMULARIO ─────────────────────────────────────────── */
 .form-control:focus,
 .form-select:focus {
-  border-color: #0d6efd;
-  box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.12);
+  border-color: #2563EA;
+  box-shadow: 0 0 0 3px rgba(37, 99, 234, 0.12);
 }
 
 .form-label {
@@ -642,7 +663,7 @@
 
 .img-btn:hover .detalle-thumb {
   transform: scale(1.04);
-  border-color: #0d6efd;
+  border-color: #2563EA;
 }
 
 /* ── MODAL LIGHTBOX ──────────────────────────────────────── */
@@ -798,8 +819,40 @@
 
 .detalle-thumb:hover {
   transform: scale(1.04);
-  border-color: #0d6efd;
-  box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+  border-color: #2563EA;
+  box-shadow: 0 4px 12px rgba(37, 99, 234, 0.2);
+}
+
+/* ── CAMBIO: alinear el "primary" de Bootstrap con el azul de marca ──────── */
+.btn-primary {
+  background-color: #2563EA;
+  border-color: #2563EA;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: #1F42B2 !important;
+  border-color: #1F42B2 !important;
+}
+
+.btn-outline-primary {
+  color: #2563EA;
+  border-color: #2563EA;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-primary:focus {
+  background-color: #2563EA;
+  border-color: #2563EA;
+}
+
+.text-primary {
+  color: #2563EA !important;
+}
+
+.bg-primary {
+  background-color: #2563EA !important;
 }
 
 /* ── RESPONSIVE ──────────────────────────────────────────── */

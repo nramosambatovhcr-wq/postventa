@@ -38,6 +38,26 @@ interface FormularioInterno {
   usuarioCrea: number;
 }
 
+// ── NUEVO: obtiene la fecha/hora ACTUAL en la zona horaria de Ecuador ────────
+// (America/Guayaquil, UTC-5 sin horario de verano), sin depender de la
+// configuración regional del dispositivo del usuario. Formato compatible
+// con <input type="datetime-local">: 'yyyy-MM-ddTHH:mm'.
+const obtenerFechaHoraEcuador = (): string => {
+  const ahora = new Date();
+  const formatter = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Guayaquil',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+  const partes = formatter.formatToParts(ahora);
+  const obtener = (tipo: string) => partes.find(p => p.type === tipo)?.value ?? '00';
+  return `${obtener('year')}-${obtener('month')}-${obtener('day')}T${obtener('hour')}:${obtener('minute')}`;
+};
+
 const formularioVacio = (usuarioId: number, agencia: string): FormularioInterno => ({
   agencia,
   modelo: '',
@@ -52,7 +72,8 @@ const formularioVacio = (usuarioId: number, agencia: string): FormularioInterno 
   ordenTrabajoDif: '',
   guiaRemisionDif: '',
   estado: 'PENDIENTE',
-  fechaIngreso: new Date().toISOString().slice(0, 16),
+  // ── CAMBIO: fecha de ingreso bloqueada = fecha/hora actual de Ecuador ──────
+  fechaIngreso: obtenerFechaHoraEcuador(),
   fechaEntrega: '',
   observaciones: '',
   tutorialUrl: '',
@@ -112,6 +133,9 @@ export class RepotenciacionagComponent implements OnInit, OnDestroy {
   // WIZARD / FORMULARIO
   // ═══════════════════════════════════════════════════════════
   pasoActual: PasoProceso = 1;
+  // ── CAMBIO: ahora son dos interruptores independientes; al menos uno debe
+  // estar activo. Antes la Caja de Cambio era siempre obligatoria. ──────────
+  incluyeCaja = true;
   tieneDiferencial = false;
   formulario!: FormularioInterno;
 
@@ -336,20 +360,99 @@ export class RepotenciacionagComponent implements OnInit, OnDestroy {
     return map[estado.toUpperCase()] ?? 0;
   }
 
-  // ── NUEVO: clase de Bootstrap para la barra de progreso ───────────────────
+  // ── CAMBIO: clase propia (paleta azul/gris) para la barra de progreso ─────
   getProgresoBsClase(estado: string): string {
     const map: { [key: string]: string } = {
-      'PENDIENTE'  : 'bg-warning',
-      'EN PROCESO' : 'bg-info',
-      'COMPLETADO' : 'bg-success',
-      'ENTREGADO'  : 'bg-primary',
+      'PENDIENTE'  : 'progreso-pendiente',
+      'EN PROCESO' : 'progreso-proceso',
+      'COMPLETADO' : 'progreso-completado',
+      'ENTREGADO'  : 'progreso-entregado',
     };
-    return map[estado.toUpperCase()] || 'bg-secondary';
+    return map[estado.toUpperCase()] || 'progreso-pendiente';
   }
 
   // ═══════════════════════════════════════════════════════════
   // WIZARD - FORMULARIO
   // ═══════════════════════════════════════════════════════════
+
+  // ── NUEVO: se ejecuta al cambiar el interruptor de Caja de Cambio ─────────
+  // Evita que ambos interruptores (Caja y Diferencial) queden desactivados.
+  onCajaChange(valor: boolean): void {
+    if (!valor && !this.tieneDiferencial) {
+      this.incluyeCaja = true;
+      this.error = 'Debe incluir al menos la Caja de Cambio o el Diferencial.';
+      return;
+    }
+    if (!valor) {
+      // Se desactivó la Caja de Cambio: limpiamos sus campos.
+      this.formulario.agencia = this.usuario1?.agencia || '';
+      this.formulario.modelo = '';
+      this.formulario.serie = '';
+      this.formulario.cliente = '';
+      this.formulario.ordenTrabajo = '';
+      this.formulario.guiaRemision = '';
+    }
+  }
+
+  // ── NUEVO: se ejecuta al cambiar el interruptor de Diferencial ────────────
+  onDiferencialChange(valor: boolean): void {
+    if (!valor && !this.incluyeCaja) {
+      this.tieneDiferencial = true;
+      this.error = 'Debe incluir al menos la Caja de Cambio o el Diferencial.';
+      return;
+    }
+    if (!valor) {
+      // Se desactivó el Diferencial: limpiamos sus campos.
+      this.formulario.agenciaDif = '';
+      this.formulario.modeloDif = '';
+      this.formulario.serieDif = '';
+      this.formulario.clienteDif = '';
+      this.formulario.ordenTrabajoDif = '';
+      this.formulario.guiaRemisionDif = '';
+    }
+  }
+
+  // ── NUEVO: etiqueta del tipo de solicitud según lo que esté incluido ──────
+  get tituloTipoSolicitud(): string {
+    if (this.incluyeCaja && this.tieneDiferencial) return 'CAJA DE CAMBIO + DIFERENCIAL';
+    if (this.tieneDiferencial) return 'SOLO DIFERENCIAL';
+    return 'SOLO CAJA DE CAMBIO';
+  }
+
+  // ── NUEVO: clase CSS del badge de tipo de solicitud (paleta azul/gris) ────
+  get claseTipoSolicitud(): string {
+    if (this.incluyeCaja && this.tieneDiferencial) return 'badge-tipo-mixta';
+    if (this.tieneDiferencial) return 'badge-tipo-dif';
+    return 'badge-tipo-caja';
+  }
+
+  // ── NUEVO: helpers para el badge de tipo en la vista DETALLE (registros ya
+  // guardados), que ahora pueden ser solo caja, solo diferencial, o ambos ───
+  private detalleTieneCaja(rep: RepotenciacionCajaDto): boolean {
+    return !!(rep.modelo && rep.modelo.trim());
+  }
+
+  getTipoBadgeClase(rep: RepotenciacionCajaDto): string {
+    const caja = this.detalleTieneCaja(rep);
+    const dif = !!rep.modeloDif;
+    if (caja && dif) return 'badge-tipo-mixta';
+    if (dif) return 'badge-tipo-dif';
+    return 'badge-tipo-caja';
+  }
+
+  getTipoBadgeTexto(rep: RepotenciacionCajaDto): string {
+    const caja = this.detalleTieneCaja(rep);
+    const dif = !!rep.modeloDif;
+    if (caja && dif) return 'CAJA DE CAMBIO + DIFERENCIAL';
+    if (dif) return 'SOLO DIFERENCIAL';
+    return 'SOLO CAJA DE CAMBIO';
+  }
+
+  getTipoBadgeIcono(rep: RepotenciacionCajaDto): string {
+    const dif = !!rep.modeloDif;
+    const caja = this.detalleTieneCaja(rep);
+    return (dif && !caja) ? 'fa-wrench' : 'fa-cog';
+  }
 
   get tituloPaso(): string {
     if (this.pasoActual === 1) return 'Datos del Componente';
@@ -394,24 +497,32 @@ export class RepotenciacionagComponent implements OnInit, OnDestroy {
   validarPaso1(): boolean {
     const f = this.formulario;
 
-    const camposCaja: [string, string][] = [
-      [f.agencia,      'La agencia de la caja es obligatoria.'],
-      [f.modelo,       'El modelo de la caja es obligatorio.'],
-      [f.serie,        'La serie de la caja es obligatoria.'],
-      [f.cliente,      'El cliente es obligatorio.'],
-      [f.ordenTrabajo, 'La orden de trabajo es obligatoria.'],
-      [f.guiaRemision, 'La guía de remisión es obligatoria.'],
-    ];
-
-    for (const [val, msg] of camposCaja) {
-      if (!val.trim()) { this.error = msg; return false; }
-    }
-
-    if (!f.fechaIngreso) {
-      this.error = 'La fecha de ingreso es obligatoria.';
+    // ── CAMBIO: debe incluirse al menos un bloque (Caja y/o Diferencial) ────
+    if (!this.incluyeCaja && !this.tieneDiferencial) {
+      this.error = 'Debe incluir al menos la Caja de Cambio o el Diferencial.';
       return false;
     }
 
+    // ── CAMBIO: la Caja de Cambio solo se valida si está incluida ───────────
+    if (this.incluyeCaja) {
+      const camposCaja: [string, string][] = [
+        [f.agencia,      'La agencia de la caja es obligatoria.'],
+        [f.modelo,       'El modelo de la caja es obligatorio.'],
+        [f.serie,        'La serie de la caja es obligatoria.'],
+        [f.cliente,      'El cliente es obligatorio.'],
+        [f.ordenTrabajo, 'La orden de trabajo es obligatoria.'],
+        [f.guiaRemision, 'La guía de remisión es obligatoria.'],
+      ];
+
+      for (const [val, msg] of camposCaja) {
+        if (!val.trim()) { this.error = msg; return false; }
+      }
+    }
+
+    // La fecha de ingreso ya no se valida: queda bloqueada y se autocompleta
+    // con la fecha/hora actual de Ecuador (ver obtenerFechaHoraEcuador()).
+
+    // ── CAMBIO: el Diferencial solo se valida si está incluido ──────────────
     if (this.tieneDiferencial) {
       const camposDif: [string | undefined, string][] = [
         [f.agenciaDif,      'La agencia del diferencial es obligatoria.'],
@@ -503,13 +614,17 @@ export class RepotenciacionagComponent implements OnInit, OnDestroy {
     this.cargando = true;
     this.error = '';
 
+    // ── CAMBIO: los campos de Caja solo se envían si el bloque está incluido.
+    // NOTA: si el backend exige estas columnas como NOT NULL, deben permitir
+    // valores vacíos/nulos para el caso "solo diferencial" — conviene
+    // confirmar esto contra RepotenciacionCajaRequest / la tabla en BD.
     const request: RepotenciacionCajaRequest = {
-      agencia:      this.formulario.agencia,
-      modelo:       this.formulario.modelo,
-      serie:        this.formulario.serie,
-      cliente:      this.formulario.cliente,
-      ordenTrabajo: this.formulario.ordenTrabajo,
-      guiaRemision: this.formulario.guiaRemision,
+      agencia:      this.incluyeCaja ? this.formulario.agencia      : '',
+      modelo:       this.incluyeCaja ? this.formulario.modelo       : '',
+      serie:        this.incluyeCaja ? this.formulario.serie        : '',
+      cliente:      this.incluyeCaja ? this.formulario.cliente      : '',
+      ordenTrabajo: this.incluyeCaja ? this.formulario.ordenTrabajo : '',
+      guiaRemision: this.incluyeCaja ? this.formulario.guiaRemision : '',
       estado:       'PENDIENTE',
       // ── CAMBIO: siempre viene del usuario autenticado ─────────────────────
       usuarioCrea:  this.id,
@@ -560,6 +675,7 @@ export class RepotenciacionagComponent implements OnInit, OnDestroy {
     this.pasoActual       = 1;
     this.exitoso          = false;
     this.idCreado         = null;
+    this.incluyeCaja      = true;
     this.tieneDiferencial = false;
     this.archivoPlaca     = null;
     this.archivosFotografias     = [];
