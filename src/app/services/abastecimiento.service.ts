@@ -548,6 +548,17 @@ export class AbastecimientoService {
     );
   }
 
+  getPendientesAsignacionByUsuario(usuarioId: number): Observable<PendienteAsignacion[]> {
+  return this.http.get<PendienteAsignacion[]>(
+    `${this.baseUrl}/pendientes/usuario/${usuarioId}`
+  ).pipe(
+    catchError(err => {
+      console.error('getPendientesAsignacionByUsuario error:', err);
+      return of([] as PendienteAsignacion[]);
+    })
+  );
+}
+
   // ═══════════════════════════════════════════════════════════════
   //  FORECAST  (nuevos)
   // ═══════════════════════════════════════════════════════════════

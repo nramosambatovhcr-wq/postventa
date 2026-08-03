@@ -563,7 +563,7 @@ const routes: Routes = [
  { path: 'clasificacion', component: ClasificacionComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', ] } },
  { path: 'forecast', component: ForecastComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', ] } },
  { path: 'rotacion', component: RotacionComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', ] } },
- { path: 'transito', component: TransitoComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', ] } },
+ { path: 'transito', component: TransitoComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos','repuestoslv', 'repuestoslk', 'repuestoslsc', ] } },
  { path: 'maestropartes', component: MaestropartesComponent, canActivate: [AuthGuard], data: { roles: ['admin','repuestos', ] } },
 
 

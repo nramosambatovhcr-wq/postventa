@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { Usuario } from 'src/app/models/usuario';
 import { PendienteAsignacion, AbastecimientoService } from 'src/app/services/abastecimiento.service';
+import { AuthService } from 'src/app/services/auth.service';
 import * as XLSX from 'xlsx';
 
 // ── Interfaz para badge unificado ──────────────────────────
@@ -36,13 +38,33 @@ export class TransitoComponent implements OnInit, OnDestroy {
   totalTransito  = 0;
   totalItems     = 0;
 
+  id: number = 0;
+  usuario: Usuario | null = null;
+
   // ── MEJORA 1: Subject para desuscripción segura ────────────
   private destroy$ = new Subject<void>();
 
-  constructor(private abastecimientoService: AbastecimientoService) {}
+  constructor(private abastecimientoService: AbastecimientoService, private authService: AuthService) {}
 
   ngOnInit(): void {
-    this.cargarPendientes();
+
+      this.usuario = this.authService.getUsuarioActual();
+    this.authService.usuarioActual$.subscribe(usuario => {
+      this.usuario = usuario;
+      console.log(this.usuario);
+      if(this.usuario != null){
+        if(this.usuario.rol=='admin'){
+         this.cargarPendientes();
+        }
+        else{
+          this.id = this.usuario.id;
+          console.log(this.id);
+          this.cargarPendientesid(this.id);
+        }
+      }
+    });
+
+    
   }
 
   // ── MEJORA 1: Implementar OnDestroy para evitar memory leaks ──
@@ -57,6 +79,28 @@ export class TransitoComponent implements OnInit, OnDestroy {
     this.error    = '';
 
     this.abastecimientoService.getPendientesAsignacion()
+      .pipe(takeUntil(this.destroy$))   // MEJORA 1: evita memory leak al navegar
+      .subscribe({
+        next: datos => {
+          this.pendientes  = datos;
+          // MEJORA 2: calcular proveedores solo cuando llegan datos nuevos
+          this.proveedores = [...new Set(datos.map(p => p.proveedor))].sort();
+          this.aplicarFiltros();
+          this.cargando = false;
+        },
+        error: err => {
+          this.error    = 'No se pudo cargar la información. Intente nuevamente.';
+          this.cargando = false;
+          console.error('TransitoComponent error:', err);
+        }
+      });
+  }
+
+  cargarPendientesid(idUsuario:number): void {
+    this.cargando = true;
+    this.error    = '';
+
+    this.abastecimientoService.getPendientesAsignacionByUsuario(idUsuario)
       .pipe(takeUntil(this.destroy$))   // MEJORA 1: evita memory leak al navegar
       .subscribe({
         next: datos => {
