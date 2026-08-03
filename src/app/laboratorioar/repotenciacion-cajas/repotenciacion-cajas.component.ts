@@ -160,7 +160,8 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
 
   // ── Opciones ──────────────────────────────────────────────
   readonly estados = [
-    { value: '',                 label: 'Todos los Estados' },
+    { value: '',                 label: 'Activos (sin finalizados)' },
+    { value: 'TODOS',            label: 'Todos (incl. finalizados)' },
     { value: 'PENDIENTE',        label: 'Pendiente' },
     { value: 'ASIGNADO',         label: 'Asignado' },
     { value: 'EN_PROCESO',       label: 'En Proceso' },
@@ -220,8 +221,10 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
 
   cargarRepotenciaciones(): void {
     this.cargando = true; this.error = '';
+    // El estado se filtra SIEMPRE localmente (así el switch entre estados es
+    // instantáneo y la vista por defecto puede ocultar ENTREGADO/DADA_BAJA).
     this.svc.getAll({
-      estado: this.filtroEstado || undefined, tipo: this.filtroTipo || undefined,
+      estado: undefined, tipo: this.filtroTipo || undefined,
       busqueda: this.terminoBusqueda || undefined,
       fechaDesde: this.fechaDesde || undefined, fechaHasta: this.fechaHasta || undefined,
     })
@@ -229,7 +232,7 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (res: ApiListResponse<RepotenciacionCajaDto>) => {
           this.repotenciaciones = res.data ?? [];
-          this.repotenciacionesFiltradas = res.data ?? [];
+          this.aplicarFiltrosLocales();   // aplica ocultado de finalizados por defecto
           this.cargarEstadisticas();
         },
         error: err => { this.error = `Error al cargar: ${err.error?.message ?? err.message}`; },
@@ -255,8 +258,15 @@ export class RepotenciacionCajasComponent implements OnInit, OnDestroy {
   onFiltroChange(): void { this.aplicarFiltrosLocales(); }
 
   aplicarFiltrosLocales(): void {
+    // Estados que se ocultan en la vista por defecto ("Activos").
+    const FINALIZADOS = ['ENTREGADO', 'DADA_BAJA'];
+    // Vista por defecto (filtroEstado === ''): ocultar finalizados.
+    const ocultarFinalizados = this.filtroEstado === '';
+
     this.repotenciacionesFiltradas = this.repotenciaciones.filter(rep => {
-      if (this.filtroEstado && rep.estado !== this.filtroEstado) return false;
+      if (ocultarFinalizados && FINALIZADOS.includes(rep.estado)) return false;
+      // 'TODOS' = mostrar todo (no filtra por estado). Un estado concreto sí filtra.
+      if (this.filtroEstado && this.filtroEstado !== 'TODOS' && rep.estado !== this.filtroEstado) return false;
       if (this.filtroTipo === 'CAJA' && rep.tipoComponente !== 'CAJA') return false;
       if (this.filtroTipo === 'DIFERENCIAL' && rep.tipoComponente !== 'DIFERENCIAL') return false;
       if (this.terminoBusqueda) {

@@ -161,7 +161,9 @@
 .table-container {
   background: white;
   border-radius: 12px;
-  padding: 1.5rem;
+  /* Sin padding superior: evita que las filas se asomen POR ENCIMA
+     de la cabecera sticky (efecto "transparente" en el scroll). */
+  padding: 0 1.5rem 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: auto;        /* scroll propio (horizontal y vertical) */
@@ -175,7 +177,10 @@
 }
 
 .table-modern thead th {
+  /* Color sólido de respaldo por si el gradiente no pinta al hacer scroll */
+  background-color: #1e40af;
   background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  background-clip: padding-box;
   color: white;
   font-weight: 600;
   font-size: 0.85rem;
@@ -185,7 +190,9 @@
   border: none;
   position: sticky;
   top: 0;
-  z-index: 10;
+  /* z-index alto para quedar SIEMPRE por encima de las filas
+     (incluyendo la fila con hover que aplica transform/scale). */
+  z-index: 20;
 }
 
 .table-modern thead th:first-child {
