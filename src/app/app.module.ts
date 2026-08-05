@@ -270,6 +270,7 @@ import { ExtraccionImagenesComponent } from './laboratorioar/extraccion-imagenes
 import { TransitovehiComponent } from './vehiculos/transitovehi/transitovehi.component';
 import { CampanasComponent } from './inventarios/campanas/campanas.component';
 import { InvusuarioComponent } from './inventarios/invusuario/invusuario.component';
+import { InventarioagenComponent } from './pedidous/inventarioagen/inventarioagen.component';
  
  
 export function initializeApp(appInitializer: AppInitializerService) {
@@ -532,7 +533,8 @@ registerLocaleData(localeEs);
        ExtraccionImagenesComponent,
        TransitovehiComponent,
        CampanasComponent,
-       InvusuarioComponent
+       InvusuarioComponent,
+       InventarioagenComponent
          
   ],
   imports: [

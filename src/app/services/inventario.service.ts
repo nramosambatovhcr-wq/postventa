@@ -178,6 +178,14 @@ sincronizarInventarioDesdeOracle(codigoAgencia: string): Observable<any> {
   );
 }
 
+obtenerInventarioOracle(codigoAgencia: string): Observable<any> {
+  return this.http.get<any>(
+    `${this.baseUrl1}/inventario-oracle/${codigoAgencia}`
+  ).pipe(
+    catchError(this.handleError)
+  );
+}
+
   getCampanas(): Observable<CampanaInventarioDto[]> {
     return this.http.get<CampanaInventarioDto[]>(`${this.baseUrl2}/campanas`);
   }

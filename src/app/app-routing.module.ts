@@ -227,6 +227,7 @@ import { ExtraccionImagenesComponent } from './laboratorioar/extraccion-imagenes
 import { TransitovehiComponent } from './vehiculos/transitovehi/transitovehi.component';
 import { CampanasComponent } from './inventarios/campanas/campanas.component';
 import { InvusuarioComponent } from './inventarios/invusuario/invusuario.component';
+import { InventarioagenComponent } from './pedidous/inventarioagen/inventarioagen.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' }, // Cambiado de 'login' a 'dashboard'
@@ -326,6 +327,7 @@ const routes: Routes = [
   { path: 'danados', component: RepuestosDanadosComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'bodega','bodegaped','bodegapdi1', 'bodegaimpor','bodegapdi2', 'bodegaimpor1'] } },
   { path: 'danadosclase', component: RepuestosdnadosclaseComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'repuestos','repuestoslv','repuestoslk','repuestoslsc','laboratorio2','laboratorio3'] } },
   { path: 'ecommerce', component: EcommerceComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'bodega','bodegaped','bodegapdi1', 'bodegaimpor','bodegapdi2','bodegaimpor1','bodegaimpor3'] } },
+  { path: 'inventarioagen', component: InventarioagenComponent, canActivate: [AuthGuard], data: { roles: ['admin', 'bodega','bodegaped','bodegapdi1', 'bodegaimpor','bodegapdi2','bodegaimpor1','bodegaimpor3'] } },
  
 
 
