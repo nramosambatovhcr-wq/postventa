@@ -1,1 +1,324 @@
-<p>inventarioagen works!</p>
+<!-- inventarioagen.component.html -->
+<div class="inv-container">
+
+  <!-- ✅ Título + estadísticas (acordeón) -->
+  <div class="panel-superior panel-superior-estadisticas">
+    <div class="panel-titulo panel-titulo-estadisticas"
+         [class.panel-titulo-estatico]="items.length === 0"
+         (click)="items.length > 0 && toggleEstadisticas()"
+         role="button" aria-label="Mostrar u ocultar estadísticas">
+      <div class="panel-titulo-izq">
+        <i class="bi bi-box-seam panel-icono"></i>
+        <div class="panel-textos">
+          <h2>Inventario por Agencia</h2>
+          <span class="panel-subtitulo" *ngIf="agenciaNombre || codigoAgencia">
+            <i class="bi bi-building"></i>
+            {{ agenciaNombre || 'Agencia' }} <span *ngIf="codigoAgencia">· {{ codigoAgencia }}</span>
+          </span>
+        </div>
+      </div>
+
+      <span class="btn-toggle-filtros btn-toggle-estadisticas" *ngIf="items.length > 0">
+        <span class="btn-toggle-texto resumen-estadisticas">
+          <span class="resumen-ok">{{ totalArticulos }}</span> art. ·
+          <span class="resumen-dif">{{ totalUnidadesDisponibles | number:'1.0-0' }}</span> und
+        </span>
+        <i class="bi chevron-filtros" [ngClass]="estadisticasAbiertas ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </span>
+    </div>
+
+    <!-- Zona colapsable: tarjetas -->
+    <div class="panel-filtros panel-estadisticas-colapsable"
+         [class.abierto]="estadisticasAbiertas"
+         *ngIf="items.length > 0">
+      <div class="panel-filtros-inner">
+        <div class="estadisticas-section-inner">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="stat-card total">
+                <div class="stat-icon"><i class="bi bi-boxes"></i></div>
+                <div class="stat-content">
+                  <h3>{{ totalArticulos | number:'1.0-0' }}</h3>
+                  <p>Artículos</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="stat-card disponible">
+                <div class="stat-icon"><i class="bi bi-check2-square"></i></div>
+                <div class="stat-content">
+                  <h3>{{ totalUnidadesDisponibles | number:'1.0-0' }}</h3>
+                  <p>Unidades Disponibles</p>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4">
+              <div class="stat-card valor">
+                <div class="stat-icon"><i class="bi bi-cash-stack"></i></div>
+                <div class="stat-content">
+                  <h3>{{ valorTotalInventario | number:'1.2-2' }}</h3>
+                  <p>Valor Inventario (disp.)</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mensaje de Error -->
+  <div class="alert alert-danger mt-3" *ngIf="errorMensaje">
+    <i class="bi bi-exclamation-triangle"></i> {{ errorMensaje }}
+  </div>
+
+  <!-- Loader -->
+  <div class="text-center my-5" *ngIf="cargando">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Cargando...</span>
+    </div>
+    <p class="mt-2">Cargando inventario...</p>
+  </div>
+
+  <!-- ✅ Filtros (acordeón) -->
+  <div class="panel-superior panel-filtros-tabla" *ngIf="!cargando">
+    <div class="panel-titulo panel-titulo-filtros" (click)="toggleFiltros()" role="button" aria-label="Mostrar u ocultar filtros">
+      <div class="panel-titulo-izq">
+        <i class="bi bi-funnel-fill panel-icono panel-icono-filtros"></i>
+        <div class="panel-textos">
+          <h2 class="titulo-filtros">Filtros</h2>
+        </div>
+        <span class="badge-filtros" *ngIf="filtrosActivosCount > 0">{{ filtrosActivosCount }}</span>
+      </div>
+
+      <span class="btn-toggle-filtros">
+        <span class="btn-toggle-texto">{{ itemsFiltrados.length }} artículos</span>
+        <i class="bi chevron-filtros" [ngClass]="filtrosAbiertos ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+      </span>
+    </div>
+
+    <!-- Zona colapsable de filtros -->
+    <div class="panel-filtros" [class.abierto]="filtrosAbiertos">
+      <div class="panel-filtros-inner">
+        <div class="filtros-grid">
+
+          <!-- Código de agencia -->
+          <div class="filtro-item filtro-span-2">
+            <label class="filtro-label">Código de Agencia</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-building"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="codigoAgencia"
+                placeholder="Ej: 008"
+                (keyup.enter)="cargarInventario()">
+              <button class="btn btn-primary" (click)="cargarInventario()" [disabled]="cargando">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Búsqueda -->
+          <div class="filtro-item filtro-span-2">
+            <label class="filtro-label">Buscar Artículo/Nombre</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text"><i class="bi bi-search"></i></span>
+              <input
+                type="text"
+                class="form-control"
+                [(ngModel)]="busquedaTexto"
+                (ngModelChange)="onBusquedaTextoChange($event)"
+                placeholder="Buscar...">
+            </div>
+          </div>
+
+          <!-- Clase -->
+          <div class="filtro-item">
+            <label class="filtro-label">Clase</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroClaseId"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todas">Todas</option>
+              <option *ngFor="let clase of clasesDisponibles" [value]="clase">
+                {{ clase }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Grupo -->
+          <div class="filtro-item">
+            <label class="filtro-label">Grupo</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="filtroGrupoId"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="todos">Todos</option>
+              <option *ngFor="let grupo of gruposDisponibles" [value]="grupo">
+                {{ grupo }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Ordenar por costo -->
+          <div class="filtro-item">
+            <label class="filtro-label">Ordenar por Costo</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="ordenCosto"
+              (ngModelChange)="aplicarFiltros()">
+              <option value="ninguno">Sin orden</option>
+              <option value="mayor">Mayor a Menor ↓</option>
+              <option value="menor">Menor a Mayor ↑</option>
+            </select>
+          </div>
+
+          <!-- Items por página -->
+          <div class="filtro-item">
+            <label class="filtro-label">Por página</label>
+            <select
+              class="form-select form-select-sm"
+              [(ngModel)]="itemsPorPagina"
+              (ngModelChange)="cambiarItemsPorPagina()">
+              <option *ngFor="let n of opcionesItemsPorPagina" [ngValue]="n">{{ n }}</option>
+            </select>
+          </div>
+
+          <!-- Acciones -->
+          <div class="filtro-acciones">
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              type="button"
+              (click)="limpiarFiltros()"
+              title="Quitar todos los filtros">
+              <i class="bi bi-eraser"></i> Limpiar
+            </button>
+            <button
+              class="btn btn-outline-primary btn-sm"
+              type="button"
+              (click)="refrescar()"
+              [disabled]="cargando"
+              title="Volver a cargar desde Oracle">
+              <i class="bi bi-arrow-clockwise"></i> Refrescar
+            </button>
+            <button
+              class="btn btn-success btn-sm"
+              type="button"
+              (click)="exportarExcel()"
+              [disabled]="items.length === 0"
+              title="Descargar el inventario en Excel">
+              <i class="bi bi-file-earmark-excel"></i> Excel
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla de Inventario -->
+  <div class="tabla-inventario" *ngIf="!cargando && itemsFiltrados.length > 0">
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered">
+        <thead class="table-header">
+          <tr>
+            <th class="col-fija col-fija-1" style="width: 9%; cursor: pointer; user-select: none;" (click)="ordenarPor('articulo')">
+              Artículo <span [ngClass]="getSortClass('articulo')"></span>
+            </th>
+            <th style="width: 24%; cursor: pointer; user-select: none;" (click)="ordenarPor('nombre')">
+              Nombre <span [ngClass]="getSortClass('nombre')"></span>
+            </th>
+            <th style="width: 8%; cursor: pointer; user-select: none;" (click)="ordenarPor('ubicacion')">
+              Ubicación <span [ngClass]="getSortClass('ubicacion')"></span>
+            </th>
+            <th style="width: 6%; cursor: pointer; user-select: none;" (click)="ordenarPor('clase_id')">
+              Clase <span [ngClass]="getSortClass('clase_id')"></span>
+            </th>
+            <th style="width: 6%; cursor: pointer; user-select: none;" (click)="ordenarPor('grupo_id')">
+              Grupo <span [ngClass]="getSortClass('grupo_id')"></span>
+            </th>
+            <th style="width: 6%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('stock')">
+              Stock <span [ngClass]="getSortClass('stock')"></span>
+            </th>
+            <th style="width: 6%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('reserva')">
+              Reserva <span [ngClass]="getSortClass('reserva')"></span>
+            </th>
+            <th style="width: 6%; cursor: pointer; user-select: none;" class="text-center" (click)="ordenarPor('disponible')">
+              Disp. <span [ngClass]="getSortClass('disponible')"></span>
+            </th>
+            <th style="width: 7%; cursor: pointer; user-select: none;" class="text-end" (click)="ordenarPor('costo')">
+              Costo <span [ngClass]="getSortClass('costo')"></span>
+            </th>
+            <th style="width: 7%; cursor: pointer; user-select: none;" class="text-end" (click)="ordenarPor('precio')">
+              Precio s/IVA <span [ngClass]="getSortClass('precio')"></span>
+            </th>
+            <th style="width: 8%; cursor: pointer; user-select: none;" class="text-end" (click)="ordenarPor('valor')">
+              Valor Disp. <span [ngClass]="getSortClass('valor')"></span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of itemsPaginados; trackBy: trackByArticulo">
+            <td class="col-fija col-fija-1"><strong>{{ item.articulo }}</strong></td>
+            <td>
+              <div class="nombre-repuesto">{{ item.nombre }}</div>
+            </td>
+            <td>{{ item.ubicacion || '-' }}</td>
+            <td>{{ item.clase_id || '-' }}</td>
+            <td>{{ item.grupo_id || '-' }}</td>
+            <td class="text-center">{{ item.stock | number:'1.0-0' }}</td>
+            <td class="text-center">{{ item.stock_reservado | number:'1.0-0' }}</td>
+            <td class="text-center">
+              <span class="badge badge-disp">{{ item.stock_disponible | number:'1.0-0' }}</span>
+            </td>
+            <td class="text-end">{{ item.costo_uni | number:'1.2-2' }}</td>
+            <td class="text-end">{{ item.precio_sin_iva | number:'1.2-2' }}</td>
+            <td class="text-end fw-semibold">{{ item.valor_disponible | number:'1.2-2' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="paginacion" *ngIf="totalPaginas > 1">
+      <nav>
+        <ul class="pagination justify-content-center">
+          <li class="page-item" [class.disabled]="paginaActual === 1">
+            <a class="page-link" (click)="cambiarPagina(paginaActual - 1)" style="cursor: pointer;">Anterior</a>
+          </li>
+          <li class="page-item"
+              *ngFor="let pagina of getPaginasArray()"
+              [class.active]="pagina === paginaActual"
+              [class.disabled]="pagina === -1">
+            <span class="page-link page-ellipsis" *ngIf="pagina === -1">…</span>
+            <a class="page-link" *ngIf="pagina !== -1" (click)="cambiarPagina(pagina)" style="cursor: pointer;">{{ pagina }}</a>
+          </li>
+          <li class="page-item" [class.disabled]="paginaActual === totalPaginas">
+            <a class="page-link" (click)="cambiarPagina(paginaActual + 1)" style="cursor: pointer;">Siguiente</a>
+          </li>
+        </ul>
+      </nav>
+      <p class="text-center text-muted">
+        Mostrando {{ (paginaActual - 1) * itemsPorPagina + 1 }} -
+        {{ Math.min(paginaActual * itemsPorPagina, itemsFiltrados.length) }}
+        de {{ itemsFiltrados.length }} artículos
+      </p>
+    </div>
+  </div>
+
+  <!-- Mensaje cuando no hay datos cargados -->
+  <div class="text-center my-5" *ngIf="!cargando && items.length === 0 && !errorMensaje">
+    <i class="bi bi-inbox" style="font-size: 4rem; color: #cbd5e1;"></i>
+    <p class="text-muted mt-3">Ingrese el código de la agencia para ver su inventario</p>
+  </div>
+
+  <!-- Mensaje cuando no hay resultados filtrados -->
+  <div class="text-center my-5" *ngIf="!cargando && items.length > 0 && itemsFiltrados.length === 0">
+    <i class="bi bi-search" style="font-size: 4rem; color: #cbd5e1;"></i>
+    <p class="text-muted mt-3">No se encontraron resultados con los filtros aplicados</p>
+    <button class="btn btn-primary" (click)="limpiarFiltros()">
+      <i class="bi bi-x-circle"></i> Limpiar Filtros
+    </button>
+  </div>
+</div>
